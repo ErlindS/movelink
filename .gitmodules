@@ -4,3 +4,9 @@
 [submodule "embedded"]
 	path = embedded
 	url = https://github.com/ErlindS/movelink-embedded.git
+[submodule "setup/embedded"]
+	path = setup/embedded
+	url = https://github.com/ErlindS/movelink-embedded.git
+[submodule "setup/app"]
+	path = setup/app
+	url = https://github.com/ErlindS/movelink-app.git
