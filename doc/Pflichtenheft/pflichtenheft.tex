@@ -1,0 +1,235 @@
+% =============================================================================
+% MoveLink - Kurz-Pflichtenheft
+% Software-Architekturen Labor, SS 2026
+% Hochschule Karlsruhe (HKA)
+% =============================================================================
+\documentclass[11pt, a4paper]{article}
+
+% --- Pakete ---
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{parskip}
+
+% --- Farben (HKA Corporate) ---
+\definecolor{hkared}{RGB}{198, 42, 18}
+\definecolor{hkagray}{RGB}{100, 100, 100}
+
+% --- Hyperref Setup ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=hkared,
+    urlcolor=hkared,
+    citecolor=hkared
+}
+
+% --- Section Styling ---
+\titleformat{\section}{\large\bfseries\color{hkared}}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{hkared}}{\thesubsection}{1em}{}
+\titlespacing*{\section}{0pt}{1.2em}{0.5em}
+\titlespacing*{\subsection}{0pt}{0.8em}{0.3em}
+
+% --- Header/Footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{hkagray}MoveLink -- Kurz-Pflichtenheft}
+\fancyhead[R]{\small\color{hkagray}SWA Labor SS~2026}
+\fancyfoot[C]{\small\color{hkagray}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% =============================================================================
+\begin{document}
+
+% --- Titelseite ---
+\begin{titlepage}
+    \centering
+    \includegraphics[width=0.35\textwidth]{HKA.jpg}
+
+    {\normalsize\color{hkagray} University of Applied Sciences}\\[0.125cm]
+    {\small\color{hkagray} Fakultät für Informatik und Wirtschaftsinformatik}
+
+    \vspace{.5cm}
+    {\color{hkared}\rule{\textwidth}{1.5pt}}
+
+    \vspace{1.5cm}
+    {\fontsize{24}{30}\selectfont\bfseries\color{hkared} MoveLink}\\[0.6cm]
+    {\Large Echtzeit-Bewegungsanalyse im Krafttraining}\\[.75cm]
+    {\LARGE\bfseries Pflichtenheft}
+
+    \vspace{.5cm}
+    {\large Software-Architekturen Labor}\\[0.3cm]
+    {\large Sommersemester 2026}
+
+    \vspace{.5cm}
+    {\color{hkared}\rule{0.6\textwidth}{0.5pt}}
+    \vspace{1.5cm}
+
+    {\normalsize
+    \begin{tabular}{rl}
+        \textbf{Betreuer:}  & Prof.~Dr.~Sinz \\[0.5cm]
+        \textbf{Team:}      & Erlind \\
+                             & Luca Schöneberg \\
+                             & Devin Uyan \\[0.5cm]
+        \textbf{Abgabe:}    & 08.~April~2026 \\
+    \end{tabular}
+    }
+
+    \vfill
+    {\small\color{hkagray} Version 1.0 -- Stand: \today}
+\end{titlepage}
+
+\setcounter{page}{1}
+\vspace*{-1cm}
+% =============================================================================
+\section{Grundlegende Problemstellung}
+% =============================================================================
+\vspace{.25cm}
+Bei der Ausübung von Krafttraining ist die korrekte Bewegungsausführung entscheidend für den Trainingserfolg und die Verletzungsprävention. Trainierende erhalten jedoch selten \newline unmittelbares, objektives Feedback zu ihrer Bewegungsqualität. \vspace{.25cm}
+
+\textbf{MoveLink} adressiert dieses Problem: Trainingsgeräte (z.\,B.\ Hanteln) werden mit Sensoren \newline ausgestattet, die Bewegungsdaten in Echtzeit erfassen und drahtlos an eine Anwendung \newline übertragen. Dort wird dem Trainierenden visuelles Feedback gegeben. \vspace{.25cm}
+
+Im Rahmen dieses Laborprojekts wird ein \textbf{Proof of Concept} entwickelt, der die gesamte \newline Datenkette -- von der Sensorerfassung über die Übertragung bis zur Echtzeit-Visualisierung -- prototypisch umsetzt. Die Bewegungserkennung via Machine Learning ist Gegenstand eines separaten Projekts und wird hier als Datenquelle abstrahiert.
+\vspace{.25cm}
+% =============================================================================
+\section{Architekturvorschlag}
+% =============================================================================
+\vspace{.25cm}
+\subsection{Gewählte Architektur: Client-Server mit BLE-Gateway}
+\vspace{.25cm}
+Die Architektur folgt einem \textbf{dreischichtigen Client-Server-Modell}:
+\vspace{.5cm}
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        box/.style={draw, rounded corners, minimum width=3cm, minimum height=1cm, align=center, font=\small},
+        arrow/.style={->, thick, >=stealth},
+        label/.style={font=\scriptsize, midway, above}
+    ]
+        \node[box, fill=hkared!15] (sensor) at (0, 0) {XIAO nRF52840\\+ IMU-Sensoren};
+        \node[box, fill=hkared!25] (server) at (5.5, 0) {Backend-Server\\(Gateway / API)};
+        \node[box, fill=hkared!35] (frontend) at (11, 0) {Frontend\\(Web-App)};
+        \draw[arrow] (sensor) -- node[label] {BLE} (server);
+        \draw[arrow] (server) -- node[label] {WebSocket} (frontend);
+        \draw[arrow] (frontend) -- node[label, below] {REST} (server);
+    \end{tikzpicture}
+    \caption{Übersicht der Systemarchitektur}
+\end{figure}
+\vspace{.25cm}
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Embedded:} XIAO nRF52840 erfasst Bewegungsdaten (Accelerometer, Gyroskop) \newline und sendet sie via \textbf{BLE}. \\
+    \item \textbf{Backend:} Lokal in einem Docker-Container betriebener Server als BLE-Gateway; \newline leitet Daten über \textbf{WebSockets} weiter und bietet eine \textbf{REST-API} für Konfiguration. \\
+    \item \textbf{Frontend:} Web-Applikation zur Echtzeit-Visualisierung der Bewegungsdaten.
+\end{itemize}
+\vspace{.5cm}
+\subsection{Diskussion von Alternativen}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lXX}
+    \toprule
+    \textbf{Alternative} & \textbf{Vorteile} & \textbf{Nachteile} \\
+    \midrule
+    \textbf{Direkt BLE $\rightarrow$ App} (kein Server)
+        & Geringere Latenz; \newline weniger Infrastruktur
+        & Web Bluetooth API \newline eingeschränkt; \newline plattformabhängig; \newline keine zentrale Verarbeitung \\
+    \midrule
+    \textbf{MQTT-Broker} (IoT-Standard)
+        & Skalierbar; \newline Pub/Sub ideal für \newline Sensordaten
+        & Infrastruktur; \newline Overhead für PoC \newline überproportional \\
+    \midrule
+    \textbf{Native App} (Flutter/MAUI)
+        & Direkter BLE-Zugriff; \newline native Performance
+        & Aufwand; \newline schwerer im Team zu \newline parallelisieren \\
+    \bottomrule
+\end{tabularx}
+\caption{Vergleich der Architektur-Alternativen}
+\end{table}
+\vspace*{-.75cm}
+\textbf{Begründung:} Die Client-Server-Architektur ermöglicht eine klare Trennung der Verantwortlichkeiten (Embedded\,/\,Backend\,/\,Frontend), erleichtert parallele Teamarbeit und liefert eine plattformunabhängige Web-Oberfläche. Das gesamte System wird \textbf{lokal} über Docker Compose betrieben -- es ist kein externer Server oder Cloud-Hosting erforderlich.
+\vspace{.25cm}
+% =============================================================================
+\section{Technologieauswahl}
+% =============================================================================
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{llX}
+    \toprule
+    \textbf{Schicht} & \textbf{Technologie} & \textbf{Begründung} \\
+    \midrule
+    Embedded     & XIAO nRF52840, C/C++       & Integriertes BLE; kompakt; stromsparend \\
+    Backend      & Node.js oder Python        & BLE-Bibliotheken (Noble/Bleak); \newline WebSocket-Support; containerisierbar \\
+    Frontend     & React (TypeScript)         & Komponentenbasiert; Visualisierungs-Ökosystem \newline (D3.js, Recharts) \\
+    Echtzeit     & WebSockets                 & Bidirektional; geringe Latenz; nativ im Browser \\
+    Container    & Docker Compose             & Lokaler Betrieb aller Dienste; reproduzierbar; \newline kein externes Hosting nötig \\
+    Datenformat  & JSON                       & Leichtgewichtig; universell; gut für Debugging \\
+    \bottomrule
+\end{tabularx}
+\caption{Technologieübersicht}
+\end{table}
+% =============================================================================
+\section{Use Cases}
+% =============================================================================
+\vspace{.25cm}
+\textbf{UC-1: Echtzeit-Training überwachen} (Primär) \vspace{.25cm} \newline 
+\textit{Akteur:} Trainierender \quad \newline\textit{Vorbedingung:} Sensor verbunden \vspace{-.25cm} \newline
+\begin{enumerate}[nosep]
+    \item Trainierender startet eine Trainingseinheit in der App. \\
+    \item Sensor erfasst Bewegungsdaten und sendet sie via BLE an den Server. \\
+    \item Server leitet die Daten per WebSocket an das Frontend. \\
+    \item Frontend visualisiert die Bewegung in Echtzeit ($<$ 1\,s Latenz).
+\end{enumerate}
+\vspace{.5cm}
+\textbf{UC-2: Sensorverbindung herstellen}\\ \vspace{-.25cm} \newline
+\textit{Akteur:} Trainierender \quad \newline\textit{Vorbedingung:} Sensor eingeschaltet, Server läuft \vspace{-.25cm} \newline
+\begin{enumerate}[nosep]
+    \item App zeigt verfügbare Sensoren an. \\
+    \item Trainierender wählt Sensor aus; Verbindung wird hergestellt.
+\end{enumerate}
+\vspace{.5cm}
+\textbf{UC-3: Trainingsdaten einsehen} (Sekundär)\\ \vspace{-.25cm} \newline
+\textit{Akteur:} Trainierender \quad \newline\textit{Vorbedingung:} Vergangene Trainingseinheit vorhanden \vspace{-.25cm} \newline
+\begin{enumerate}[nosep]
+    \item Trainierender navigiert zur Übersicht vergangener Einheiten. \\
+    \item App zeigt historische Bewegungsdaten an.
+\end{enumerate}
+\newpage \vspace*{-.25cm}
+% =============================================================================
+\section{Muss- und Kann-Kriterien}
+% =============================================================================
+\vspace{1.5cm}
+\textbf{Muss-Kriterien:} \vspace{1cm}
+\begin{enumerate}[label=\textbf{M\arabic*}, nosep]
+    \item Echtzeitübertragung der Sensordaten mit einer Latenz von \textbf{max.\ 1\,s}. \\
+    \item \textbf{Visuelle Darstellung} der Bewegungsdaten als Live-Diagramm. \\
+    \item \textbf{Eigenständige Web-Applikation} (kein Plugin / nativer Client nötig). \\
+    \item Plattformübergreifend nutzbar: \textbf{Android (Browser), macOS, Windows}. \\
+    \item Klare \textbf{Trennung der Systemkomponenten} (Embedded, Backend, Frontend). \\
+    \item \textbf{Lokaler Betrieb} des gesamten Systems via Docker Compose (kein Cloud-Hosting).
+\end{enumerate}
+
+\vspace{1.5cm}
+\textbf{Kann-Kriterien:} \vspace{1cm}
+\begin{enumerate}[label=\textbf{K\arabic*}, nosep]
+    \item Einfache \textbf{Bewertung der Bewegungsausführung} (Schwellenwert-basiert). \\
+    \item \textbf{Persistierung} von Trainingsdaten für spätere Einsicht. \\
+    \item \textbf{3D-Visualisierung} der Sensorbewegung (z.\,B.\ Three.js). \\
+    \item Unterstützung \textbf{mehrerer Sensoren} gleichzeitig. \\
+    \item \textbf{Konfigurierbarkeit} der Darstellung (Achsen, Zeitfenster).
+\end{enumerate}
+
+\end{document}
