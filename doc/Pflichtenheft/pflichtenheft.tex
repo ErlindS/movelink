@@ -65,7 +65,7 @@
 
     \vspace{1.5cm}
     {\fontsize{24}{30}\selectfont\bfseries\color{hkared} MoveLink}\\[0.6cm]
-    {\Large Echtzeit-Bewegungsanalyse im Krafttraining}\\[.75cm]
+    {\Large Visualisierung von Echtzeit-Bewegungsdaten}\\[.75cm]
     {\LARGE\bfseries Pflichtenheft}
 
     \vspace{.5cm}
@@ -98,7 +98,7 @@
 \vspace{.25cm}
 Im Krafttraining ist eine korrekte Bewegungsausführung essenziell für den Trainingserfolg und die Verletzungsprävention. Dennoch fehlt es den Trainierenden in der Praxis meist an unmittelbarem, objektivem Feedback zur Qualität ihrer Ausführung. \vspace{.25cm}
 
-Zwar können Bewegungsabläufe durch moderne Hardware-Sensoren erfasst werden, jedoch liegen diese Informationen oft nur als unstrukturierte Rohdaten vor, die für den Endanwender kaum interpretierbar sind. Daraus ergibt sich die informationstechnische Herausforderung, die anfallenden Datenströme aus verschiedenen Quellen zentral zusammenzuführen und visuell nutzergerecht aufzubereiten. \vspace{.25cm}
+Zwar können Bewegungsabläufe durch moderne Hardware-Sensoren erfasst werden, jedoch liegen diese Informationen oft nur als unstrukturierte Rohdaten vor, die für den Endanwender kaum interpretierbar sind. Daraus ergibt sich die Herausforderung, die anfallenden Datenströme aus verschiedenen Quellen zentral zusammenzuführen und visuell nutzergerecht aufzubereiten. \vspace{.25cm}
 
 Um diese Lücke zu schließen, wird im Rahmen dieses Laborprojekts die mobile Applikation MoveLink konzipiert und prototypisch entwickelt. Ziel der Anwendung ist es, als zentrale Schnittstelle zu fungieren, die Trainingsdaten von unterschiedlichen Hardware-Sensoren standardisiert erfasst, speichert und in einer einheitlichen Benutzeroberfläche verständlich darstellt.
 
@@ -110,7 +110,7 @@ Bevor eine Architekturerläuterung folgt, sollen zunächst die folgenden Use Cas
 
 \vspace{0.5cm}
 
-\textbf{UC-1: Echtzeit-Training überwachen} (Primär) \\
+\textbf{UC-1: Echtzeit-Training überwachen} \\
 \textit{Akteur:} Trainierender \\
 \textit{Vorbedingung:} Trainingsgerät verbunden \\
 \textit{Beschreibung:} Ich als Trainierender möchte mein Training in Echtzeit überwachen können, um direkt Feedback zu meiner Ausführung zu erhalten.
@@ -133,7 +133,7 @@ Bevor eine Architekturerläuterung folgt, sollen zunächst die folgenden Use Cas
 
 \vspace{0.5cm}
 
-\textbf{UC-3: Trainingsdaten einsehen} (Sekundär) \\
+\textbf{UC-3: Trainingsdaten einsehen} \\
 \textit{Akteur:} Trainierender \\
 \textit{Vorbedingung:} Vergangene Trainingseinheit vorhanden \\
 \textit{Beschreibung:} Ich als Trainierender möchte vergangene Trainingseinheiten einsehen können, um meine Fortschritte zu verfolgen.
@@ -192,7 +192,7 @@ Aus den oben definierten Use Cases ergeben sich die folgenden Anforderungen an d
 \vspace{.25cm}
 \subsection{Gewählte Architektur: Containerisierte App-Architektur}
 \vspace{.25cm}
-Die Architektur konzentriert sich auf die Applikationsschicht und folgt einem dreischichtigen Container-Modell, das modular aufgebaut ist und sich optimal für ein späteres Deployment via Docker eignet:
+Die Architektur konzentriert sich auf die Applikationsschicht und folgt einem dreischichtigen Container-Modell, das modular aufgebaut ist und sich optimal für ein späteres Deployment eignet:
 
 \vspace{.5cm}
 \begin{figure}[H]
@@ -252,7 +252,7 @@ Die Architektur konzentriert sich auf die Applikationsschicht und folgt einem dr
 
 \begin{itemize}[leftmargin=*, nosep]
     \item \textbf{Frontend Container:} Stellt die Benutzeroberfläche für den Trainierenden bereit. Diese Schicht ist für die Echtzeit-Visualisierung der Bewegungsdaten und die Koppelung mit externen Sensoren zuständig.
-    \item \textbf{Backend Container:} Ein in einem Docker-Container isolierter Server, der als zentrale API und Gateway fungiert. Er verarbeitet Echtzeit-Datenströme und bietet Schnittstellen für statische Anfragen (z.\,B. Authentifizierung, Abruf von Historien).
+    \item \textbf{Backend Container:} Ein isolierter Server, der als zentrale API und Gateway fungiert. Er verarbeitet Echtzeit-Datenströme und bietet Schnittstellen für statische Anfragen (z.\,B. Authentifizierung, Abruf von Historien).
     \item \textbf{Datenbank Container:} Kapselt die Datenhaltung. Hier werden Nutzerprofile sowie die in \textit{UC-3} geforderten historischen Trainingsdaten sicher und persistent gespeichert.
 \end{itemize}
 \vspace{.5cm}
@@ -260,7 +260,7 @@ Die Architektur konzentriert sich auf die Applikationsschicht und folgt einem dr
 
 \subsection{Diskussion von Alternativen}
 
-Für die Umsetzung des Projekts ein Zeitbudget von insgesamt rund 180 Stunden zur Verfügung (ca. 60 Stunden pro Person). Da bereits die Einarbeitung in die verwendeten Technologien einen Teil dieser Zeit beansprucht, ist eine effiziente Planung wichtig. Um in diesem begrenzten Rahmen einen aussagekräftigen und funktionsfähigen Prototypen zu entwickeln, muss die Architektur so aufgebaut sein, dass Aufgaben möglichst unabhängig und parallel bearbeitet werden können.
+Für die Umsetzung des Projekts steht ein Zeitbudget von insgesamt rund 180 Stunden zur Verfügung (ca. 60 Stunden pro Person). Da bereits die Einarbeitung in die verwendeten Technologien einen Teil dieser Zeit beansprucht, ist eine effiziente Planung wichtig. Um in diesem begrenzten Rahmen einen funktionsfähigen Prototypen zu entwickeln, muss die Architektur so aufgebaut sein, dass Aufgaben möglichst unabhängig und parallel bearbeitet werden können.
 
 Aus diesem Grund scheiden sehr komplexe Architekturmuster wie die Clean Architecture oder die Onion Architecture für diesen konkreten Anwendungsfall aus. Der strukturelle Overhead und die anfängliche Setup-Zeit dieser Muster stehen nicht im Verhältnis zum verfügbaren Zeitbudget. Stattdessen fällt die Entscheidung auf einen pragmatischen Architekturansatz. Dieser beschränkt die Komplexität auf das Nötigste, erlaubt schnelle Entwicklungszyklen und stellt sicher, dass der Fokus voll und ganz auf der Umsetzung der wesentlichen Kernfunktionen liegt.
 
@@ -334,13 +334,11 @@ Zur Evaluierung der optimalen Systemarchitektur wurden drei alternative Architek
 \vspace*{-.75cm}
 \textbf{Begründung:} 
 
-%Die Client-Server-Architektur ermöglicht eine klare Trennung der Verantwortlichkeiten (Embedded\,/\,Backend\,/\,Frontend), erleichtert parallele Teamarbeit und liefert eine plattformunabhängige Web-Oberfläche. Das gesamte System wird \textbf{lokal} über Docker Compose betrieben -- es ist kein externer Server oder Cloud-Hosting erforderlich.
+Unter Abwägung der strikten Ressourcenrestriktionen (180 Stunden) und der funktionalen Systemanforderungen erweist sich eine \textbf{monolithische Client-Server-Architektur} als die zielführendste Lösung für diesen Proof of Concept (PoC). 
 
-Unter Abwägung der strikten Ressourcenrestriktionen (180 Stunden) und der funktionalen Systemanforderungen erweist ist das vorgestellte \textbf{dreischichtige Container-Modell} als optimaler Kompromiss für diesen Proof of Concept (PoC). 
+Aufgrund der limitierten Entwicklungszeit ist eine Minimierung des Infrastruktur- und Deployment-Overheads erforderlich. Containerisierte Ansätze oder Microservices erzwingen zwar eine logische Trennung, verbrauchen jedoch durch das komplexe Setup wertvolle Projektstunden, die für die Echtzeit-Visualisierung benötigt werden. Auch eine Publisher-Subscriber-Architektur scheidet aus, da die zwingende Integration eines Message Brokers den Rahmen des PoC sprengen würde.
 
-Ein reiner Software-Monolith würde zwar den initialen Infrastrukturaufwand minimieren, steht jedoch der zwingend erforderlichen Parallelisierung der Arbeitspakete im dreiköpfigen Team im Weg und birgt ein hohes Risiko für Code-Konflikte. Auf der anderen Seite scheiden eine strikte Microservice- sowie eine Publisher-Subscriber-Architektur aus. Obwohl letztere durch den IoT-Fokus ideal für Sensordatenströme wäre, erzeugt die zwingende Integration und Konfiguration eines Message Brokers einen unverhältnismäßigen Overhead, der die Fertigstellung gefährdet.
-
-Die gewählte containerisierte Client-Server-Architektur vereint pragmatisch die Stärken der evaluierten Ansätze: Sie erzwingt durch die logische Trennung von Frontend, Backend und Datenbank eine klare \textit{Separation of Concerns}, wodurch das dreiköpfige Team kollisionsfrei und in seinen jeweiligen Arbeitspaketen (AP) entwickeln kann. Gleichzeitig bleibt die Komplexität des Deployments gering.
+Ein monolithisches Backend bündelt die API-Logik, Datenverarbeitung und Datenbankzugriffe in einer Codebase. Dies eliminiert Netzwerk-Overhead zwischen Services und reduziert die Latenz durch direkte In-Memory-Aufrufe, was den strengen Echtzeit-Anforderungen (Latenz < 100\,ms) zugutekommt. Potenzielle Code-Konflikte bei der parallelen Entwicklung im dreiköpfigen Team werden durch eine saubere interne Strukturierung (Modularer Monolith) vermieden. So kann der Fokus vollständig auf der funktionalen Umsetzung liegen.
 
 \vspace{.25cm}
 % =============================================================================
