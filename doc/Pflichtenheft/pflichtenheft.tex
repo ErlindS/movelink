@@ -22,6 +22,8 @@
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{parskip}
+\usepackage{microtype}
+\emergencystretch=2em
 
 % --- Farben (HKA Corporate) ---
 \definecolor{hkared}{RGB}{198, 42, 18}
@@ -78,7 +80,7 @@
 
     {\normalsize
     \begin{tabular}{rl}
-        \textbf{Betreuer:}  & Prof. Dr. rer. nat. ~Sinz \\[0.5cm]
+        \textbf{Betreuer:}  & Prof. Dr. rer. nat. Sinz \\[0.5cm]
         \textbf{Team:}      & Erlind Sejdiu\\
                              & Luca Schöneberg \\
                              & Devin Uyan \\[0.5cm]
@@ -91,7 +93,7 @@
 \end{titlepage}
 
 \setcounter{page}{1}
-\vspace*{-1cm}
+\vspace*{-.75cm}
 % =============================================================================
 \section{Grundlegende Problemstellung}
 % ==========================================================================
@@ -102,7 +104,7 @@ Zwar können Bewegungsabläufe durch moderne Hardware-Sensoren erfasst werden, j
 
 Um diese Lücke zu schließen, wird im Rahmen dieses Laborprojekts die mobile Applikation MoveLink konzipiert und prototypisch entwickelt. Ziel der Anwendung ist es, als zentrale Schnittstelle zu fungieren, die Trainingsdaten von unterschiedlichen Hardware-Sensoren standardisiert erfasst, speichert und in einer einheitlichen Benutzeroberfläche verständlich darstellt.
 
-
+\vspace{.5cm}
 % =============================================================================
 \section{Use Cases}
 % =============================================================================
@@ -143,25 +145,25 @@ Bevor eine Architekturerläuterung folgt, sollen zunächst die folgenden Use Cas
 \end{enumerate}
 
 \newpage
-
-\section{Systemanforderungen (App-Fokus)}
+\vspace*{-.5cm}
+\section{Systemanforderungen (App-Fokus)} \vspace{.5cm}
 Aus den oben definierten Use Cases ergeben sich die folgenden Anforderungen an die Applikation, unterteilt in funktionale und nicht-funktionale Kriterien.
-
+\vspace{.25cm}
 \subsubsection*{Funktionale Anforderungen}
 
 \vspace{0.25cm}
-\textbf{Muss-Kriterien:}
+\textbf{Muss-Kriterien:} \vspace{.25cm}
 \begin{itemize}[nosep]
-    \item Die App muss eine Verbindung zu den Trainingssensoren aufbauen und aufrechterhalten können.
-    \item Die App muss Echtzeit-Datenströme empfangen und verarbeiten können.
-    \item Die App muss eine grafische Benutzeroberfläche zur Live-Visualisierung der Bewegungsdaten bereitstellen.
+    \item Die App muss eine Verbindung zu den Trainingssensoren aufbauen und aufrechterhalten können. \\
+    \item Die App muss Echtzeit-Datenströme empfangen und verarbeiten können. \\
+    \item Die App muss eine grafische Benutzeroberfläche zur Live-Visualisierung der Bewegungsdaten bereitstellen. \\
     \item Die App muss eine Historien-Ansicht zum Abrufen und Anzeigen vergangener Trainingseinheiten anbieten.
 \end{itemize}
 
-\vspace{0.25cm}
-\textbf{Kann-Kriterien:}
+\vspace{0.5cm}
+\textbf{Kann-Kriterien:} \vspace{.25cm}
 \begin{itemize}[nosep]
-    \item Die App kann neben der visuellen Darstellung auch Feedback (z.\,B. Warntöne bei falscher Haltung) ausgeben.
+    \item Die App kann neben der visuellen Darstellung auch Feedback (z.\,B. Warntöne bei falscher Haltung) ausgeben. \\
     \item Die App kann detaillierte statistische Auswertungen (z.\,B. Fortschrittskurven über mehrere Wochen) in der Historie anzeigen.
 \end{itemize}
 
@@ -171,9 +173,9 @@ Aus den oben definierten Use Cases ergeben sich die folgenden Anforderungen an d
 \vspace{0.25cm}
 \textbf{Muss-Kriterien:}
 \begin{itemize}[nosep]
-    \item \textbf{Latenz/Performance:} Die Visualisierung der Sensordaten in der App muss in Echtzeit erfolgen (z.\,B. Latenz < 100\,ms), um ein nutzbares Feedback zu garantieren.
-    \item \textbf{Zuverlässigkeit:} Bei einem Verbindungsabbruch zum Sensor oder Server muss die App den Nutzer umgehend benachrichtigen und automatische Reconnect-Versuche starten.
-    \item \textbf{Usability:} Der Koppelungsprozess (Pairing) in der App muss intuitiv gestaltet sein und darf maximal zwei Klicks erfordern.
+    \item \textbf{Latenz/Performance:} Die Visualisierung der Sensordaten in der App muss in Echtzeit erfolgen (z.\,B. Latenz < 100\,ms), um ein nutzbares Feedback zu garantieren. \\
+    \item \textbf{Zuverlässigkeit:} Bei einem Verbindungsabbruch zum Sensor oder Server muss die App den Nutzer umgehend benachrichtigen und automatische Reconnect-Versuche starten. \\
+    \item \textbf{Usability:} Der Koppelungsprozess (Pairing) in der App muss intuitiv gestaltet sein und darf maximal zwei Klicks erfordern. \\
     \item \textbf{Plattformunabhängigkeit:} Die App kann als Cross-Platform-Anwendung (z.\,B. Flutter oder React Native) entwickelt werden, um sowohl iOS- als auch Android-Nutzer zu bedienen.
 \end{itemize}
 
@@ -185,7 +187,7 @@ Aus den oben definierten Use Cases ergeben sich die folgenden Anforderungen an d
 
 \vspace{.25cm}
 
-\newpage
+\newpage \vspace*{-.5cm}
 % =============================================================================
 \section{Architekturvorschlag}
 % =============================================================================
@@ -194,7 +196,7 @@ Aus den oben definierten Use Cases ergeben sich die folgenden Anforderungen an d
 \vspace{.25cm}
 Die Architektur konzentriert sich auf die Applikationsschicht und folgt einem dreischichtigen Container-Modell, das modular aufgebaut ist und sich optimal für ein späteres Deployment eignet:
 
-\vspace{.5cm}
+\vspace{.25cm}
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}[
@@ -251,15 +253,15 @@ Die Architektur konzentriert sich auf die Applikationsschicht und folgt einem dr
 \vspace{.25cm}
 
 \begin{itemize}[leftmargin=*, nosep]
-    \item \textbf{Frontend Container:} Stellt die Benutzeroberfläche für den Trainierenden bereit. Diese Schicht ist für die Echtzeit-Visualisierung der Bewegungsdaten und die Koppelung mit externen Sensoren zuständig.
-    \item \textbf{Backend Container:} Ein isolierter Server, der als zentrale API und Gateway fungiert. Er verarbeitet Echtzeit-Datenströme und bietet Schnittstellen für statische Anfragen (z.\,B. Authentifizierung, Abruf von Historien).
+    \item \textbf{Frontend Container:} Stellt die Benutzeroberfläche für den Trainierenden bereit. Diese Schicht ist für die Echtzeit-Visualisierung der Bewegungsdaten und die Koppelung mit externen Sensoren zuständig. \\
+    \item \textbf{Backend Container:} Ein isolierter Server, der als zentrale API und Gateway fungiert. Er verarbeitet Echtzeit-Datenströme und bietet Schnittstellen für statische Anfragen (z.\,B. Authentifizierung, Abruf von Historien). \\
     \item \textbf{Datenbank Container:} Kapselt die Datenhaltung. Hier werden Nutzerprofile sowie die in \textit{UC-3} geforderten historischen Trainingsdaten sicher und persistent gespeichert.
 \end{itemize}
 \vspace{.5cm}
 
 
 \subsection{Diskussion von Alternativen}
-
+\vspace{.25cm}
 Für die Umsetzung des Projekts steht ein Zeitbudget von insgesamt rund 180 Stunden zur Verfügung (ca. 60 Stunden pro Person). Da bereits die Einarbeitung in die verwendeten Technologien einen Teil dieser Zeit beansprucht, ist eine effiziente Planung wichtig. Um in diesem begrenzten Rahmen einen funktionsfähigen Prototypen zu entwickeln, muss die Architektur so aufgebaut sein, dass Aufgaben möglichst unabhängig und parallel bearbeitet werden können.
 
 Aus diesem Grund scheiden sehr komplexe Architekturmuster wie die Clean Architecture oder die Onion Architecture für diesen konkreten Anwendungsfall aus. Der strukturelle Overhead und die anfängliche Setup-Zeit dieser Muster stehen nicht im Verhältnis zum verfügbaren Zeitbudget. Stattdessen fällt die Entscheidung auf einen pragmatischen Architekturansatz. Dieser beschränkt die Komplexität auf das Nötigste, erlaubt schnelle Entwicklungszyklen und stellt sicher, dass der Fokus voll und ganz auf der Umsetzung der wesentlichen Kernfunktionen liegt.
@@ -271,8 +273,7 @@ Zur Evaluierung der optimalen Systemarchitektur wurden drei alternative Architek
     \item Client-Server-Architektur (Monolith)
     \item Publisher-Subscriber-Architektur (IoT-Fokus)
 \end{itemize}
-
-\vspace{0.5cm}
+\newpage \vspace*{-.5cm}
 
 \begin{table}[H]
 \centering
@@ -327,12 +328,12 @@ Zur Evaluierung der optimalen Systemarchitektur wurden drei alternative Architek
           \end{itemize} \\
           
     \bottomrule
-\end{tabularx}
-\caption{Vergleich der evaluierten Architekturmuster für das Fitness-Tracking-System}
+\end{tabularx} 
+\caption{Vergleich der evaluierten Architekturmuster für das Fitness-Tracking-System} \vspace{1cm}
 \label{tab:architektur_vergleich}
 \end{table}
 \vspace*{-.75cm}
-\textbf{Begründung:} 
+\textbf{Begründung:} \vspace{.25cm}
 
 Unter Abwägung der strikten Ressourcenrestriktionen (180 Stunden) und der funktionalen Systemanforderungen erweist sich eine \textbf{monolithische Client-Server-Architektur} als die zielführendste Lösung für diesen Proof of Concept (PoC). 
 
