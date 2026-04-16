@@ -1,5 +1,5 @@
 % =============================================================================
-% MoveLink - Kurz-Pflichtenheft
+% MoveLink - Labor-/Projektbericht
 % Software-Architekturen Labor, SS 2026
 % Hochschule Karlsruhe (HKA)
 % =============================================================================
@@ -23,11 +23,35 @@
 \usepackage{titlesec}
 \usepackage{parskip}
 \usepackage{microtype}
+\usepackage{mdframed}
+\usepackage{tocloft}
+\usepackage[document]{ragged2e}
 \emergencystretch=2em
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+
+% X-Spalten in tabularx global linksbündig (kein Blocksatz in Tabellen)
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% --- Inhaltsverzeichnis Styling ---
+% Überkapitel: rot und fett
+\renewcommand{\cftsecfont}{\bfseries\color{hkared}}
+\renewcommand{\cftsecpagefont}{\bfseries\color{hkared}}
+% Unterkapitel: schwarz (hidelinks im TOC nötig damit hyperref nicht überschreibt)
+\renewcommand{\cftsubsecfont}{\normalfont\color{black}}
+\renewcommand{\cftsubsecpagefont}{\normalfont\color{black}}
+% Spacing: gleiches Spacing auf allen Ebenen
+\setlength{\cftbeforesecskip}{8pt}
+\setlength{\cftbeforesubsecskip}{8pt}
+\setlength{\cftbeforesubsubsecskip}{8pt}
+% Abstand nach dem Titel "Inhaltsverzeichnis" vor dem ersten Eintrag
+\setlength{\cftaftertoctitleskip}{1.2cm}
 
 % --- Farben (HKA Corporate) ---
 \definecolor{hkared}{RGB}{198, 42, 18}
 \definecolor{hkagray}{RGB}{100, 100, 100}
+\definecolor{placeholderbg}{RGB}{255, 248, 220}
+\definecolor{placeholderborder}{RGB}{200, 150, 0}
 
 % --- Hyperref Setup ---
 \hypersetup{
@@ -40,13 +64,29 @@
 % --- Section Styling ---
 \titleformat{\section}{\large\bfseries\color{hkared}}{\thesection}{1em}{}
 \titleformat{\subsection}{\normalsize\bfseries\color{hkared}}{\thesubsection}{1em}{}
-\titlespacing*{\section}{0pt}{1.2em}{0.5em}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{black}}{\thesubsubsection}{1em}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.5em}
 \titlespacing*{\subsection}{0pt}{0.8em}{0.3em}
+\titlespacing*{\subsubsection}{0pt}{0.6em}{0.2em}
+
+% --- Platzhalter-Umgebung ---
+\newmdenv[
+    backgroundcolor=placeholderbg,
+    linecolor=placeholderborder,
+    linewidth=1.5pt,
+    roundcorner=4pt,
+    innertopmargin=8pt,
+    innerbottommargin=8pt,
+    innerleftmargin=10pt,
+    innerrightmargin=10pt,
+    skipabove=8pt,
+    skipbelow=8pt
+]{placeholder}
 
 % --- Header/Footer ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\color{hkagray}MoveLink -- Kurz-Pflichtenheft}
+\fancyhead[L]{\small\color{hkagray}MoveLink -- Projektbericht}
 \fancyhead[R]{\small\color{hkagray}SWA Labor SS~2026}
 \fancyfoot[C]{\small\color{hkagray}\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -60,7 +100,7 @@
     \includegraphics[width=0.35\textwidth]{HKA.jpg}
 
     {\normalsize\color{hkagray} University of Applied Sciences}\\[0.125cm]
-    {\small\color{hkagray} Fakultät für Informatik und Wirtschaftsinformatik}
+    {\small\color{hkagray} Fakult\"at f\"ur Informatik und Wirtschaftsinformatik}
 
     \vspace{.5cm}
     {\color{hkared}\rule{\textwidth}{1.5pt}}
@@ -68,7 +108,7 @@
     \vspace{1.5cm}
     {\fontsize{24}{30}\selectfont\bfseries\color{hkared} MoveLink}\\[0.6cm]
     {\Large Visualisierung von Echtzeit-Bewegungsdaten}\\[.75cm]
-    {\LARGE\bfseries Pflichtenheft}
+    {\LARGE\bfseries Projektbericht}
 
     \vspace{.5cm}
     {\large Software-Architekturen Labor}\\[0.3cm]
@@ -80,329 +120,479 @@
 
     {\normalsize
     \begin{tabular}{rl}
-        \textbf{Betreuer:}  & Prof. Dr. rer. nat. Sinz \\[0.5cm]
-        \textbf{Team:}      & Erlind Sejdiu\\
-                             & Luca Schöneberg \\
+        \textbf{Betreuer:}  & Prof.~Dr.~rer.~nat.~Sinz \\[0.5cm]
+        \textbf{Team:}      & Erlind Sejdiu \\
+                             & Luca Sch\"oneberg \\
                              & Devin Uyan \\[0.5cm]
-        \textbf{Abgabe:}    & 08.~April~2026 \\
+        \textbf{Abgabe:}    & Ende Sommersemester 2026 \\
     \end{tabular}
     }
 
     \vfill
-    {\small\color{hkagray} Version 1.0 -- Stand: \today}
+    {\small\color{hkagray} Version 2.0 -- Stand: \today}
 \end{titlepage}
 
+% --- Inhaltsverzeichnis ---
+\begingroup
+\hypersetup{hidelinks}
+\tableofcontents
+\endgroup
+\thispagestyle{empty}
+\newpage
 \setcounter{page}{1}
-\vspace*{-.75cm}
+
 % =============================================================================
-\section{Grundlegende Problemstellung}
-% ==========================================================================
-\vspace{.25cm}
-Im Krafttraining ist eine korrekte Bewegungsausführung essenziell für den Trainingserfolg und die Verletzungsprävention. Dennoch fehlt es den Trainierenden in der Praxis meist an unmittelbarem, objektivem Feedback zur Qualität ihrer Ausführung. \vspace{.25cm}
-
-Zwar können Bewegungsabläufe durch moderne Hardware-Sensoren erfasst werden, jedoch liegen diese Informationen oft nur als unstrukturierte Rohdaten vor, die für den Endanwender kaum interpretierbar sind. Daraus ergibt sich die Herausforderung, die anfallenden Datenströme aus verschiedenen Quellen zentral zusammenzuführen und visuell nutzergerecht aufzubereiten. \vspace{.25cm}
-
-Um diese Lücke zu schließen, wird im Rahmen dieses Laborprojekts die mobile Applikation MoveLink konzipiert und prototypisch entwickelt. Ziel der Anwendung ist es, als zentrale Schnittstelle zu fungieren, die Trainingsdaten von unterschiedlichen Hardware-Sensoren standardisiert erfasst, speichert und in einer einheitlichen Benutzeroberfläche verständlich darstellt.
-
+\section{Einleitung}
+% =============================================================================
 \vspace{.5cm}
-% =============================================================================
-\section{Use Cases}
-% =============================================================================
-Bevor eine Architekturerläuterung folgt, sollen zunächst die folgenden Use Cases definiert werden. Diese dienen dem Verständnis der Anforderungen an das System. Jeder Use Case wird durch eine kurze Beschreibung und nachfolgend durch eine Auflistung der Schritte, die zur Erfüllung des Use Cases notwendig sind, definiert.
-
-\vspace{0.5cm}
-
-\textbf{UC-1: Echtzeit-Training überwachen} \\
-\textit{Akteur:} Trainierender \\
-\textit{Vorbedingung:} Trainingsgerät verbunden \\
-\textit{Beschreibung:} Ich als Trainierender möchte mein Training in Echtzeit überwachen können, um direkt Feedback zu meiner Ausführung zu erhalten.
-\begin{enumerate}[nosep]
-    \item Trainierender startet eine Trainingseinheit in der App.
-    \item Sensor erfasst Bewegungsdaten und sendet sie an die Applikation.
-    \item Frontend visualisiert die Bewegung in Echtzeit.
-\end{enumerate}
-
-\vspace{0.5cm}
-
-\textbf{UC-2: Trainingsgerät verbinden} \\
-\textit{Akteur:} Trainierender \\
-\textit{Vorbedingung:} Trainingsgerät eingeschaltet \\
-\textit{Beschreibung:} Ich als Trainierender möchte mein Trainingsgerät mit der App verbinden können, um Trainingsdaten erfassen zu können.
-\begin{enumerate}[nosep]
-    \item App zeigt verfügbare Sensoren an.
-    \item Trainierender wählt Sensor aus; Verbindung wird hergestellt.
-\end{enumerate}
-
-\vspace{0.5cm}
-
-\textbf{UC-3: Trainingsdaten einsehen} \\
-\textit{Akteur:} Trainierender \\
-\textit{Vorbedingung:} Vergangene Trainingseinheit vorhanden \\
-\textit{Beschreibung:} Ich als Trainierender möchte vergangene Trainingseinheiten einsehen können, um meine Fortschritte zu verfolgen.
-\begin{enumerate}[nosep]
-    \item Trainierender navigiert zur Übersicht vergangener Einheiten.
-    \item App zeigt historische Bewegungsdaten an.
-\end{enumerate}
+\subsection{Motivation}
+\vspace{.5cm}
+Die Qualit\"at der Bewegungsausf\"uhrung ist im Krafttraining ein zentraler Faktor f\"ur den langfristigen Trainingserfolg und die Vermeidung von Verletzungen. W\"ahrend professionelle Athleten Zugang zu Coaches und biomechanischer Analyse-Hardware haben, trainieren Breitensportler \"uberwiegend ohne jegliches objektives Feedback. Fehler in der Technik -- beispielsweise ein zu stark gerundeter R\"ucken bei der Kniebeuge -- werden dadurch oft \"uber lange Zeit nicht korrigiert und k\"onnen zu chronischen Beschwerden f\"uhren.
+\vspace{.25cm} \newline 
+Gleichzeitig sind Miniaturisierung und Kostensenkung von Inertial-Measurement-Unit-Sensoren (IMU) in den vergangenen Jahren stark vorangeschritten. Ger\"ate wie der XIAO nRF52840 von Seeed Studio kombinieren einen leistungsf\"ahigen Mikrocontroller mit integrierter Bluetooth-Low-Energy-Schnittstelle (BLE) und erm\"oglichen damit den Aufbau kosteng\"unstiger, kabelloser Sensorknoten. Diese Entwicklung er\"offnet die M\"oglichkeit, Bewegungsanalyse aus dem Hochleistungssport in den Alltag des Breitensports zu bringen.
+\vspace{.5cm}
+\subsection{Zielsetzung}
+\vspace{.5cm}
+Ziel dieses Laborprojekts ist die prototypische Entwicklung des Systems \textbf{MoveLink}, das die vollst\"andige Datenkette von der Sensorerfassung bis zur visuellen Darstellung im Frontend abbildet. MoveLink soll als \textbf{Proof of Concept (PoC)} demonstrieren, dass es m\"oglich ist, IMU-Rohdaten in Echtzeit drahtlos zu erfassen, serverseitig zu verarbeiten und f\"ur den Trainierenden verst\"andlich zu visualisieren.
+\vspace{.25cm} \newline 
+Das Projekt gliedert sich in drei voneinander abgegrenzte Arbeitspakete, die parallel von den Teammitgliedern bearbeitet werden:
+\vspace{.5cm}
+\begin{itemize}[nosep]
+    \item \textbf{AP\,1 -- Frontend (Devin Uyan):} Entwicklung der mobilen Applikation zur Echtzeit-Visualisierung der Bewegungsdaten und Verwaltung der Sensorverbindung. \vspace{.25cm}
+    \item \textbf{AP\,2 -- Backend (Luca Sch\"oneberg):} Implementierung des API-Gateways, der WebSocket-Infrastruktur sowie der Docker-Containerisierung aller Dienste. \vspace{.25cm}
+    \item \textbf{AP\,3 -- Embedded (Erlind Sejdiu):} Firmware-Entwicklung f\"ur den XIAO nRF52840, Kalibrierung der IMU-Sensoren und Implementierung der BLE-Kommunikation.
+\end{itemize}
+\vspace{.5cm}
+\subsection{Abgrenzung}
+\vspace{.5cm}
+Die automatische \textbf{Bewegungserkennung und -bewertung via Machine Learning} ist explizit nicht Bestandteil dieses Projekts. Diese Komponente wird in einem separaten Projekt von Erlind Sejdiu behandelt. Im Rahmen von MoveLink werden die Rohdaten des Sensors (Beschleunigung, Winkelgeschwindigkeit) visualisiert und einfache, schwellenwertbasierte Auswertungen implementiert. Eine KI-gest\"utzte Qualit\"atsbewertung ist als optionale Erweiterung (Kann-Kriterium) vorgesehen.
 
 \newpage
-\vspace*{-.5cm}
-\section{Systemanforderungen (App-Fokus)} \vspace{.5cm}
-Aus den oben definierten Use Cases ergeben sich die folgenden Anforderungen an die Applikation, unterteilt in funktionale und nicht-funktionale Kriterien.
-\vspace{.25cm}
-\subsubsection*{Funktionale Anforderungen}
+% =============================================================================
+\section{Grundlagen}
+% =============================================================================
+\vspace{.5cm}
+\subsection{Problemstellung}
+\vspace{.5cm}
+Im Krafttraining ist eine korrekte Bewegungsausf\"uhrung essenziell f\"ur den Trainingserfolg und die Verletzungspr\"avention. Dennoch fehlt es den Trainierenden in der Praxis meist an unmittelbarem, objektivem Feedback zur Qualit\"at ihrer Ausf\"uhrung.
+\vspace{.25cm} \newline
+Zwar k\"onnen Bewegungsabl\"aufe durch moderne Hardware-Sensoren erfasst werden, jedoch liegen diese Informationen oft nur als unstrukturierte Rohdaten vor, die f\"ur den Endanwender kaum interpretierbar sind. Daraus ergibt sich die Herausforderung, die anfallenden Datenstr\"ome zentral zusammenzuf\"uhren und visuell nutzergerecht aufzubereiten.
+\vspace{.25cm} \newline 
+Um diese L\"ucke zu schlie\ss{}en, wird im Rahmen dieses Laborprojekts die Applikation MoveLink konzipiert und prototypisch entwickelt. Ziel ist es, als zentrale Schnittstelle zu fungieren, die Trainingsdaten von Hardware-Sensoren standardisiert erfasst, speichert und in einer einheitlichen Benutzeroberfl\"ache verst\"andlich darstellt.
+\vspace{.5cm}
+\subsection{Stakeholder}
+\vspace{.5cm}
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4cm} X}
+    \toprule
+    \textbf{Stakeholder} & \textbf{Interessen und Erwartungen} \\
+    \midrule
+    \textbf{Trainierende} (prim\"ar) & Echtzeit-Feedback zur Bewegungsausf\"uhrung; einfache Bedienung; verl\"assliche Daten; minimale Latenz. \\
+    \textbf{Entwickler-Team} & Klare Modulabgrenzung; testbare Schnittstellen; reproduzierbare Build-Umgebung. \\
+    \textbf{Hochschule (HKA)} & Demonstration softwarearchitektonischer Konzepte; vollst\"andige Dokumentation; Einhaltung des Zeitrahmens. \\
+    \textbf{Dienstleister (zuk\"unftig)} & Erweiterbarkeit der Plattform; saubere API-Dokumentation; Containerisierbarkeit f\"ur Deployment. \\
+    \bottomrule
+\end{tabularx}
+\caption{Stakeholder-Analyse}
+\label{tab:stakeholder}
+\end{table}
 
-\vspace{0.25cm}
-\textbf{Muss-Kriterien:} \vspace{.25cm}
+\subsection{Technische Grundlagen}
+\vspace{.5cm}
+\subsubsection{Bluetooth Low Energy (BLE) und GATT}
+\vspace{.5cm}
+Bluetooth Low Energy (BLE, auch Bluetooth 4.0+) ist ein Funkstandard, der f\"ur energiesparende, drahtlose Kommunikation kurzer Reichweite ($\leq$ 100\,m) optimiert ist. Im Gegensatz zu klassischem Bluetooth ist BLE auf sporadische, kurze Daten\"ubertragungen ausgelegt und eignet sich daher ideal f\"ur Sensoranwendungen.
+\vspace{.25cm} \newline 
+Die Kommunikation in BLE basiert auf dem \textbf{Generic Attribute Profile (GATT)}, das ein Client-Server-Modell definiert. Der Sensor fungiert als \textit{GATT-Server} und stellt Messwerte als \textit{Characteristics} in einem \textit{Service} bereit. Die mobile App verbindet sich als \textit{GATT-Client} und abonniert \"Anderungen via \textit{Notifications}, wodurch der Sensor neue Messwerte aktiv an den Client pushen kann.
+
+\subsubsection{IMU-Sensoren}
+\vspace{.5cm}
+Eine Inertial Measurement Unit (IMU) ist eine elektronische Einheit, die mit Hilfe von Beschleunigungssensoren (Accelerometer) und Drehraten-Sensoren (Gyroskop) die Bewegung und Orientierung eines Objekts im dreidimensionalen Raum misst. Die Ausgabedaten bestehen typischerweise aus:
+\vspace{.5cm}
 \begin{itemize}[nosep]
-    \item Die App muss eine Verbindung zu den Trainingssensoren aufbauen und aufrechterhalten können. \\
-    \item Die App muss Echtzeit-Datenströme empfangen und verarbeiten können. \\
-    \item Die App muss eine grafische Benutzeroberfläche zur Live-Visualisierung der Bewegungsdaten bereitstellen. \\
-    \item Die App muss eine Historien-Ansicht zum Abrufen und Anzeigen vergangener Trainingseinheiten anbieten.
+    \item \textbf{Beschleunigung} in m/s\textsuperscript{2} auf den Achsen $x$, $y$, $z$ \vspace{.25cm}
+    \item \textbf{Winkelgeschwindigkeit} in rad/s (Gyroskop) auf den Achsen $x$, $y$, $z$
 \end{itemize}
+\vspace{.5cm}
+Im Projekt wird der auf dem XIAO nRF52840 Sense verf\"ugbare \textbf{LSM6DS3TR-C} verwendet, ein 6-Achsen-IMU von STMicroelectronics (3-Achsen-Accelerometer + 3-Achsen-Gyroskop).
+\vspace{.5cm}
+\subsubsection{Echtzeit-Kommunikation via WebSockets}
+\vspace{.5cm}
+Das WebSocket-Protokoll (RFC 6455) erm\"oglicht eine bidirektionale, vollduplex-f\"ahige Verbindung zwischen Client und Server \"uber eine einzige TCP-Verbindung. Im Gegensatz zu HTTP-Polling h\"alt WebSocket die Verbindung dauerhaft offen, was Overhead durch wiederholte Verbindungsaufbauten eliminiert und die Latenz erheblich reduziert. F\"ur die Echtzeit-\"Ubertragung von Sensordaten (kontinuierlicher Stream) ist WebSocket daher der bevorzugte Mechanismus.
+\vspace{.25cm}
+% =============================================================================
+\section{Use Cases und Anforderungen}
+% =============================================================================
+\vspace{.5cm}
+\subsection{Use Cases}
+\vspace{0.5cm}
+\textbf{UC-1: Echtzeit-Training \"uberwachen} \vspace{.25cm} \newline
+\textit{Akteur:} Trainierender \quad
+\textit{Vorbedingung:} Trainingsger\"at verbunden \vspace{.25cm} \newline 
+\textit{Beschreibung:} Als Trainierender m\"ochte ich mein Training in Echtzeit \"uberwachen k\"onnen, um direkt Feedback zu meiner Ausf\"uhrung zu erhalten.
+\begin{enumerate}[nosep]
+    \item Trainierender startet eine Trainingseinheit in der App.
+    \item Sensor erfasst Bewegungsdaten und \"ubertr\"agt sie via BLE an das Backend.
+    \item Backend leitet die Daten per WebSocket an die App weiter.
+    \item App visualisiert die Bewegung in Echtzeit ($<$ 100\,ms Latenz).
+\end{enumerate}
 
 \vspace{0.5cm}
-\textbf{Kann-Kriterien:} \vspace{.25cm}
-\begin{itemize}[nosep]
-    \item Die App kann neben der visuellen Darstellung auch Feedback (z.\,B. Warntöne bei falscher Haltung) ausgeben. \\
-    \item Die App kann detaillierte statistische Auswertungen (z.\,B. Fortschrittskurven über mehrere Wochen) in der Historie anzeigen.
-\end{itemize}
+\textbf{UC-2: Trainingsger\"at verbinden} \vspace{.25cm} \newline 
+\textit{Akteur:} Trainierender \quad 
+\textit{Vorbedingung:} Trainingsger\"at eingeschaltet, Backend l\"auft \vspace{.25cm} \newline
+\textit{Beschreibung:} Als Trainierender m\"ochte ich mein Trainingsger\"at mit der App verbinden k\"onnen, um Trainingsdaten erfassen zu k\"onnen.
+\begin{enumerate}[nosep]
+    \item App zeigt verf\"ugbare BLE-Sensoren in der N\"ahe an.
+    \item Trainierender w\"ahlt den gew\"unschten Sensor aus.
+    \item Verbindung wird hergestellt und der Verbindungsstatus wird in der App angezeigt.
+\end{enumerate}
 
 \vspace{0.5cm}
+\textbf{UC-3: Trainingsdaten einsehen} \vspace{.5cm} \newline 
+\textit{Akteur:} Trainierender \quad 
+\textit{Vorbedingung:} Mindestens eine abgeschlossene Trainingseinheit \vspace{.25cm} \newline
+\textit{Beschreibung:} Als Trainierender m\"ochte ich vergangene Trainingseinheiten einsehen k\"onnen, um meine Fortschritte zu verfolgen.
+\begin{enumerate}[nosep]
+    \item Trainierender navigiert zur Historien-Ansicht in der App.
+    \item App ruft die gespeicherten Einheiten vom Backend ab und zeigt sie an.
+\end{enumerate}
+\vspace{1cm}
+\subsection{Systemanforderungen}
+\vspace{.5cm}
 
-\subsubsection*{Nicht-funktionale Anforderungen}
-\vspace{0.25cm}
-\textbf{Muss-Kriterien:}
-\begin{itemize}[nosep]
-    \item \textbf{Latenz/Performance:} Die Visualisierung der Sensordaten in der App muss in Echtzeit erfolgen (z.\,B. Latenz < 100\,ms), um ein nutzbares Feedback zu garantieren. \\
-    \item \textbf{Zuverlässigkeit:} Bei einem Verbindungsabbruch zum Sensor oder Server muss die App den Nutzer umgehend benachrichtigen und automatische Reconnect-Versuche starten. \\
-    \item \textbf{Usability:} Der Koppelungsprozess (Pairing) in der App muss intuitiv gestaltet sein und darf maximal zwei Klicks erfordern. \\
-    \item \textbf{Plattformunabhängigkeit:} Die App kann als Cross-Platform-Anwendung (z.\,B. Flutter oder React Native) entwickelt werden, um sowohl iOS- als auch Android-Nutzer zu bedienen.
+\subsubsection*{Funktionale Anforderungen -- Muss-Kriterien} \vspace{.25cm}
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=10pt]
+    \item \textbf{M1:} Die App muss eine BLE-Verbindung zu Trainingssensoren aufbauen k\"onnen.
+    \item \textbf{M2:} Die App muss Echtzeit-Datenstr\"ome empfangen und verarbeiten k\"onnen.
+    \item \textbf{M3:} Die App muss eine GUI zur Live-Visualisierung der Bewegungsdaten bereitstellen.
+    \item \textbf{M4:} Die App muss eine Historie zum Anzeigen vergangener Trainingseinheiten anbieten.
+    \item \textbf{M5:} Das Backend muss als Docker-Container lokal betreibbar sein.
+    \item \textbf{M6:} Das Gesamtsystem muss auf Android, macOS und Windows funktionsf\"ahig sein.
 \end{itemize}
 
-\vspace{0.25cm}
-\textbf{Kann-Kriterien:}
-\begin{itemize}[nosep]
-    \item \textbf{Ressourceneffizienz:} Die App kann so optimiert werden, dass die Echtzeit-Visualisierung auch auf älteren Smartphones den Akku nicht übermäßig beansprucht.
+\vspace{1cm}
+\subsubsection*{Funktionale Anforderungen -- Kann-Kriterien} \vspace{.25cm}
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=10pt]
+    \item \textbf{K1:} Die App kann Feedback zur Bewegungsqualit\"at ausgeben \newline(z.\,B. schwellenwertbasierte Warnung).
+    \item \textbf{K2:} Die App kann statistische Auswertungen (z.\,B. Fortschrittskurven) anzeigen.
+    \item \textbf{K3:} Mehrere Sensoren k\"onnen gleichzeitig verbunden und visualisiert werden.
 \end{itemize}
 
-\vspace{.25cm}
+\vspace{1cm}
+\subsubsection*{Nicht-funktionale Anforderungen -- Muss-Kriterien} \vspace{.25cm}
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=10pt]
+    \item \textbf{NF1 -- Latenz:} Die E2E-Latenz vom Sensor bis zur Darstellung muss $\leq$ \textbf{100\,ms} sein.
+    \item \textbf{NF2 -- Zuverl\"assigkeit:} Bei einem Verbindungsabbruch muss die App den Nutzer benachrichtigen und automatisch Reconnect-Versuche starten.
+    \item \textbf{NF3 -- Usability:} Das Pairing darf maximal zwei Nutzerinteraktionen erfordern.
+    \item \textbf{NF4 -- Reproduzierbarkeit:} Das Gesamtsystem muss per \texttt{docker compose up},\newline in einer neuen Umgebung startbar sein.
+\end{itemize}
 
-\newpage \vspace*{-.5cm}
+\newpage
 % =============================================================================
-\section{Architekturvorschlag}
+\section{Systemarchitektur}
 % =============================================================================
 \vspace{.25cm}
-\subsection{Gewählte Architektur: Containerisierte App-Architektur}
+\subsection{Gew\"ahlte Architektur: Containerisierte Monolith-Architektur}
 \vspace{.25cm}
-Die Architektur konzentriert sich auf die Applikationsschicht und folgt einem dreischichtigen Container-Modell, das modular aufgebaut ist und sich optimal für ein späteres Deployment eignet:
-
-\vspace{.25cm}
+Die Architektur konzentriert sich auf die Applikationsschicht und folgt einem dreischichtigen Container-Modell, das modular aufgebaut ist und sich optimal f\"ur ein lokales Deployment eignet:
+\vspace{-.25cm}
 \begin{figure}[H]
     \centering
+    \resizebox{\textwidth}{!}{%
     \begin{tikzpicture}[
-        % Definition der Styles für ein einheitliches, professionelles Design
         box/.style={draw=black!70, thick, rounded corners=4pt, minimum width=3.5cm, minimum height=1.4cm, align=center},
         arrow/.style={<->, thick, >=stealth, draw=black!80},
         label_top/.style={font=\scriptsize, midway, above, text=black!90},
         label_bot/.style={font=\scriptsize, midway, below, text=black!80},
         boundary/.style={draw=black!50, dashed, rounded corners=6pt, thick}
     ]
-        
-        % 1. Rahmen für die Backend-Infrastruktur (Docker-Host) zeichnen
-        % Koordinaten sind manuell so gewählt, dass Backend und Datenbank gut hineinpassen
-        \draw[boundary, fill=black!2] (3.8, -1.5) rectangle (13.2, 1.6);
-        \node[font=\scriptsize\itshape, text=black!70, anchor=north] at (8.5, 1.5) {Backend-Infrastruktur (Docker-Host)};
+        \draw[boundary, fill=black!2] (7.3, -1.5) rectangle (16.7, 1.6);
+        \node[font=\scriptsize\itshape, text=black!70, anchor=north] at (12, 1.5) {Backend-Infrastruktur (Docker-Host)};
 
-        % 2. Knoten (Nodes) definieren
-        % Frontend (außerhalb des Docker-Hosts, da Endgerät)
-        \node[box, fill=hkared!10] (frontend) at (0, 0) {
-            \textbf{Mobile Client} \\ 
-            \scriptsize Frontend-App \\ 
+        \node[box, fill=hkared!5] (sensor) at (-3.5, 0) {
+            \textbf{Sensor} \\
+            \scriptsize XIAO nRF52840 \\
+            \scriptsize \textit{+ IMU}
+        };
+        \node[box, fill=hkared!10] (frontend) at (3.5, 0) {
+            \textbf{Mobile Client} \\
+            \scriptsize Frontend-App \\
             \scriptsize \textit{AP 1}
         };
-        
-        % Backend (innerhalb)
-        \node[box, fill=hkared!25] (backend) at (6, 0) {
-            \textbf{API Gateway} \\ 
-            \scriptsize Backend-Container \\ 
+        \node[box, fill=hkared!25] (backend) at (9.5, 0) {
+            \textbf{API Gateway} \\
+            \scriptsize Backend-Container \\
             \scriptsize \textit{AP 2}
         };
-        
-        % Datenbank (innerhalb)
-        \node[box, fill=hkared!40] (database) at (11.5, 0) {
-            \textbf{Persistenz} \\ 
-            \scriptsize Datenbank-Container \\ 
+        \node[box, fill=hkared!40] (database) at (15, 0) {
+            \textbf{Persistenz} \\
+            \scriptsize Datenbank-Container \\
             \scriptsize \textit{AP 3}
         };
-        
-        % 3. Verbindungslinien mit detaillierten Protokoll-Informationen
-        \draw[arrow] (frontend) -- 
-            node[label_top] {HTTPS / WSS} 
-            node[label_bot] {(JSON)} 
-        (backend);
-        
-        \draw[arrow] (backend) -- 
-            node[label_top] {TCP} 
-            node[label_bot] {(SQL)} 
-        (database);
 
-    \end{tikzpicture}
-    \caption{Übersicht der Systemarchitektur, Protokolle und Arbeitspakete (AP)}
+        \draw[arrow] (sensor) --
+            node[label_top] {BLE}
+            node[label_bot] {(GATT)}
+        (frontend);
+        \draw[arrow] (frontend) --
+            node[label_top] {HTTPS / WSS}
+            node[label_bot] {(JSON)}
+        (backend);
+        \draw[arrow] (backend) --
+            node[label_top] {TCP}
+            node[label_bot] {(SQL)}
+        (database);
+    \end{tikzpicture}%
+    } \vspace{-.5cm}
+    \caption{\"Ubersicht der Systemarchitektur, Protokolle und Arbeitspakete (AP)}
     \label{fig:architektur_container}
 \end{figure}
-\vspace{.25cm}
-
-\begin{itemize}[leftmargin=*, nosep]
-    \item \textbf{Frontend Container:} Stellt die Benutzeroberfläche für den Trainierenden bereit. Diese Schicht ist für die Echtzeit-Visualisierung der Bewegungsdaten und die Koppelung mit externen Sensoren zuständig. \\
-    \item \textbf{Backend Container:} Ein isolierter Server, der als zentrale API und Gateway fungiert. Er verarbeitet Echtzeit-Datenströme und bietet Schnittstellen für statische Anfragen (z.\,B. Authentifizierung, Abruf von Historien). \\
-    \item \textbf{Datenbank Container:} Kapselt die Datenhaltung. Hier werden Nutzerprofile sowie die in \textit{UC-3} geforderten historischen Trainingsdaten sicher und persistent gespeichert.
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=10pt]
+    \item \textbf{Sensor (extern):} Der XIAO nRF52840 mit IMU-Sensor erfasst Bewegungsdaten und sendet sie via BLE/GATT an die App. Er ist bewusst au\ss{}erhalb des Docker-Hosts angesiedelt, da es sich um externe Hardware handelt.
+    \item \textbf{Frontend-App (AP\,1):} Stellt die Benutzeroberfl\"ache f\"ur den Trainierenden bereit und ist zust\"andig f\"ur BLE-Verbindungsmanagement sowie Echtzeit-Visualisierung.
+    \item \textbf{Backend-Container (AP\,2):} Isolierter Server als zentrales API-Gateway. Verarbeitet Echtzeit-Datenstr\"ome und bietet REST-Schnittstellen f\"ur statische Anfragen.
+    \item \textbf{Datenbank-Container (AP\,3):} Kapselt die Datenhaltung. Speichert Nutzerprofile sowie die f\"ur UC-3 ben\"otigten historischen Trainingsdaten persistent.
 \end{itemize}
 \vspace{.5cm}
-
-
 \subsection{Diskussion von Alternativen}
+\vspace{.5cm}
+F\"ur die Umsetzung des Projekts steht ein Zeitbudget von insgesamt rund 180 Stunden (ca. 60 Stunden pro Person) zur Verf\"ugung. Zur Evaluierung der optimalen Systemarchitektur wurden drei Alternativen untersucht:
 \vspace{.25cm}
-Für die Umsetzung des Projekts steht ein Zeitbudget von insgesamt rund 180 Stunden zur Verfügung (ca. 60 Stunden pro Person). Da bereits die Einarbeitung in die verwendeten Technologien einen Teil dieser Zeit beansprucht, ist eine effiziente Planung wichtig. Um in diesem begrenzten Rahmen einen funktionsfähigen Prototypen zu entwickeln, muss die Architektur so aufgebaut sein, dass Aufgaben möglichst unabhängig und parallel bearbeitet werden können.
-
-Aus diesem Grund scheiden sehr komplexe Architekturmuster wie die Clean Architecture oder die Onion Architecture für diesen konkreten Anwendungsfall aus. Der strukturelle Overhead und die anfängliche Setup-Zeit dieser Muster stehen nicht im Verhältnis zum verfügbaren Zeitbudget. Stattdessen fällt die Entscheidung auf einen pragmatischen Architekturansatz. Dieser beschränkt die Komplexität auf das Nötigste, erlaubt schnelle Entwicklungszyklen und stellt sicher, dass der Fokus voll und ganz auf der Umsetzung der wesentlichen Kernfunktionen liegt.
-
-\vspace{0.5cm}
-Zur Evaluierung der optimalen Systemarchitektur wurden drei alternative Architekturmuster für den geplanten Anwendungsfall untersucht:
-\begin{itemize}[nosep]
-    \item Client-Server-Architektur (Microservices)
-    \item Client-Server-Architektur (Monolith)
-    \item Publisher-Subscriber-Architektur (IoT-Fokus)
-\end{itemize}
-\newpage \vspace*{-.5cm}
-
 \begin{table}[H]
 \centering
 \small
-\renewcommand{\arraystretch}{1.4} % Erhöht den Zeilenabstand für bessere Lesbarkeit
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
     \toprule
     \textbf{Architekturansatz} & \textbf{Vorteile} & \textbf{Nachteile} \\
     \midrule
-    
+
     \textbf{Client-Server (Microservices)} \newline
-    \scriptsize Entkoppelte Bereitstellung von Frontend und mehreren Backend-Diensten auf getrennten Systemen.
+    \scriptsize Entkoppelte Frontend-/Backend-Services
         & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item Strikte \textit{Separation of Concerns}
-            \item Unabhängige Skalierbarkeit der einzelnen Dienste
-            \item Hohe technologische Flexibilität
+            \item Klare \textit{Separation of Concerns}
+            \item Unabh\"angig skalierbar
+            \item Hohe Technologie-Flexibilit\"at
           \end{itemize}
         & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item Hoher Infrastruktur- und Deployment-Aufwand
-            \item Mögliche Netzwerklatenzen zwischen den Services
-            \item Erhöhte Komplexität für einen Proof of Concept (PoC)
+            \item Hoher Infrastrukturaufwand
+            \item Netzwerklatenzen
+            \item Hohe Komplexit\"at (PoC)
           \end{itemize} \\
-          
     \midrule
-    
+
     \textbf{Client-Server (Monolith)} \newline
-    \scriptsize Zentrale Verarbeitungseinheit, die die gesamte Backend-Logik in einer Anwendung bündelt.
+    \scriptsize Zentrale Backend-Logik
         & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item Sehr geringe Latenz (native Performance durch In-Memory-Aufrufe)
-            \item Einfaches Deployment und Testing
-            \item Geringer Overhead; ideal für initiale PoC-Entwicklung
+            \item Geringe Latenz (In-Memory)
+            \item Einfaches Deployment \& Testing
+            \item Geringer Overhead (PoC)
           \end{itemize}
         & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item Eingeschränkte, nur vertikale Skalierbarkeit
-            \item Starke Kopplung erschwert zukünftige Wartbarkeit bei Systemwachstum
+            \item Nur vertikale Skalierung
+            \item Starke Kopplung bei Wachstum
             \item \textit{Single Point of Failure}
           \end{itemize} \\
-          
     \midrule
-    
+
     \textbf{Publisher-Subscriber} \newline
-    \scriptsize Ereignisgesteuerte Architektur (z.\,B. via MQTT) zur asynchronen Verteilung von Nachrichten.
+    \scriptsize Ereignisgesteuert (z.\,B. MQTT)
         & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item Hervorragende Skalierbarkeit der Endpunkte
-            \item Ideal für kontinuierliche IoT-Sensordaten-Streams
-            \item Asynchrone und vollständig entkoppelte Kommunikation
+            \item Sehr gut skalierbar
+            \item Ideal f\"ur Daten-Streams (IoT)
+            \item Lose gekoppelte Kommunikation
           \end{itemize}
         & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item Zusätzliche Infrastruktur (Message Broker) zwingend notwendig
-            \item Überproportionaler Overhead für erste Prototypen
-            \item Komplexe Fehlerverfolgung (Debugging) über Systemgrenzen hinweg
+            \item Broker erforderlich
+            \item Hoher Overhead (PoC)
+            \item Erschwertes Debugging
           \end{itemize} \\
-          
     \bottomrule
-\end{tabularx} 
-\caption{Vergleich der evaluierten Architekturmuster für das Fitness-Tracking-System} \vspace{1cm}
+\end{tabularx}
+\caption{Vergleich der evaluierten Architekturmuster}
 \label{tab:architektur_vergleich}
 \end{table}
-\vspace*{-.75cm}
-\textbf{Begründung:} \vspace{.25cm}
 
-Unter Abwägung der strikten Ressourcenrestriktionen (180 Stunden) und der funktionalen Systemanforderungen erweist sich eine \textbf{monolithische Client-Server-Architektur} als die zielführendste Lösung für diesen Proof of Concept (PoC). 
-
-Aufgrund der limitierten Entwicklungszeit ist eine Minimierung des Infrastruktur- und Deployment-Overheads erforderlich. Containerisierte Ansätze oder Microservices erzwingen zwar eine logische Trennung, verbrauchen jedoch durch das komplexe Setup wertvolle Projektstunden, die für die Echtzeit-Visualisierung benötigt werden. Auch eine Publisher-Subscriber-Architektur scheidet aus, da die zwingende Integration eines Message Brokers den Rahmen des PoC sprengen würde.
-
-Ein monolithisches Backend bündelt die API-Logik, Datenverarbeitung und Datenbankzugriffe in einer Codebase. Dies eliminiert Netzwerk-Overhead zwischen Services und reduziert die Latenz durch direkte In-Memory-Aufrufe, was den strengen Echtzeit-Anforderungen (Latenz < 100\,ms) zugutekommt. Potenzielle Code-Konflikte bei der parallelen Entwicklung im dreiköpfigen Team werden durch eine saubere interne Strukturierung (Modularer Monolith) vermieden. So kann der Fokus vollständig auf der funktionalen Umsetzung liegen.
-
-\vspace{.25cm}
+\textbf{Begr\"undung:} \vspace{.25cm} \newline Unter Abw\"agung der Ressourcenrestriktionen (180 Stunden) erweist sich die \textbf{monolithische Client-Server-Architektur} als die zielf\"uhrendste L\"osung. Sie minimiert den Infrastruktur-Overhead, erlaubt schnelle Entwicklungszyklen und erf\"ullt die Echtzeit-Anforderungen durch direkte In-Memory-Aufrufe. Potenzielle Konflikte bei der parallelen Team-Entwicklung werden durch eine saubere interne Modulstruktur vermieden.
+\vspace{.5cm}
 % =============================================================================
-\newpage
 \section{Technologieauswahl}
 % =============================================================================
-\vspace{.25cm}
-Die Auswahl der Technologien orientiert sich maßgeblich an den definierten Ressourcenrestriktionen (Zeiteffizienz) sowie der Notwendigkeit, die Arbeitspakete klar voneinander zu entkoppeln. Im Fokus stehen Frameworks, die eine schnelle Prototypenentwicklung (MVP) unterstützen, ohne Kompromisse bei der Echtzeitfähigkeit einzugehen.
+\vspace{.5cm}
+Die Auswahl der Technologien orientiert sich an den Ressourcenrestriktionen (Zeiteffizienz) sowie der Notwendigkeit, die Arbeitspakete klar voneinander zu entkoppeln.
 
 \vspace{.5cm}
 \begin{table}[H]
 \centering
 \small
-\renewcommand{\arraystretch}{1.5} % Erhöht den Zeilenabstand für bessere Lesbarkeit
+\renewcommand{\arraystretch}{1.5}
 \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3cm} >{\raggedright\arraybackslash}p{4cm} >{\raggedright\arraybackslash}X}
     \toprule
-    \textbf{Architekturschicht} & \textbf{Technologie} & \textbf{Entscheidungsbegründung} \\
+    \textbf{Schicht} & \textbf{Technologie} & \textbf{Entscheidungsbegr\"undung} \\
     \midrule
-    
-    \textbf{Mobile Client} \newline (Frontend)
-        & Cross-Platform Framework \newline (z.\,B. React Native oder Flutter) 
+
+    \textbf{Embedded} \newline (AP 3)
+        & XIAO nRF52840 \newline C/C++ (Arduino/Zephyr)
+        & Integriertes BLE; kompakter Formfaktor; stromsparend; direkte IMU-Anbindung \"uber I\textsuperscript{2}C. \\
+    \midrule
+
+    \textbf{Mobile Client} \newline (AP 1)
+        & Cross-Platform Framework \newline (React Native / Flutter)
         & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item \textbf{Zeiteffizienz:} Single-Codebase für iOS und Android.
-            \item \textbf{BLE-Support:} Etablierte Bibliotheken für Bluetooth GATT.
-            \item \textbf{UI-Performance:} Hohe Rendering-Performance für Live-Charts (z.\,B. via Recharts/Skia).
+            \item Single-Codebase f\"ur iOS und Android.
+            \item Etablierte BLE-Bibliotheken (GATT-Support).
+            \item Hohe Rendering-Performance f\"ur Live-Charts.
           \end{itemize} \\
     \midrule
-    
-    \textbf{API \& Gateway} \newline (Backend)
-        & Node.js (TypeScript) oder \newline Python (FastAPI) 
+
+    \textbf{API \& Gateway} \newline (AP 2)
+        & Node.js (TypeScript) \newline oder Python (FastAPI)
         & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item \textbf{Asynchronität:} Hervorragendes Handling von Non-Blocking I/O für parallele Live-Streams.
-            \item \textbf{Ökosystem:} Native Integration von WebSocket- und REST-Protokollen.
+            \item Non-Blocking I/O f\"ur parallele Live-Streams.
+            \item Native WebSocket- und REST-Unterst\"utzung.
           \end{itemize} \\
     \midrule
-    
-    \textbf{Persistenz} \newline (Datenbank)
-        & Relationales RDBMS \newline (z.\,B. PostgreSQL) 
-        & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item \textbf{Datenintegrität:} ACID-konforme Speicherung von Nutzer- und Session-Daten.
-            \item \textbf{Flexibilität:} JSONB-Support ermöglicht das effiziente Speichern schemaloser Sensordaten (Zeitreihen).
-          \end{itemize} \\
+
+    \textbf{Persistenz}
+        & PostgreSQL
+        & ACID-konforme Speicherung; JSONB-Support f\"ur schemaloser Sensordaten (Zeitreihen). \\
     \midrule
-    
+
     \textbf{Echtzeit- \newline kommunikation}
-        & WebSockets (WSS) 
-        & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item \textbf{Latenz:} Bidirektionaler Vollduplex-Kanal stellt Feedback-Latenzen von $< 100$\,ms sicher.
-            \item \textbf{Overhead:} Geringerer Header-Overhead im Vergleich zu HTTP-Polling.
-          \end{itemize} \\
+        & WebSockets (WSS)
+        & Bidirektionaler Vollduplex-Kanal; Latenz $< 100$\,ms; kein HTTP-Polling-Overhead. \\
     \midrule
-    
-    \textbf{Infrastruktur \& \newline Containerisierung}
-        & Docker \& Docker Compose 
-        & \vspace{-0.3cm}\begin{itemize}[leftmargin=*, nosep]
-            \item \textbf{Isolation:} Fehlerfreie, reproduzierbare lokale Entwicklung ("Works on my machine"-Prävention).
-            \item \textbf{Orchestrierung:} Simples, gemeinsames Starten aller Backend-Services mit einem einzigen Befehl.
-          \end{itemize} \\
-          
+
+    \textbf{Infrastruktur}
+        & Docker \& Docker Compose
+        & Reproduzierbarer lokaler Betrieb aller Dienste mit einem Befehl; kein Cloud-Hosting n\"otig. \\
+
     \bottomrule
 \end{tabularx}
-\caption{Übersicht und Begründung des gewählten Technologie-Stacks}
+\caption{\"Ubersicht und Begr\"undung des gew\"ahlten Technologie-Stacks}
 \label{tab:technologieauswahl}
 \end{table}
 
+\newpage
+% =============================================================================
+\section{Umsetzung und Implementierung}
+% =============================================================================
+\vspace{.25cm}
+\subsection{Embedded-Schicht -- XIAO nRF52840 (AP\,3)}
+\vspace{.5cm}
+\begin{placeholder}
+\textbf{\color{placeholderborder}TODO -- Wird nach Abschluss der Implementierung erg\"anzt \newline (AP\,3 -- Erlind Sejdiu)}
+
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=5pt]
+    \item Beschreibung der Firmware-Architektur (Arduino/Zephyr RTOS)
+    \item IMU-Initialisierung und Kalibrierung (LSM6DS3TR-C \"uber I\textsuperscript{2}C)
+    \item Abtastrate und Datenformat der Sensorwerte (Accelerometer, Gyroskop)
+    \item BLE-Service-Definitionen (GATT-Service UUID, Characteristic-Layout)
+    \item Implementierung der BLE-Notifications / Advertising
+    \item Energieverwaltung und Verbindungsparameter
+    \item Code-Snippets der Kernfunktionalit\"at
+\end{itemize}
+\end{placeholder}
+\vspace{.25cm}
+\subsection{Backend -- API-Gateway und Containerisierung (AP\,2)}
+\vspace{.5cm}
+\begin{placeholder}
+\textbf{\color{placeholderborder}TODO -- Wird nach Abschluss der Implementierung erg\"anzt \newline (AP\,2 -- Luca Sch\"oneberg)}
+
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=5pt]
+    \item Projektstruktur und gew\"ahltes Framework (Node.js/FastAPI)
+    \item REST-API-Endpunkte (Routen, Request-/Response-Schemata)
+    \item WebSocket-Handler: Verbindungsmanagement und Broadcast-Logik
+    \item Datenbankschema (Tabellen: Nutzer, Sessions, Sensorwerte)
+    \item Docker-Compose-Konfiguration (Services, Netzwerke, Volumes)
+    \item Umgebungsvariablen und Konfigurationsmanagement
+    \item Sequenzdiagramm des Datenflusses (BLE-Eingang bis WS-Ausgang)
+\end{itemize}
+\end{placeholder}
+\vspace{.25cm}
+\subsection{Frontend -- Mobile Applikation (AP\,1)}
+\vspace{.5cm}
+\begin{placeholder}
+\textbf{\color{placeholderborder}TODO -- Wird nach Abschluss der Implementierung erg\"anzt \newline (AP\,1 -- Devin Uyan)}
+
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=5pt]
+    \item Projektstruktur und Komponentenarchitektur (z.\,B. React Native Screens)
+    \item BLE-Verbindungsmanagement: Scan, Pairing, GATT-Notification-Handling
+    \item WebSocket-Client-Implementierung und Zustandsmanagement
+    \item Echtzeit-Visualisierungskomponente (Bibliothek, Darstellungsform, Achsen)
+    \item Historien-Ansicht: Abruf und Darstellung vergangener Sessions
+    \item UI/UX-Entscheidungen (Navigation, Farbgebung, Feedbackelemente)
+    \item Screenshots / Screen-Recordings der fertigen App
+\end{itemize}
+\end{placeholder}
+
+\newpage
+% =============================================================================
+\section{Qualit\"atssicherung und Tests}
+% =============================================================================
+\vspace{.5cm}
+\begin{placeholder}
+\textbf{\color{placeholderborder}TODO -- Wird nach Abschluss der Implementierung erg\"anzt}
+
+Geplante Inhalte dieses Abschnitts:
+
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=5pt]
+    \item \textbf{Teststrategie:} \"Ubersicht der eingesetzten Testmethoden \newline(Unit-, Integrations-, Systemtest)
+    \item \textbf{Backend-Tests:} Unit-Tests der REST-Endpunkte; \newline Integrationstests des WebSocket-Handlers
+    \item \textbf{Frontend-Tests:} Komponenten-Tests; manuelle UI-Tests auf Android und iOS
+    \item \textbf{End-to-End-Test:} Messung der tats\"achlichen End-to-End-Latenz (Sensor $\rightarrow$ App)
+    \item \textbf{Latenzauswertung:} Vergleich gemessene Latenz vs. Anforderung NF1 ($< 100$\,ms)
+    \item \textbf{Bekannte Einschr\"ankungen:} Abweichungen vom urspr\"unglichen Pflichtenheft
+\end{itemize}
+\end{placeholder}
+
+% =============================================================================
+\section{Fazit}
+% =============================================================================
+\vspace{.5cm}
+\begin{placeholder}
+\textbf{\color{placeholderborder}TODO -- Wird am Projektende verfasst}
+
+Geplante Inhalte dieses Abschnitts:
+
+\begin{itemize}[topsep=0pt, parsep=0pt, itemsep=5pt]
+    \item \textbf{Zusammenfassung:} Was wurde umgesetzt? \newline Wurden die Ziele aus Abschnitt~1.2 erreicht?
+    \item \textbf{Erf\"ullte Muss- und Kann-Kriterien:} R\"uckblick auf den Anforderungskatalog (Abschnitt~3.2)
+    \item \textbf{Erfahrungen:} Team-Reflexion zu Technologiewahl, \newline Architekturentscheidungen und Arbeitsteilung
+    \item \textbf{Ausblick:} M\"ogliche n\"achste Schritte \newline(ML-Integration, Produktivbetrieb, Multi-Sensor-Unterst\"utzung)
+\end{itemize}
+\end{placeholder}
+\vspace{.5cm}
+% =============================================================================
+\section*{Literaturverzeichnis}
+\addcontentsline{toc}{section}{Literaturverzeichnis}
+% =============================================================================
+\vspace{.5cm}
+\begin{thebibliography}{9}
+
+\bibitem{ble_spec}
+Bluetooth SIG, \textit{Bluetooth Core Specification 5.4}, 2023. \\
+\texttt{https://www.bluetooth.com/specifications/specs/core54-html/}
+
+\bibitem{xiao_nrf52840}
+Seeed Studio, \textit{XIAO nRF52840 (Sense) Wiki}, 2023. \\
+\texttt{https://wiki.seeedstudio.com/XIAO\_BLE/}
+
+\bibitem{lsm6ds3}
+STMicroelectronics, \textit{LSM6DS3TR-C Datasheet}, 2019. \\
+\texttt{https://www.st.com/en/mems-and-sensors/lsm6ds3tr-c.html}
+
+\bibitem{websocket_rfc}
+I. Fette, A. Melnikov, \textit{RFC 6455: The WebSocket Protocol}, IETF, 2011. \\
+\texttt{https://datatracker.ietf.org/doc/html/rfc6455}
+
+\bibitem{docker_compose}
+Docker Inc., \textit{Docker Compose Documentation}, 2024. \\
+\texttt{https://docs.docker.com/compose/}
+
+\end{thebibliography}
 \end{document}

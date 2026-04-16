@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.10.12)  8 APR 2026 08:27
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.10.12)  16 APR 2026 16:03
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -507,36 +507,210 @@ LaTeX Info: Redefining \lslig on input line 900.
 Package microtype Info: Loading configuration file microtype.cfg.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/microtype/microtype.cfg
 File: microtype.cfg 2022/03/14 v3.0d microtype main configuration file (RS)
-))
-Package hyperref Info: Option `colorlinks' set `true' on input line 38.
-LaTeX Font Info:    Trying to load font information for T1+lmr on input line 55.
- (/usr/local/texlive/2022/texmf-dist/tex/latex/lm/t1lmr.fd
-File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) (/usr/local/texlive/2022/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+)) (/usr/local/texlive/2022/texmf-dist/tex/latex/mdframed/mdframed.sty
+Package: mdframed 2013/07/01 1.9b: mdframed
+ (/usr/local/texlive/2022/texmf-dist/tex/latex/l3packages/xparse/xparse.sty (/usr/local/texlive/2022/texmf-dist/tex/latex/l3kernel/expl3.sty
+Package: expl3 2022-02-24 L3 programming layer (loader) 
+ (/usr/local/texlive/2022/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2022-02-07 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count306
 \l__pdf_internal_box=\box68
+))
+Package: xparse 2022-01-12 L3 Experimental document command parser
+) (/usr/local/texlive/2022/texmf-dist/tex/latex/zref/zref-abspage.sty
+Package: zref-abspage 2020-07-03 v2.32 Module abspage for zref (HO)
+ (/usr/local/texlive/2022/texmf-dist/tex/latex/zref/zref-base.sty
+Package: zref-base 2020-07-03 v2.32 Module base for zref (HO)
+Package zref Info: New property list: main on input line 764.
+Package zref Info: New property: default on input line 765.
+Package zref Info: New property: page on input line 766.
+)
+\c@abspage=\count307
+Package zref Info: New property: abspage on input line 66.
+) (/usr/local/texlive/2022/texmf-dist/tex/latex/needspace/needspace.sty
+Package: needspace 2010/09/12 v1.3d reserve vertical space
+)
+\mdf@templength=\skip65
+\c@mdf@globalstyle@cnt=\count308
+\mdf@skipabove@length=\skip66
+\mdf@skipbelow@length=\skip67
+\mdf@leftmargin@length=\skip68
+\mdf@rightmargin@length=\skip69
+\mdf@innerleftmargin@length=\skip70
+\mdf@innerrightmargin@length=\skip71
+\mdf@innertopmargin@length=\skip72
+\mdf@innerbottommargin@length=\skip73
+\mdf@splittopskip@length=\skip74
+\mdf@splitbottomskip@length=\skip75
+\mdf@outermargin@length=\skip76
+\mdf@innermargin@length=\skip77
+\mdf@linewidth@length=\skip78
+\mdf@innerlinewidth@length=\skip79
+\mdf@middlelinewidth@length=\skip80
+\mdf@outerlinewidth@length=\skip81
+\mdf@roundcorner@length=\skip82
+\mdf@footenotedistance@length=\skip83
+\mdf@userdefinedwidth@length=\skip84
+\mdf@needspace@length=\skip85
+\mdf@frametitleaboveskip@length=\skip86
+\mdf@frametitlebelowskip@length=\skip87
+\mdf@frametitlerulewidth@length=\skip88
+\mdf@frametitleleftmargin@length=\skip89
+\mdf@frametitlerightmargin@length=\skip90
+\mdf@shadowsize@length=\skip91
+\mdf@extratopheight@length=\skip92
+\mdf@subtitleabovelinewidth@length=\skip93
+\mdf@subtitlebelowlinewidth@length=\skip94
+\mdf@subtitleaboveskip@length=\skip95
+\mdf@subtitlebelowskip@length=\skip96
+\mdf@subtitleinneraboveskip@length=\skip97
+\mdf@subtitleinnerbelowskip@length=\skip98
+\mdf@subsubtitleabovelinewidth@length=\skip99
+\mdf@subsubtitlebelowlinewidth@length=\skip100
+\mdf@subsubtitleaboveskip@length=\skip101
+\mdf@subsubtitlebelowskip@length=\skip102
+\mdf@subsubtitleinneraboveskip@length=\skip103
+\mdf@subsubtitleinnerbelowskip@length=\skip104
+ (/usr/local/texlive/2022/texmf-dist/tex/latex/mdframed/md-frame-0.mdf
+File: md-frame-0.mdf 2013/07/01\ 1.9b: md-frame-0
+)
+\mdf@frametitlebox=\box69
+\mdf@footnotebox=\box70
+\mdf@splitbox@one=\box71
+\mdf@splitbox@two=\box72
+\mdf@splitbox@save=\box73
+\mdfsplitboxwidth=\skip105
+\mdfsplitboxtotalwidth=\skip106
+\mdfsplitboxheight=\skip107
+\mdfsplitboxdepth=\skip108
+\mdfsplitboxtotalheight=\skip109
+\mdfframetitleboxwidth=\skip110
+\mdfframetitleboxtotalwidth=\skip111
+\mdfframetitleboxheight=\skip112
+\mdfframetitleboxdepth=\skip113
+\mdfframetitleboxtotalheight=\skip114
+\mdffootnoteboxwidth=\skip115
+\mdffootnoteboxtotalwidth=\skip116
+\mdffootnoteboxheight=\skip117
+\mdffootnoteboxdepth=\skip118
+\mdffootnoteboxtotalheight=\skip119
+\mdftotallinewidth=\skip120
+\mdfboundingboxwidth=\skip121
+\mdfboundingboxtotalwidth=\skip122
+\mdfboundingboxheight=\skip123
+\mdfboundingboxdepth=\skip124
+\mdfboundingboxtotalheight=\skip125
+\mdf@freevspace@length=\skip126
+\mdf@horizontalwidthofbox@length=\skip127
+\mdf@verticalmarginwhole@length=\skip128
+\mdf@horizontalspaceofbox=\skip129
+\mdfsubtitleheight=\skip130
+\mdfsubsubtitleheight=\skip131
+\c@mdfcountframes=\count309
+
+****** mdframed patching \endmdf@trivlist
+
+****** -- success******
+
+\mdf@envdepth=\count310
+\c@mdf@env@i=\count311
+\c@mdf@env@ii=\count312
+\c@mdf@zref@counter=\count313
+Package zref Info: New property: mdf@pagevalue on input line 895.
+) (/usr/local/texlive/2022/texmf-dist/tex/latex/tocloft/tocloft.sty
+Package: tocloft 2017/08/31 v2.3i parameterised ToC, etc., typesetting
+Package tocloft Info: The document has section divisions on input line 51.
+\cftparskip=\skip132
+\cftbeforetoctitleskip=\skip133
+\cftaftertoctitleskip=\skip134
+\cftbeforepartskip=\skip135
+\cftpartnumwidth=\skip136
+\cftpartindent=\skip137
+\cftbeforesecskip=\skip138
+\cftsecindent=\skip139
+\cftsecnumwidth=\skip140
+\cftbeforesubsecskip=\skip141
+\cftsubsecindent=\skip142
+\cftsubsecnumwidth=\skip143
+\cftbeforesubsubsecskip=\skip144
+\cftsubsubsecindent=\skip145
+\cftsubsubsecnumwidth=\skip146
+\cftbeforeparaskip=\skip147
+\cftparaindent=\skip148
+\cftparanumwidth=\skip149
+\cftbeforesubparaskip=\skip150
+\cftsubparaindent=\skip151
+\cftsubparanumwidth=\skip152
+\cftbeforeloftitleskip=\skip153
+\cftafterloftitleskip=\skip154
+\cftbeforefigskip=\skip155
+\cftfigindent=\skip156
+\cftfignumwidth=\skip157
+\c@lofdepth=\count314
+\c@lotdepth=\count315
+\cftbeforelottitleskip=\skip158
+\cftafterlottitleskip=\skip159
+\cftbeforetabskip=\skip160
+\cfttabindent=\skip161
+\cfttabnumwidth=\skip162
+
+
+Package tocloft Warning: \@starttoc has already been redefined; tocloft bailing out. on input line 1156.
+
+) (/usr/local/texlive/2022/texmf-dist/tex/latex/ragged2e/ragged2e.sty
+Package: ragged2e 2021/12/15 v3.1 ragged2e Package
+ (/usr/local/texlive/2022/texmf-dist/tex/latex/footmisc/footmisc.sty
+Package: footmisc 2022/03/08 v6.0d a miscellany of footnote facilities
+\FN@temptoken=\toks39
+\footnotemargin=\dimen287
+\@outputbox@depth=\dimen288
+Package footmisc Info: Declaring symbol style bringhurst on input line 695.
+Package footmisc Info: Declaring symbol style chicago on input line 703.
+Package footmisc Info: Declaring symbol style wiley on input line 712.
+Package footmisc Info: Declaring symbol style lamport-robust on input line 723.
+Package footmisc Info: Declaring symbol style lamport* on input line 743.
+Package footmisc Info: Declaring symbol style lamport*-robust on input line 764.
+)
+\CenteringLeftskip=\skip163
+\RaggedLeftLeftskip=\skip164
+\RaggedRightLeftskip=\skip165
+\CenteringRightskip=\skip166
+\RaggedLeftRightskip=\skip167
+\RaggedRightRightskip=\skip168
+\CenteringParfillskip=\skip169
+\RaggedLeftParfillskip=\skip170
+\RaggedRightParfillskip=\skip171
+\JustifyingParfillskip=\skip172
+\CenteringParindent=\skip173
+\RaggedLeftParindent=\skip174
+\RaggedRightParindent=\skip175
+\JustifyingParindent=\skip176
+)
+Package hyperref Info: Option `colorlinks' set `true' on input line 62.
+LaTeX Font Info:    Trying to load font information for T1+lmr on input line 95.
+ (/usr/local/texlive/2022/texmf-dist/tex/latex/lm/t1lmr.fd
+File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 ) (./pflichtenheft.aux)
 \openout1 = `pflichtenheft.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 55.
-LaTeX Font Info:    ... okay on input line 55.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 95.
+LaTeX Font Info:    ... okay on input line 95.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -574,24 +748,24 @@ LaTeX Font Info:    ... okay on input line 55.
 
 (/usr/local/texlive/2022/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count307
-\scratchdimen=\dimen287
-\scratchbox=\box69
-\nofMPsegments=\count308
-\nofMParguments=\count309
-\everyMPshowfont=\toks39
-\MPscratchCnt=\count310
-\MPscratchDim=\dimen288
-\MPnumerator=\count311
-\makeMPintoPDFobject=\count312
-\everyMPtoPDFconversion=\toks40
+\scratchcounter=\count316
+\scratchdimen=\dimen289
+\scratchbox=\box74
+\nofMPsegments=\count317
+\nofMParguments=\count318
+\everyMPshowfont=\toks40
+\MPscratchCnt=\count319
+\MPscratchDim=\dimen290
+\MPnumerator=\count320
+\makeMPintoPDFobject=\count321
+\everyMPtoPDFconversion=\toks41
 ) (/usr/local/texlive/2022/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 485.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
-Package hyperref Info: Link coloring ON on input line 55.
+Package hyperref Info: Link coloring ON on input line 95.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2021-04-02 v2.47 Cross-referencing by name of section
  (/usr/local/texlive/2022/texmf-dist/tex/latex/refcount/refcount.sty
@@ -599,158 +773,180 @@ Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
 ) (/usr/local/texlive/2022/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
 Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
-\c@section@level=\count313
+\c@section@level=\count322
 )
-LaTeX Info: Redefining \ref on input line 55.
-LaTeX Info: Redefining \pageref on input line 55.
-LaTeX Info: Redefining \nameref on input line 55.
+LaTeX Info: Redefining \ref on input line 95.
+LaTeX Info: Redefining \pageref on input line 95.
+LaTeX Info: Redefining \nameref on input line 95.
  (./pflichtenheft.out) (./pflichtenheft.out)
 \@outlinefile=\write4
 \openout4 = `pflichtenheft.out'.
 
-LaTeX Info: Redefining \microtypecontext on input line 55.
-Package microtype Info: Applying patch `item' on input line 55.
-Package microtype Info: Applying patch `toc' on input line 55.
-Package microtype Info: Applying patch `eqnum' on input line 55.
-Package microtype Info: Applying patch `footnote' on input line 55.
+LaTeX Info: Redefining \microtypecontext on input line 95.
+Package microtype Info: Applying patch `item' on input line 95.
+Package microtype Info: Applying patch `toc' on input line 95.
+Package microtype Info: Applying patch `eqnum' on input line 95.
+Package microtype Info: Applying patch `footnote' on input line 95.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
 Package microtype Info: Automatic font expansion enabled (level 2),
 (microtype)             stretch: 20, shrink: 20, step: 1, non-selected.
 Package microtype Info: Using default expansion set `alltext-nott'.
-LaTeX Info: Redefining \showhyphens on input line 55.
+LaTeX Info: Redefining \showhyphens on input line 95.
 Package microtype Info: No adjustment of tracking.
 Package microtype Info: No adjustment of interword spacing.
 Package microtype Info: No adjustment of character kerning.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/microtype/mt-cmr.cfg
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman (RS)
 )
-<HKA.jpg, id=35, 1505.625pt x 1102.1175pt>
+Package ragged2e Info: ABD: executing \RaggedRight on input line 95.
+<HKA.jpg, id=106, 1505.625pt x 1102.1175pt>
 File: HKA.jpg Graphic file (type jpg)
 <use HKA.jpg>
-Package pdftex.def Info: HKA.jpg  used on input line 60.
+Package pdftex.def Info: HKA.jpg  used on input line 100.
 (pdftex.def)             Requested size: 159.33821pt x 116.62546pt.
-LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 82.
+LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 122.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OML+lmm on input line 82.
+LaTeX Font Info:    Trying to load font information for OML+lmm on input line 122.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 82.
+LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 122.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 82.
+LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 122.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 82.
+(Font)              <10.95> on input line 122.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 82.
+(Font)              <8> on input line 122.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 82.
+(Font)              <6> on input line 122.
  [1
 
-{/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./HKA.jpg>]
+{/usr/local/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./HKA.jpg>] (./pflichtenheft.toc)
+\tf@toc=\write5
+\openout5 = `pflichtenheft.toc'.
+
+
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.147 \newpage
+l.141 \newpage
                [1]
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 157.
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 161.
  (/usr/local/texlive/2022/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-Underfull \hbox (badness 10000) in paragraph at lines 157--158
-
+pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
+<to be read again> 
+                   \relax 
+l.170 \newpage
+               [1]
+Underfull \hbox (badness 1264) in paragraph at lines 179--180
+[]\T1/lmr/m/n/10.95 (+20) Zwar kön-nen Be-we-gungs-ab-läu-fe durch mo-der-ne Hardware-Sensoren er-fasst wer-den, 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 158--159
-
+Overfull \hbox (8.26617pt too wide) in paragraph at lines 207--208
+\T1/lmr/m/n/10.95 (-20) Bluetooth Low Ener-gy (BLE, auch Blue-tooth 4.0+) ist ein Funk-stan-dard, der für ener-gie-spa-ren-de, 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 159--160
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 166--167
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 176--177
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 177--178
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 178--179
-
- []
-
-[2]
-Underfull \hbox (badness 10000) in paragraph at lines 256--257
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 257--258
-
- []
-
-[3
-pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) has been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.276 \newpage
-               \vspace*{-.5cm}] [4
+[2
 pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.346 \newpage
-              ]
-Overfull \hbox (6.20564pt too wide) in paragraph at lines 403--403
-[]|\T1/lmr/bx/n/10 (-20) Architekturschicht|  
- []
-
-
-Overfull \hbox (2.19635pt too wide) in paragraph at lines 403--403
-\T1/lmr/bx/n/10 (-20) Containerisierung|  
+l.215 \begin{itemize}[nosep]
+                            ] [3]
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 291.
+ (/usr/local/texlive/2022/texmf-dist/tex/latex/lm/t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `lmtt' (encoding: T1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+ [4]
+Overfull \hbox (0.182pt too wide) in paragraph at lines 356--357
+[]\T1/lmr/bx/n/10.95 (+11) Frontend-App (AP1): \T1/lmr/m/n/10.95 (+11) Stellt die Benutzeroberfläche für den Trainierenden bereit und 
  []
 
 [5
+pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.420 ...bf{Begr\"undung:} \vspace{.25cm} \newline
+                                                   Unter Abw\"agung der Ress...
 pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.408 \end{document}
-                    ] (./pflichtenheft.aux)
+l.420 ...bf{Begr\"undung:} \vspace{.25cm} \newline
+                                                   Unter Abw\"agung der Ress...]
+Overfull \hbox (27.95193pt too wide) in paragraph at lines 420--423
+\T1/lmr/bx/n/10.95 (-20) Client-Server-Architektur \T1/lmr/m/n/10.95 (-20) als die ziel-füh-rends-te Lö-sung. Sie mi-ni-miert den Infrastruktur-Overhead, 
+ []
+
+[6
+pdfTeX warning (ext4): destination with the same identifier (name{table.3}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.480 \newpage
+              ]
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 485.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.82504pt
+(hyperref)                removed on input line 485.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 501.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.82504pt
+(hyperref)                removed on input line 501.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\leavevmode@ifvmode' on input line 517.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                \kern 1.82504pt
+(hyperref)                removed on input line 517.
+
+[7]
+Underfull \hbox (badness 10000) in paragraph at lines 564--565
+[]\T1/lmr/bx/n/10.95 (+20) Erfüllte Muss- und Kann-Kriterien: \T1/lmr/m/n/10.95 (+20) Rück-blick auf den An-for-de-rungs-ka-ta-log
+ []
+
+[8] (./pflichtenheft.aux)
 Package rerunfilecheck Info: File `pflichtenheft.out' has not changed.
-(rerunfilecheck)             Checksum: 9574779824E766E5BE169B3C22A1FC92;1297.
+(rerunfilecheck)             Checksum: 1A1EE5BC0D7C1AA496ED6578D6C117DD;4296.
  ) 
 Here is how much of TeX's memory you used:
- 23849 strings out of 478268
- 444212 string characters out of 5846346
- 767610 words of memory out of 5000000
- 41474 multiletter control sequences out of 15000+600000
- 548722 words of font info for 144 fonts, out of 8000000 for 9000
+ 25334 strings out of 478268
+ 473878 string characters out of 5846346
+ 810513 words of memory out of 5000000
+ 42915 multiletter control sequences out of 15000+600000
+ 553722 words of font info for 132 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 84i,11n,80p,1202b,813s stack positions out of 10000i,1000n,20000p,200000b,200000s
-{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmri8.pfb>
-Output written on pflichtenheft.pdf (6 pages, 323210 bytes).
+ 84i,14n,80p,1202b,848s stack positions out of 10000i,1000n,20000p,200000b,200000s
+{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/local/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}</usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr7.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmri8.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmsy10.pfb></usr/local/texlive/2022/texmf-dist/fonts/type1/public/lm/lmtt10.pfb>
+Output written on pflichtenheft.pdf (10 pages, 391054 bytes).
 PDF statistics:
- 130 PDF objects out of 1000 (max. 8388607)
- 101 compressed objects within 2 object streams
- 23 named destinations out of 1000 (max. 500000)
- 47178 words of extra memory for PDF output out of 51595 (max. 10000000)
+ 275 PDF objects out of 1000 (max. 8388607)
+ 235 compressed objects within 3 object streams
+ 51 named destinations out of 1000 (max. 500000)
+ 51930 words of extra memory for PDF output out of 61914 (max. 10000000)
 
