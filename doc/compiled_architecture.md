@@ -1,14 +1,35 @@
 # Systemarchitektur & Datenfluss Dokumentation
 
-*Automatisch generiert am 19.6.2026, 21:31:58*
+*Automatisch generiert am 19.6.2026, 23:08:09*
 
 > Diese Dokumentation wurde automatisch aus den dezentralen `architecture.md` Dateien des Projekts zusammengeführt.
 
 ---
 
+## Komponente: ProfileCard
+
+**Quelle:** [`app/components/ProfileCard/architecture.md`](./app/components/ProfileCard/architecture.md)
+
+<!-- START COMPONENT DOC -->
+# Profil-Karte (ProfileCard)
+
+Diese Komponente zeigt die Profildetails des angemeldeten Benutzers an.
+
+## Datenfluss
+```mermaid
+flowchart LR
+    JWT[Authentifizierungs-Token] -->|1. User-ID auslesen| Controller[ProfileController]
+    Controller -->|2. Query| DB[(Datenbank)]
+    DB -->|3. Rohdaten| Controller
+    Controller -->|4. Bereinigtes Profil DTO| Client[ProfileCard UI]
+```
+<!-- END COMPONENT DOC -->
+
+---
+
 ## Komponente: components
 
-**Quelle:** [`app\components\architecture.md`](./app/components/architecture.md)
+**Quelle:** [`app/components/architecture.md`](./app/components/architecture.md)
 
 <!-- START COMPONENT DOC -->
 # App Komponenten
@@ -32,30 +53,9 @@ flowchart LR
 
 ---
 
-## Komponente: ProfileCard
-
-**Quelle:** [`app\components\ProfileCard\architecture.md`](./app/components/ProfileCard/architecture.md)
-
-<!-- START COMPONENT DOC -->
-# Profil-Karte (ProfileCard)
-
-Diese Komponente zeigt die Profildetails des angemeldeten Benutzers an.
-
-## Datenfluss
-```mermaid
-flowchart LR
-    JWT[Authentifizierungs-Token] -->|1. User-ID auslesen| Controller[ProfileController]
-    Controller -->|2. Query| DB[(Datenbank)]
-    DB -->|3. Rohdaten| Controller
-    Controller -->|4. Bereinigtes Profil DTO| Client[ProfileCard UI]
-```
-<!-- END COMPONENT DOC -->
-
----
-
 ## Komponente: src
 
-**Quelle:** [`embedded\src\architecture.md`](./embedded/src/architecture.md)
+**Quelle:** [`embedded/src/architecture.md`](./embedded/src/architecture.md)
 
 <!-- START COMPONENT DOC -->
 # Embedded Sensor-Firmware
