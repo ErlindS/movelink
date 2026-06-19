@@ -9,6 +9,9 @@ on:
       - 'embedded/**/*.md'
       - 'scripts/merge-docs.js'
 
+permissions:
+  contents: write
+
 jobs:
   build-docs:
     runs-on: ubuntu-latest
