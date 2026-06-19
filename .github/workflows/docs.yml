@@ -30,9 +30,12 @@ jobs:
         run: node scripts/merge-docs.js
 
       - name: Änderungen zurück ins Repository pushen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add doc/compiled_architecture.md
           git commit -m "docs: auto-merge decentralized architecture files [skip ci]" || echo "Keine Änderungen zu committen"
-          git push
+          git push https://x-token-access:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:${{ github.ref_name }}
+
