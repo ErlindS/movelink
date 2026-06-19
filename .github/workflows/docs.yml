@@ -29,7 +29,9 @@ jobs:
           node-version: '18'
 
       - name: Dokumentation zusammenführen
-        run: node scripts/merge-docs.js
+        run: |
+          node scripts/merge-docs.js
+          node scripts/generate-html-docs.js
 
       - name: Änderungen zurück ins Repository pushen
         env:
@@ -37,7 +39,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add doc/compiled_architecture.md
-          git commit -m "docs: auto-merge decentralized architecture files [skip ci]" || echo "Keine Änderungen zu committen"
+          git add doc/compiled_architecture.md docs/
+          git commit -m "docs: auto-merge and update html portal [skip ci]" || echo "Keine Änderungen zu committen"
           git push https://x-token-access:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:${{ github.ref_name }}
 

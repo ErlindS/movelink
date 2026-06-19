@@ -1,8 +1,0 @@
-\glsresetall
-\newpage
-\section*{Abstract} 
-The electronic information system (EIS) from ProSeS sends automated notifications via various channels, such as SMS, email, and a smartphone app. Due to the continuous expansion of the existing system without accompanying architectural adjustments, a high degree of component coupling and limited maintainability have resulted. The aim of this work was therefore to redevelop the EIS.
-
-In an iterative survey process, eleven functional requirements were prioritized and 13 non-functional requirements were defined based on the maintainability definition of ISO 25010 with measurable acceptance criteria. Based on this, a client-server architecture was designed. The Angular front end serves as a configuration interface for rule creation and management. The C\# backend processes incoming events and controls dispatch. A hexagonal architecture was chosen for the backend, which allows new dispatch channels to be added without having to change the existing business logic.
-
-The evaluation shows that all functional requirements classified as mandatory have been met. The maintainability analysis using static analysis tools confirms higher maintainability compared to the legacy system based on the selected indicators. Overall, the results suggest an improved structural basis for long-term further development.

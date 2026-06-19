@@ -1,8 +1,0 @@
-\babel@toc {german}{}\relax 
-\contentsline {section}{\numberline {1}Motivation}{1}{section.1}%
-\contentsline {section}{\numberline {2}Problemstellung}{1}{section.2}%
-\contentsline {section}{\numberline {3}Stand der Technik}{2}{section.3}%
-\contentsline {section}{\numberline {4}Forschungsfrage}{3}{section.4}%
-\contentsline {section}{\numberline {5}Methodik}{3}{section.5}%
-\contentsline {section}{\numberline {6}Zeitplan}{5}{section.6}%
-\contentsline {section}{Literaturverzeichnis}{7}{section*.4}%
