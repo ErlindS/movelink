@@ -1,0 +1,33 @@
+name: Continuous Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**/*.md'
+      - 'embedded/**/*.md'
+      - 'scripts/merge-docs.js'
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v3
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Dokumentation zusammenführen
+        run: node scripts/merge-docs.js
+
+      - name: Änderungen zurück ins Repository pushen
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add doc/compiled_architecture.md
+          git commit -m "docs: auto-merge decentralized architecture files [skip ci]" || echo "Keine Änderungen zu committen"
+          git push
