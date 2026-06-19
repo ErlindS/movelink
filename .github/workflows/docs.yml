@@ -1,4 +1,6 @@
+# Trigger-Kommentar zur Überprüfung der Workflow-Schreibrechte
 name: Continuous Documentation
+
 
 on:
   push:
