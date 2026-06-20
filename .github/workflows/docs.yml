@@ -1,16 +1,12 @@
 # Trigger-Kommentar zur Überprüfung der Workflow-Schreibrechte
 name: Continuous Documentation
 
-
 on:
   push:
     branches:
       - main
-    paths:
-      - 'app/**/*.md'
-      - 'embedded/**/*.md'
-      - 'scripts/merge-docs.js'
-      - '.github/workflows/docs.yml'
+    paths-ignore:
+      - 'docs_site/**'
   workflow_dispatch:
 
 permissions:
@@ -23,15 +19,20 @@ jobs:
       - name: Code auschecken
         uses: actions/checkout@v3
 
-      - name: Node.js einrichten
-        uses: actions/setup-node@v3
+      - name: Python einrichten
+        uses: actions/setup-python@v4
         with:
-          node-version: '18'
+          python-version: '3.10'
 
-      - name: Dokumentation zusammenführen
+      - name: Abhängigkeiten installieren
         run: |
-          node scripts/merge-docs.js
-          node scripts/generate-html-docs.js
+          python -m pip install --upgrade pip
+          pip install reportlab
+
+      - name: Dokumentation & PDF generieren
+        run: |
+          python scrape_docs.py
+          python generate_pdf.py
 
       - name: Änderungen zurück ins Repository pushen
         env:
@@ -39,7 +40,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add doc/compiled_architecture.md docs/
-          git commit -m "docs: auto-merge and update html portal [skip ci]" || echo "Keine Änderungen zu committen"
+          git add docs_site/
+          git commit -m "docs: auto-generate documentation dashboard and PDF [skip ci]" || echo "Keine Änderungen zu committen"
           git push https://x-token-access:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:${{ github.ref_name }}
 
