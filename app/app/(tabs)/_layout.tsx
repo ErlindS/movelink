@@ -1,3 +1,6 @@
+/**
+ * @implements FA1
+ */
 import React from 'react';
 import { View } from 'react-native';
 import { Tabs } from 'expo-router';

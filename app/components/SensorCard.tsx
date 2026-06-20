@@ -1,3 +1,6 @@
+/**
+ * @implements FA2, FA3, NF3
+ */
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {

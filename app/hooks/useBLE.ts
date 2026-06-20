@@ -1,3 +1,6 @@
+/**
+ * @implements FA3, FA5, NF2
+ */
 import { useEffect, useRef, useCallback } from 'react';
 import { Platform } from 'react-native';
 import {

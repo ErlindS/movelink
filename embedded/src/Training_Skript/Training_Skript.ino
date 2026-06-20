@@ -1,4 +1,5 @@
 // XIAO BLE Sense LSM6DS3 - 6 Achsen (Accel + Gyro) Raw Data 
+// @implements FA5
 
 #include "LSM6DS3.h"
 #include "Wire.h"

@@ -1,3 +1,6 @@
+/**
+ * @implements FA2, FA3, FA4, FA5, FA6
+ */
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
 import Animated, {

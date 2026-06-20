@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoveLink - Documentation & Requirements Traceability</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- JS Dependencies from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body class="dark-mode">
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <i class="fa-solid fa-gauge-high logo-icon"></i>
+                <div class="logo-text">
+                    <span class="logo-title">MOVELINK</span>
+                    <span class="logo-sub">Doc Center</span>
+                </div>
+            </div>
+            
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="docSearch" placeholder="Dokumente durchsuchen...">
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-section-title">Dokumente</div>
+                <ul id="fileList" class="nav-list">
+                    <!-- Loaded dynamically -->
+                </ul>
+                
+                <div class="nav-section-title">Traceability & Graphs</div>
+                <ul class="nav-list">
+                    <li>
+                        <button class="nav-btn active" data-target="docs-tab">
+                            <i class="fa-regular fa-file-lines"></i> Dokumenten-Ansicht
+                        </button>
+                    </li>
+                    <li>
+                        <button class="nav-btn" data-target="trace-tree-tab">
+                            <i class="fa-solid fa-sitemap"></i> E2E Trace-Baum
+                        </button>
+                    </li>
+                    <li>
+                        <button class="nav-btn" data-target="matrix-tab">
+                            <i class="fa-solid fa-table-cells"></i> Matrix-Ansicht
+                        </button>
+                    </li>
+                    <li>
+                        <button class="nav-btn" data-target="graph-tab">
+                            <i class="fa-solid fa-circle-nodes"></i> Netzwerk-Graph
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="theme-toggle" id="themeToggle">
+                    <i class="fa-solid fa-moon"></i>
+                    <span>Dunkler Modus</span>
+                </div>
+                <div class="footer-version">v1.1.0 · Scraped Live</div>
+            </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <h1 id="activeTabTitle" class="tab-title">Dokumenten-Ansicht</h1>
+                <div class="stats-pills">
+                    <span class="pill"><i class="fa-regular fa-file"></i> <span id="statFiles">0</span> Dateien</span>
+                    <span class="pill"><i class="fa-solid fa-circle-check"></i> <span id="statReqs">0</span> Anforderungen</span>
+                    <span class="pill"><i class="fa-solid fa-code"></i> <span id="statLinks">0</span> Links</span>
+                </div>
+            </header>
+            
+            <!-- Views Container -->
+            <div class="view-container">
+                <!-- Tab 1: Documents Render View -->
+                <section id="docs-tab" class="tab-content active">
+                    <div class="docs-layout">
+                        <div class="doc-body glass-card">
+                            <div class="doc-meta" id="docMeta">
+                                <span id="docPathLabel"><i class="fa-regular fa-folder-open"></i> doc/Requirements.md</span>
+                            </div>
+                            <article id="markdownRender" class="markdown-body">
+                                <!-- Rendered HTML from markdown -->
+                            </article>
+                        </div>
+                        <aside class="doc-toc glass-card" id="docTocContainer">
+                            <h3 class="toc-title">Inhalt</h3>
+                            <ul id="tocList" class="toc-list">
+                                <!-- Loaded dynamically -->
+                            </ul>
+                        </aside>
+                    </div>
+                </section>
+                
+                <!-- Tab 2: E2E Trace Tree View -->
+                <section id="trace-tree-tab" class="tab-content">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">End-to-End Traceability Tree</h2>
+                            <p class="card-subtitle">Vollständiger Fluss von Use Cases über funktionale Anforderungen zu den tatsächlichen Implementierungsdateien im Code.</p>
+                        </div>
+                        <div class="trace-tree-search">
+                            <div class="search-box">
+                                <i class="fa-solid fa-filter"></i>
+                                <input type="text" id="treeFilter" placeholder="Nach Anforderungen, Use Cases oder Dateien filtern...">
+                            </div>
+                            <div class="tree-controls">
+                                <button class="btn btn-secondary" id="expandAllTree"><i class="fa-solid fa-angles-down"></i> Alle ausklappen</button>
+                                <button class="btn btn-secondary" id="collapseAllTree"><i class="fa-solid fa-angles-up"></i> Alle einklappen</button>
+                            </div>
+                        </div>
+                        <div class="trace-tree-container" id="traceTree">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Tab 3: Traceability Matrix View -->
+                <section id="matrix-tab" class="tab-content">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Anforderungen vs. Use Cases Matrix</h2>
+                            <p class="card-subtitle">Verbindung zwischen den Use Cases und funktionalen Anforderungen. Fahre über die Symbole für weitere Details.</p>
+                        </div>
+                        <div class="matrix-responsive-container">
+                            <table class="trace-matrix" id="traceMatrix">
+                                <!-- Populated dynamically -->
+                            </table>
+                        </div>
+                        <div class="matrix-legend">
+                            <div class="legend-item"><span class="marker direct"><i class="fa-solid fa-circle-check"></i></span> Direkt verknüpft (im Pflichtenheft definiert)</div>
+                            <div class="legend-item"><span class="marker transitive"><i class="fa-solid fa-link"></i></span> Transitive Verknüpfung</div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Tab 4: Network Dependency Graph -->
+                <section id="graph-tab" class="tab-content">
+                    <div class="graph-layout">
+                        <div class="graph-main glass-card">
+                            <div class="graph-canvas-container">
+                                <div id="networkGraph"></div>
+                            </div>
+                            <div class="graph-floating-controls">
+                                <button class="btn-floating" id="fitGraphBtn" title="Zoom zurücksetzen"><i class="fa-solid fa-expand"></i></button>
+                                <button class="btn-floating" id="togglePhysicsBtn" title="Physik einfrieren/aktivieren"><i class="fa-solid fa-play"></i></button>
+                            </div>
+                        </div>
+                        <aside class="graph-sidebar glass-card" id="graphDetailPanel">
+                            <h3 class="panel-title">Element Details</h3>
+                            <div class="panel-content" id="graphDetailContent">
+                                <div class="detail-placeholder">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    <p>Wähle einen Knoten im Netzwerk-Graph aus, um detaillierte Informationen und Verbindungen anzuzeigen.</p>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Code Viewer Modal -->
+    <div class="modal" id="codeModal">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3 class="modal-title" id="codeModalTitle">Datei: src/main.js</h3>
+                <button class="modal-close" id="codeModalClose"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <pre class="line-numbers"><code class="language-tsx" id="codeModalBlock">
+                    // Code
+                </code></pre>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loaded compiled scraper data -->
+    <script src="data.js"></script>
+    <!-- Custom Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

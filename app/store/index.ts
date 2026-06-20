@@ -1,3 +1,6 @@
+/**
+ * @implements FA5
+ */
 import { create } from 'zustand';
 
 export type ConnectionStatus = 'idle' | 'scanning' | 'connecting' | 'connected' | 'disconnected' | 'error';

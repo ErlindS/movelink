@@ -1,4 +1,6 @@
-/* Includes ---------------------------------------------------------------- */
+/* 
+ * @implements FA5
+ * Includes ---------------------------------------------------------------- */
 #include <Erlind-project-1_inferencing.h> // Deine exportierte Edge Impulse Bibliothek
 #include <LSM6DS3.h>
 #include <U8g2lib.h>
