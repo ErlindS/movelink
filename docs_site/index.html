@@ -90,10 +90,15 @@
             <!-- Top Navbar -->
             <header class="top-navbar">
                 <h1 id="activeTabTitle" class="tab-title">Dokumenten-Ansicht</h1>
-                <div class="stats-pills">
-                    <span class="pill"><i class="fa-regular fa-file"></i> <span id="statFiles">0</span> Dateien</span>
-                    <span class="pill"><i class="fa-solid fa-circle-check"></i> <span id="statReqs">0</span> Anforderungen</span>
-                    <span class="pill"><i class="fa-solid fa-code"></i> <span id="statLinks">0</span> Links</span>
+                <div style="display: flex; gap: 16px; align-items: center;">
+                    <div class="stats-pills">
+                        <span class="pill"><i class="fa-regular fa-file"></i> <span id="statFiles">0</span> Dateien</span>
+                        <span class="pill"><i class="fa-solid fa-circle-check"></i> <span id="statReqs">0</span> Anforderungen</span>
+                        <span class="pill"><i class="fa-solid fa-code"></i> <span id="statLinks">0</span> Links</span>
+                    </div>
+                    <a href="documentation_report.pdf" class="btn btn-secondary" download style="text-decoration: none;">
+                        <i class="fa-solid fa-file-pdf" style="color: #ef4444; font-size: 13px;"></i> PDF Export
+                    </a>
                 </div>
             </header>
             
