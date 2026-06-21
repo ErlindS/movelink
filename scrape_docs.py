@@ -101,14 +101,28 @@ def parse_markdown_file(root_dir, rel_path):
         desc = def_info['title']
         links = [link for link in ID_PATTERN.findall(desc) if link != item_id]
         def_info['links'] = sorted(list(set(links)))
+        
+    # Extract C4 level and deployable status
+    c4_level = None
+    deployable = None
+    for line in lines:
+        c4_match = re.search(r'C4-Ebene\s*[:-–]\s*(?:\*\*)?\s*(\w+)', line, re.IGNORECASE)
+        if c4_match:
+            c4_level = c4_match.group(1).strip()
+        dep_match = re.search(r'Deployable\s*[:-–]\s*(?:\*\*)?\s*(\w+)', line, re.IGNORECASE)
+        if dep_match:
+            deployable = dep_match.group(1).strip()
             
     return {
         'path': rel_path,
         'title': title,
         'content': content,
         'headings': headings,
-        'definitions': definitions
+        'definitions': definitions,
+        'c4_level': c4_level,
+        'deployable': deployable
     }
+
 
 
 def scan_references(root_dir, code_files, md_files, definitions):
@@ -159,7 +173,9 @@ def main():
             'path': res['path'],
             'title': res['title'],
             'content': res['content'],
-            'headings': res['headings']
+            'headings': res['headings'],
+            'c4_level': res.get('c4_level'),
+            'deployable': res.get('deployable')
         })
         all_definitions.update(res['definitions'])
         

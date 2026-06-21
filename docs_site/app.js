@@ -86,7 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 'docs-tab': 'Dokumenten-Ansicht',
                 'trace-tree-tab': 'E2E Trace-Baum',
                 'matrix-tab': 'Matrix-Ansicht',
-                'graph-tab': 'Netzwerk-Graph'
+                'graph-tab': 'Netzwerk-Graph',
+                'c4-tab': 'C4-Modell Explorer'
             };
             elements.activeTabTitle.textContent = labelMap[target];
             
@@ -97,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTraceMatrix();
             } else if (target === 'graph-tab') {
                 initNetworkGraph();
+            } else if (target === 'c4-tab') {
+                renderC4Explorer();
             }
         });
     });
@@ -119,6 +122,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-initialize graph if it exists to adapt to new theme colors
         if (state.network && state.activeTab === 'graph-tab') {
             initNetworkGraph();
+        }
+        if (state.activeTab === 'c4-tab') {
+            drawC4Connections();
         }
     });
 
@@ -207,7 +213,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = DOCS_DATA.files.find(f => f.path === filePath);
         if (!file) return;
         
-        elements.docPathLabel.innerHTML = `<i class="fa-regular fa-folder-open"></i> ${file.path}`;
+        let metaHtml = `<i class="fa-regular fa-folder-open"></i> ${file.path}`;
+        if (file.c4_level) {
+            const isDeployable = file.deployable && (file.deployable.toLowerCase() === 'ja' || file.deployable.toLowerCase() === 'yes');
+            const badgeClass = isDeployable ? 'usecase' : 'code';
+            const label = isDeployable ? 'C4 Container' : 'C4 Component';
+            metaHtml += ` <span class="node-badge ${badgeClass}" style="margin-left: 12px; vertical-align: middle;">${label}</span>`;
+            if (isDeployable) {
+                metaHtml += ` <span class="node-badge requirement" style="margin-left: 6px; vertical-align: middle;"><i class="fa-solid fa-cloud-arrow-up"></i> Deployable</span>`;
+            }
+        }
+        elements.docPathLabel.innerHTML = metaHtml;
         
         // Render Markdown content
         let html = renderMarkdownWithTraceBadges(file.content);
@@ -935,6 +951,478 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.codeModal.classList.remove('active');
         }
     });
+
+    // 13.5 C4 Model Explorer Logic
+    const C4_DATA = {
+        context: {
+            title: "MoveLink System",
+            description: "System zur Echtzeit-Bewegungsanalyse von Fitnessübungen mittels IMU-Sensorik.",
+            elements: [
+                { id: 'user', type: 'actor', title: 'Trainierender', description: 'Benutzer, der seine Übungsausführung in Echtzeit analysieren möchte.', tech: 'Person' },
+                { id: 'system', type: 'system-context', title: 'MoveLink System', description: 'Erfasst, filtert und visualisiert Bewegungsdaten, klassifiziert Übungen lokal und persistiert historische Datensätze.', tech: 'Software System' },
+                { id: 'external_db', type: 'external', title: 'Datenbank', description: 'Speichert Benutzerprofile und historische Trainingsdaten persistent.', tech: 'PostgreSQL' }
+            ],
+            connections: [
+                { from: 'user', to: 'system', text: 'Nutzt für Training' },
+                { from: 'system', to: 'external_db', text: 'Speichert Daten' }
+            ]
+        },
+        containers: {
+            elements: [
+                { id: 'app', type: 'container', title: 'Mobile App Container', description: 'React Native / Expo App für Smartphones. Bietet UI für Verbindung, Live-Visualisierung und Verlauf.', tech: 'React Native, TypeScript, Zustand', deployable: true, file: 'app/architecture.md' },
+                { id: 'firmware', type: 'container', title: 'Sensor Firmware Container', description: 'Arduino C++ Code auf dem XIAO-Mikrocontroller. Erfasst Sensordaten, wendet Filter an und sendet BLE Pakete.', tech: 'Arduino C/C++, Edge Impulse SDK', deployable: true, file: 'embedded/architecture.md' },
+                { id: 'backend', type: 'container', title: 'Backend Container', description: 'Node.js/Express API und PostgreSQL Datenbank. Verwaltet Nutzer und speichert Trainingsverlauf.', tech: 'Node.js, Express, PostgreSQL', deployable: true, file: 'doc/Pflichtenheft/pflichtenheft.tex' }
+            ],
+            connections: [
+                { from: 'firmware', to: 'app', text: 'BLE Data Stream' },
+                { from: 'app', to: 'backend', text: 'HTTPS / WebSockets' }
+            ]
+        },
+        components: {
+            app: {
+                title: "Mobile App Komponenten",
+                elements: [
+                    { id: 'sensor_card', type: 'component', title: 'SensorCard UI', description: 'Steuert den Verbindungszustand und das Bluetooth-Geräte-Pairing.', tech: 'React Native Component', file: 'app/components/architecture.md' },
+                    { id: 'live_chart', type: 'component', title: 'LiveChart UI', description: 'Echtzeit-Zeichnung des Beschleunigungs- und Gyroskop-Verlaufs.', tech: 'SVG Canvas Component', file: 'app/components/architecture.md' },
+                    { id: 'session_card', type: 'component', title: 'SessionCard UI', description: 'Zeigt eine Zusammenfassung einer vergangenen Trainingseinheit.', tech: 'React Native Component', file: 'app/components/SessionCard.tsx' },
+                    { id: 'profile_card', type: 'component', title: 'ProfileCard UI', description: 'Komponente zur Darstellung der Benutzerdaten und Authentifizierung.', tech: 'React Native Component', file: 'app/components/ProfileCard/architecture.md' },
+                    { id: 'use_ble', type: 'component', title: 'useBLE Hook', description: 'Custom React Hook für das Scanning und die BLE-Verbindung.', tech: 'TypeScript Hook', file: 'app/hooks/useBLE.ts' },
+                    { id: 'use_ws', type: 'component', title: 'useWebSocket Hook', description: 'Verbindung zum Backend zwecks Live-Datentransfer.', tech: 'TypeScript Hook', file: 'app/hooks/useWebSocket.ts' }
+                ],
+                connections: [
+                    { from: 'sensor_card', to: 'use_ble', text: 'Steuert BLE-Verbindung' },
+                    { from: 'live_chart', to: 'use_ble', text: 'Liest IMU-Daten' },
+                    { from: 'profile_card', to: 'use_ws', text: 'Nutzt API' },
+                    { from: 'session_card', to: 'use_ws', text: 'Lädt historische Daten' }
+                ]
+            },
+            firmware: {
+                title: "Sensor-Firmware Komponenten",
+                elements: [
+                    { id: 'imu_reader', type: 'component', title: 'LSM6DS3 Reader', description: 'Periodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz.', tech: 'C++ Module', file: 'embedded/architecture.md' },
+                    { id: 'inference_engine', type: 'component', title: 'Edge Impulse SDK', description: 'Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.', tech: 'Inferenzbibliothek', file: 'embedded/src/Executable.ino' },
+                    { id: 'ble_service', type: 'component', title: 'BLE Service', description: 'Stellt Characteristics bereit und verwaltet Verbindungsnotifikationen.', tech: 'ArduinoBLE', file: 'embedded/architecture.md' }
+                ],
+                connections: [
+                    { from: 'imu_reader', to: 'inference_engine', text: 'Liefert Sensor-Rohdaten' },
+                    { from: 'imu_reader', to: 'ble_service', text: 'Streamt Rohdaten' },
+                    { from: 'inference_engine', to: 'ble_service', text: 'Überträgt Klassifikation' }
+                ]
+            }
+        }
+    };
+
+    state.c4Level = 'context';
+    state.c4ActiveContainer = null;
+
+    function renderC4Explorer() {
+        const board = document.getElementById('c4Board');
+        const breadcrumbs = document.getElementById('c4Breadcrumbs');
+        const zoomOutBtn = document.getElementById('c4ZoomOutBtn');
+        const detailContent = document.getElementById('c4DetailContent');
+        
+        if (!board) return;
+        
+        board.innerHTML = '';
+        const svg = document.getElementById('c4Svg');
+        if (svg) {
+            const defs = svg.querySelector('defs');
+            svg.innerHTML = '';
+            if (defs) svg.appendChild(defs);
+        }
+        
+        // Reset CSS classes
+        board.className = 'c4-board';
+        
+        // 1. Breadcrumbs update
+        let breadcrumbHtml = `<span class="breadcrumb-item clickable" id="c4BcSystem" style="color: var(--primary); cursor: pointer;"><i class="fa-solid fa-network-wired"></i> System-Kontext</span>`;
+        
+        if (state.c4Level === 'containers' || state.c4Level === 'components') {
+            breadcrumbHtml += ` <span class="separator">&gt;</span> <span class="breadcrumb-item clickable" id="c4BcContainers" style="color: var(--primary); cursor: pointer;">MoveLink System</span>`;
+        }
+        if (state.c4Level === 'components') {
+            const containerName = state.c4ActiveContainer === 'app' ? 'Mobile App Container' : 'Sensor Firmware Container';
+            breadcrumbHtml += ` <span class="separator">&gt;</span> <span class="breadcrumb-item active">${containerName}</span>`;
+        }
+        breadcrumbs.innerHTML = breadcrumbHtml;
+        
+        // Wire breadcrumb clicks
+        document.getElementById('c4BcSystem').addEventListener('click', () => {
+            zoomToLevel('context');
+        });
+        const bcContainers = document.getElementById('c4BcContainers');
+        if (bcContainers) {
+            bcContainers.addEventListener('click', () => {
+                zoomToLevel('containers');
+            });
+        }
+        
+        // 2. Zoom Out Button update
+        if (state.c4Level === 'context') {
+            zoomOutBtn.style.display = 'none';
+        } else {
+            zoomOutBtn.style.display = 'block';
+        }
+        
+        zoomOutBtn.onclick = () => {
+            if (state.c4Level === 'components') {
+                zoomToLevel('containers');
+            } else if (state.c4Level === 'containers') {
+                zoomToLevel('context');
+            }
+        };
+
+        // 3. Render Cards based on active level
+        if (state.c4Level === 'context') {
+            board.classList.add('c4-grid-context');
+            const elementsList = C4_DATA.context.elements;
+            
+            elementsList.forEach(el => {
+                const card = createC4Card(el);
+                
+                // Clicking system context card drills down to container view
+                if (el.id === 'system') {
+                    card.style.borderStyle = 'dashed';
+                    card.title = "Klicke zum Öffnen der Container-Ebene";
+                    card.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        zoomToLevel('containers');
+                    });
+                }
+                
+                board.appendChild(card);
+            });
+        } 
+        else if (state.c4Level === 'containers') {
+            board.classList.add('c4-grid-containers');
+            const elementsList = C4_DATA.containers.elements;
+            
+            elementsList.forEach(el => {
+                const card = createC4Card(el);
+                
+                // Double check if clickable container
+                if (el.id === 'app' || el.id === 'firmware') {
+                    card.title = "Klicke zum Betrachten der Komponenten-Ebene";
+                    card.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        zoomToLevel('components', el.id);
+                    });
+                }
+                
+                board.appendChild(card);
+            });
+        } 
+        else if (state.c4Level === 'components') {
+            board.classList.add('c4-grid-components');
+            const elementsList = C4_DATA.components[state.c4ActiveContainer].elements;
+            
+            elementsList.forEach(el => {
+                const card = createC4Card(el);
+                board.appendChild(card);
+            });
+        }
+
+        // Trigger connector rendering after browser layout
+        setTimeout(drawC4Connections, 100);
+    }
+
+    function createC4Card(el) {
+        const card = document.createElement('div');
+        card.className = `c4-card ${el.type}`;
+        card.setAttribute('data-id', el.id);
+        
+        const isDeployable = el.deployable;
+        const deployableBadge = isDeployable ? `<span class="node-badge requirement" style="font-size: 8px;"><i class="fa-solid fa-cloud-arrow-up"></i> Deployable</span>` : '';
+        
+        card.innerHTML = `
+            <div class="c4-header-row">
+                <span class="c4-tech">${el.tech}</span>
+                ${deployableBadge}
+            </div>
+            <div class="c4-title">${el.title}</div>
+            <div class="c4-desc">${el.description}</div>
+        `;
+        
+        card.addEventListener('click', (e) => {
+            // Check if it was double click or drill-down target. We still highlight it first.
+            const cards = document.querySelectorAll('.c4-card');
+            cards.forEach(c => c.style.borderColor = '');
+            card.style.borderColor = 'var(--primary)';
+            
+            // Show details in sidebar
+            showC4Detail(el);
+        });
+        
+        return card;
+    }
+
+    function zoomToLevel(level, containerId = null) {
+        state.c4Level = level;
+        state.c4ActiveContainer = containerId;
+        renderC4Explorer();
+        
+        // Clear details
+        showC4Detail(null);
+    }
+
+    function showC4Detail(el) {
+        const detailContent = document.getElementById('c4DetailContent');
+        if (!detailContent) return;
+        
+        if (!el) {
+            detailContent.innerHTML = `
+                <div class="detail-placeholder">
+                    <i class="fa-solid fa-cube"></i>
+                    <p>Klicke auf ein Element (eine Box) im C4-Modell, um Details, Technologiestack und Implementierungsdateien anzuzeigen.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const isContainer = el.type === 'container';
+        const isComponent = el.type === 'component';
+        
+        let c4LevelLabel = '';
+        if (el.type === 'actor') c4LevelLabel = 'Person / Stakeholder';
+        if (el.type === 'system-context') c4LevelLabel = 'System Kontext';
+        if (el.type === 'container') c4LevelLabel = 'Container (Deployable)';
+        if (el.type === 'component') c4LevelLabel = 'Component';
+        if (el.type === 'external') c4LevelLabel = 'Externes System';
+        
+        let badgeClass = el.type === 'container' ? 'usecase' : (el.type === 'component' ? 'code' : 'requirement');
+        
+        let fileLinkHtml = '';
+        if (el.file) {
+            fileLinkHtml = `
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">
+                    Dokumentiert in: <span class="btn-text-link" onclick="window.app.showTraceDetails('${el.title}')" style="cursor:pointer">${el.file}</span>
+                </div>
+                <button class="btn btn-secondary" onclick="window.app.showTraceDetails('${el.title}')" style="width:100%; margin-top: 8px;">
+                    <i class="fa-regular fa-file-lines"></i> Dokumentation anzeigen
+                </button>
+            `;
+            
+            // If it's a specific component, we can link to the code modal directly as well!
+            if (isComponent && el.file.endsWith('.ts') || el.file.endsWith('.tsx') || el.file.endsWith('.ino')) {
+                fileLinkHtml = `
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">
+                        Quellcodedatei: <span class="btn-text-link" onclick="window.app.openCodeView('${el.file}', 1)">${el.file}</span>
+                    </div>
+                    <button class="btn btn-secondary" onclick="window.app.openCodeView('${el.file}', 1)" style="width:100%; margin-top: 8px;">
+                        <i class="fa-solid fa-code"></i> Code im Editor anzeigen
+                    </button>
+                `;
+            }
+        }
+        
+        detailContent.innerHTML = `
+            <div class="detail-header">
+                <span class="node-badge ${badgeClass} detail-badge">${c4LevelLabel}</span>
+                <h4 class="detail-title">${el.title}</h4>
+            </div>
+            
+            <div class="detail-description">${el.description}</div>
+            
+            <div class="detail-section-title">Technologie</div>
+            <div style="font-size:12px;color:var(--text-secondary);background:rgba(0,0,0,0.1);padding:6px 10px;border-radius:6px;font-family:monospace;margin-bottom:16px">
+                ${el.tech || 'Keine Angabe'}
+            </div>
+            
+            ${fileLinkHtml}
+        `;
+    }
+
+    function getBoxIntersection(x1, y1, x2, y2, rx, ry, rw, rh) {
+        const cx = rx + rw / 2;
+        const cy = ry + rh / 2;
+        let tMin = 1;
+        const dx = x2 - cx;
+        const dy = y2 - cy;
+        
+        if (Math.abs(dx) > 1e-5) {
+            let t = (rx - cx) / dx;
+            if (t > 0 && t < tMin) {
+                const y = cy + t * dy;
+                if (y >= ry && y <= ry + rh) tMin = t;
+            }
+            t = (rx + rw - cx) / dx;
+            if (t > 0 && t < tMin) {
+                const y = cy + t * dy;
+                if (y >= ry && y <= ry + rh) tMin = t;
+            }
+        }
+        
+        if (Math.abs(dy) > 1e-5) {
+            let t = (ry - cy) / dy;
+            if (t > 0 && t < tMin) {
+                const x = cx + t * dx;
+                if (x >= rx && x <= rx + rw) tMin = t;
+            }
+            t = (ry + rh - cy) / dy;
+            if (t > 0 && t < tMin) {
+                const x = cx + t * dx;
+                if (x >= rx && x <= rx + rw) tMin = t;
+            }
+        }
+        
+        return {
+            x: cx + tMin * dx,
+            y: cy + tMin * dy
+        };
+    }
+
+    function drawC4Connections() {
+        const svg = document.getElementById('c4Svg');
+        const container = document.getElementById('c4BoardContainer');
+        if (!svg || !container) return;
+
+        // Clear existing drawn paths and texts (keep defs)
+        const defs = svg.querySelector('defs');
+        svg.innerHTML = '';
+        if (defs) svg.appendChild(defs);
+
+        // Get connections based on active level
+        let connections = [];
+        if (state.c4Level === 'context') {
+            connections = C4_DATA.context.connections || [];
+        } else if (state.c4Level === 'containers') {
+            connections = C4_DATA.containers.connections || [];
+        } else if (state.c4Level === 'components' && state.c4ActiveContainer) {
+            connections = C4_DATA.components[state.c4ActiveContainer].connections || [];
+        }
+
+        if (connections.length === 0) {
+            svg.style.width = '0px';
+            svg.style.height = '0px';
+            return;
+        }
+
+        // Set SVG size to match container scrollHeight and scrollWidth
+        const scrollWidth = container.scrollWidth;
+        const scrollHeight = container.scrollHeight;
+        svg.setAttribute('width', scrollWidth);
+        svg.setAttribute('height', scrollHeight);
+        svg.style.width = scrollWidth + 'px';
+        svg.style.height = scrollHeight + 'px';
+
+        const containerRect = container.getBoundingClientRect();
+        const isDark = document.body.classList.contains('dark-mode');
+
+        connections.forEach(conn => {
+            const elFrom = document.querySelector(`[data-id="${conn.from}"]`);
+            const elTo = document.querySelector(`[data-id="${conn.to}"]`);
+
+            if (!elFrom || !elTo) return;
+
+            const rectFrom = elFrom.getBoundingClientRect();
+            const rectTo = elTo.getBoundingClientRect();
+
+            // Card positions relative to the container, considering scrolling
+            const boxA = {
+                x: rectFrom.left - containerRect.left + container.scrollLeft,
+                y: rectFrom.top - containerRect.top + container.scrollTop,
+                w: rectFrom.width,
+                h: rectFrom.height
+            };
+
+            const boxB = {
+                x: rectTo.left - containerRect.left + container.scrollLeft,
+                y: rectTo.top - containerRect.top + container.scrollTop,
+                w: rectTo.width,
+                h: rectTo.height
+            };
+
+            const cxA = boxA.x + boxA.w / 2;
+            const cyA = boxA.y + boxA.h / 2;
+            const cxB = boxB.x + boxB.w / 2;
+            const cyB = boxB.y + boxB.h / 2;
+
+            // Calculate start and end at boundaries of boxes
+            const start = getBoxIntersection(cxA, cyA, cxB, cyB, boxA.x, boxA.y, boxA.w, boxA.h);
+            const end = getBoxIntersection(cxB, cyB, cxA, cyA, boxB.x, boxB.y, boxB.w, boxB.h);
+
+            // Determine stroke color and marker arrowhead
+            let strokeColor = isDark ? '#00d4aa' : '#00a685';
+            let markerId = isDark ? 'arrow-teal' : 'arrow-teal-light';
+
+            if (state.c4Level === 'components') {
+                strokeColor = '#8b5cf6';
+                markerId = 'arrow-purple';
+            }
+
+            // Draw line
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M ${start.x} ${start.y} L ${end.x} ${end.y}`);
+            path.setAttribute('stroke', strokeColor);
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('marker-end', `url(#${markerId})`);
+            
+            // Context lines to external or database can be dashed
+            if (conn.to === 'external_db' || elTo.classList.contains('external')) {
+                path.setAttribute('stroke-dasharray', '5,5');
+            }
+            
+            svg.appendChild(path);
+
+            // Add text label centered on the line
+            if (conn.text) {
+                const midX = (start.x + end.x) / 2;
+                const midY = (start.y + end.y) / 2;
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.textContent = conn.text;
+                text.setAttribute('font-size', '9px');
+                text.setAttribute('font-family', 'var(--font-body)');
+                text.setAttribute('font-weight', '500');
+                text.setAttribute('fill', isDark ? '#a3b8b5' : '#4a5c59');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.setAttribute('x', midX);
+                text.setAttribute('y', midY);
+
+                // Add to SVG to calculate width/height
+                svg.appendChild(text);
+                const bbox = text.getBBox();
+                svg.removeChild(text);
+
+                // Add a styled background rectangle for the text
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', bbox.x - 6);
+                rect.setAttribute('y', bbox.y - 3);
+                rect.setAttribute('width', bbox.width + 12);
+                rect.setAttribute('height', bbox.height + 6);
+                rect.setAttribute('fill', isDark ? '#070e0d' : '#f3f7f6'); // Match body background
+                rect.setAttribute('rx', '4');
+                rect.setAttribute('ry', '4');
+                rect.setAttribute('stroke', isDark ? 'rgba(0, 212, 170, 0.15)' : 'rgba(0, 180, 144, 0.15)');
+                rect.setAttribute('stroke-width', '1');
+
+                g.appendChild(rect);
+                g.appendChild(text);
+                svg.appendChild(g);
+            }
+        });
+    }
+
+    // Recalculate on window resize
+    window.addEventListener('resize', () => {
+        if (state.activeTab === 'c4-tab') {
+            drawC4Connections();
+        }
+    });
+
+    // Also draw connections on scroll to prevent alignment lag
+    const c4BoardContainer = document.getElementById('c4BoardContainer');
+    if (c4BoardContainer) {
+        c4BoardContainer.addEventListener('scroll', () => {
+            if (state.activeTab === 'c4-tab') {
+                drawC4Connections();
+            }
+        });
+    }
 
     // 14. Start Application
     updateStats();

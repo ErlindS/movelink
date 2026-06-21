@@ -1079,3 +1079,172 @@ body {
         max-height: 300px;
     }
 }
+
+/* C4 Explorer Tab Styles */
+.c4-board-container {
+    overflow: auto;
+    position: relative;
+    background: rgba(0,0,0,0.1);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 480px;
+    padding: 24px;
+    width: 100%;
+}
+
+.c4-board {
+    display: grid;
+    gap: 24px;
+    width: 100%;
+    max-width: 800px;
+    transition: var(--transition-smooth);
+}
+
+.c4-grid-context {
+    grid-template-columns: 1fr 1.5fr 1fr;
+    align-items: center;
+}
+
+.c4-grid-containers {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: stretch;
+}
+
+.c4-grid-components {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    align-items: start;
+}
+
+/* C4 Card Boxes styling */
+.c4-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition-smooth);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.c4-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: 0 8px 24px var(--primary-glow);
+}
+
+/* Types of boxes */
+.c4-card.actor {
+    background-color: #082f49;
+    border-color: #0284c7;
+    border-radius: 30px; /* rounded-pill like shape for actors */
+    text-align: center;
+}
+.c4-card.actor:hover {
+    border-color: #38bdf8;
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+}
+
+.c4-card.system-context {
+    background-color: #0b1f1a;
+    border-color: var(--primary);
+    border-width: 2px;
+}
+
+.c4-card.container {
+    background-color: #0a1715;
+    border-color: var(--primary);
+}
+
+.c4-card.component {
+    background-color: #171520;
+    border-color: rgba(139, 92, 246, 0.4);
+    border-left: 4px solid #8b5cf6;
+}
+.c4-card.component:hover {
+    border-color: #8b5cf6;
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.25);
+}
+
+.c4-card.external {
+    background-color: #1e1e1e;
+    border-color: #404040;
+}
+.c4-card.external:hover {
+    border-color: #737373;
+    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.05);
+}
+
+/* C4 Header Text inside cards */
+.c4-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+}
+
+.c4-title {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.c4-card.actor .c4-title {
+    font-size: 15px;
+    color: #e0f2fe;
+}
+
+.c4-tech {
+    font-family: monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.c4-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Connectors Overlay and Grid lines */
+.c4-connector-line {
+    position: absolute;
+    stroke: var(--border-color);
+    stroke-width: 1.5;
+    fill: none;
+}
+
+.c4-connector-text {
+    font-size: 8px;
+    font-weight: 600;
+    fill: var(--text-muted);
+    font-family: monospace;
+}
+
+/* Zoom Out button and Breadcrumbs styling */
+.c4-breadcrumbs span {
+    transition: var(--transition-smooth);
+}
+.c4-breadcrumbs span:hover {
+    color: var(--primary-hover);
+}
+.c4-breadcrumbs span.active {
+    color: var(--text-primary);
+    cursor: default;
+}
+.c4-breadcrumbs span.separator {
+    color: var(--text-muted);
+}
+

@@ -2,6 +2,10 @@
 
 Diese Verzeichnis enthält die UI-Komponenten der Mobile-/Web-Anwendung (z.B. Visualisierungen, Charts, Navigation).
 
+## C4-Architektur-Ebene
+* **C4-Ebene:** Component
+* **Deployable:** Nein (Läuft als Teil des Mobile App Containers)
+
 ## Datenfluss in UI-Komponenten
 
 Die Komponenten erhalten Daten über Props oder den globalen Store und rendern diese reaktiv.
