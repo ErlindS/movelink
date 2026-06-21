@@ -329,9 +329,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 9. Render E2E Traceability Tree
+    // Helper to resolve a physical file to its logical C4 Component or Container
+    function getC4ElementForFile(filePath, reqId) {
+        // 1. Check direct component file matches from C4 data
+        for (const containerId in C4_DATA.components) {
+            const containerComponents = C4_DATA.components[containerId].elements;
+            for (const comp of containerComponents) {
+                if (filePath === comp.file) {
+                    return { name: comp.title, type: 'component', id: comp.id, container: containerId };
+                }
+            }
+        }
+
+        // 2. Fallbacks / mappings for source code files to logical components
+        const lowerPath = filePath.toLowerCase();
+        
+        if (lowerPath.includes('sensorcard.tsx')) {
+            return { name: 'SensorCard UI', type: 'component', id: 'sensor_card', container: 'app' };
+        }
+        if (lowerPath.includes('livechart.tsx')) {
+            return { name: 'LiveChart UI', type: 'component', id: 'live_chart', container: 'app' };
+        }
+        if (lowerPath.includes('sessioncard.tsx')) {
+            return { name: 'SessionCard UI', type: 'component', id: 'session_card', container: 'app' };
+        }
+        if (lowerPath.includes('profilecard') || lowerPath.includes('profile')) {
+            return { name: 'ProfileCard UI', type: 'component', id: 'profile_card', container: 'app' };
+        }
+        if (lowerPath.includes('useble.ts')) {
+            return { name: 'useBLE Hook', type: 'component', id: 'use_ble', container: 'app' };
+        }
+        if (lowerPath.includes('usewebsocket.ts') || lowerPath.includes('websocket')) {
+            return { name: 'useWebSocket Hook', type: 'component', id: 'use_ws', container: 'app' };
+        }
+
+        if (lowerPath.includes('executable.ino') && (reqId === 'FA5' || reqId === 'FA4')) {
+            return { name: 'Edge Impulse SDK', type: 'component', id: 'inference_engine', container: 'firmware' };
+        }
+        if (lowerPath.includes('imu') || lowerPath.includes('sensor')) {
+            return { name: 'LSM6DS3 Reader', type: 'component', id: 'imu_reader', container: 'firmware' };
+        }
+        if (lowerPath.includes('ble')) {
+            return { name: 'BLE Service', type: 'component', id: 'ble_service', container: 'firmware' };
+        }
+
+        // 3. Container-level mappings based on directory
+        if (lowerPath.startsWith('app/') || lowerPath.includes('/app/')) {
+            return { name: 'Mobile App Container', type: 'container', id: 'app' };
+        }
+        if (lowerPath.startsWith('embedded/') || lowerPath.includes('/embedded/')) {
+            return { name: 'Sensor Firmware Container', type: 'container', id: 'firmware' };
+        }
+        if (lowerPath.startsWith('doc/') || lowerPath.includes('backend') || lowerPath.includes('pflichtenheft')) {
+            return { name: 'Backend Container', type: 'container', id: 'backend' };
+        }
+
+        // Fallback
+        return { name: 'MoveLink System', type: 'system-context', id: 'system' };
+    }
+
+    // 9. Render E2E Traceability Tree (Horizontal Flow Chart)
     function renderTraceTree() {
         elements.traceTree.innerHTML = '';
         
+        // Hide tree-controls since everything is displayed fully expanded horizontally
+        const controls = document.querySelector('.tree-controls');
+        if (controls) controls.style.display = 'none';
+
         // Find all Use Cases (UC-X)
         const useCases = Object.values(DOCS_DATA.definitions)
             .filter(d => d.type === 'UC')
@@ -341,9 +405,11 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.traceTree.innerHTML = '<div class="detail-placeholder"><i class="fa-solid fa-triangle-exclamation"></i> Kein Trace-Baum Daten vorhanden. Scrape erneut.</div>';
             return;
         }
-        
+
+        const flowContainer = document.createElement('div');
+        flowContainer.className = 'trace-flow-container';
+
         useCases.forEach(uc => {
-            // Check if matches tree filter
             const filter = state.treeFilter.toLowerCase();
             
             // Find linked requirements
@@ -367,90 +433,154 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (!matchesFilter) return; // Skip if filter is set and doesn't match
+
+            const flowRow = document.createElement('div');
+            flowRow.className = 'trace-flow-row';
+
+            // 1. Use Case Column
+            const ucCol = document.createElement('div');
+            ucCol.className = 'uc-col';
             
-            const ucNode = document.createElement('div');
-            ucNode.className = 'tree-node expanded'; // Default expanded
-            
-            const ucHeader = document.createElement('div');
-            ucHeader.className = 'tree-node-header';
-            ucHeader.innerHTML = `
-                <i class="fa-solid fa-chevron-right tree-toggle-icon"></i>
-                <span class="node-badge usecase">${uc.id}</span>
-                <span class="node-title">${uc.title}</span>
-                <span class="node-subtext">${uc.file}:${uc.line}</span>
+            const ucCard = document.createElement('div');
+            ucCard.className = 'trace-flow-card uc-card';
+            ucCard.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="node-badge usecase">${uc.id}</span>
+                    <i class="fa-solid fa-chevron-down flow-toggle-icon" style="font-size: 10px; color: var(--text-muted); transition: var(--transition-smooth);"></i>
+                </div>
+                <div class="card-title">${uc.title}</div>
+                <div class="card-file-info"><i class="fa-regular fa-folder-open"></i> ${uc.file}:${uc.line}</div>
             `;
-            
-            // Toggle open / close
-            ucHeader.addEventListener('click', () => {
-                ucNode.classList.toggle('expanded');
+            ucCard.addEventListener('click', () => {
+                flowRow.classList.toggle('collapsed-row');
             });
-            
-            const ucChildren = document.createElement('div');
-            ucChildren.className = 'tree-node-children';
-            
-            // Render linked requirements
+            ucCol.appendChild(ucCard);
+            flowRow.appendChild(ucCol);
+
+            // 2. Requirements Container (stores requirement rows)
+            const reqsContainer = document.createElement('div');
+            reqsContainer.className = 'trace-flow-requirements-container';
+
             if (linkedReqs.length === 0) {
-                ucChildren.innerHTML = '<div class="code-ref-node" style="color:var(--text-muted)"><i class="fa-solid fa-info-circle"></i> Keine Anforderungen verknüpft</div>';
+                // Placeholder Row for no linked requirements
+                const reqRow = document.createElement('div');
+                reqRow.className = 'trace-flow-requirement-row';
+
+                const reqCol = document.createElement('div');
+                reqCol.className = 'req-col';
+                reqCol.innerHTML = `
+                    <div class="trace-flow-card placeholder-card" style="border-left: 4px solid var(--text-muted); opacity:0.7;">
+                        <div class="card-title" style="color:var(--text-muted); font-style:italic;">
+                            <i class="fa-solid fa-info-circle"></i> Keine Anforderungen verknüpft
+                        </div>
+                    </div>
+                `;
+
+                const codeCol = document.createElement('div');
+                codeCol.className = 'code-col';
+                codeCol.innerHTML = `
+                    <div class="trace-flow-card placeholder-card" style="border-left: 4px solid var(--text-muted); opacity:0.7;">
+                        <div class="card-title" style="color:var(--text-muted); font-style:italic;">
+                            -
+                        </div>
+                    </div>
+                `;
+
+                reqRow.appendChild(reqCol);
+                reqRow.appendChild(codeCol);
+                reqsContainer.appendChild(reqRow);
             } else {
                 linkedReqs.forEach(req => {
-                    const reqNode = document.createElement('div');
-                    reqNode.className = 'tree-node expanded';
+                    const reqRow = document.createElement('div');
+                    reqRow.className = 'trace-flow-requirement-row';
+
+                    // Requirement Column
+                    const reqCol = document.createElement('div');
+                    reqCol.className = 'req-col';
                     
-                    const reqHeader = document.createElement('div');
-                    reqHeader.className = 'tree-node-header';
-                    reqHeader.innerHTML = `
-                        <i class="fa-solid fa-chevron-right tree-toggle-icon"></i>
-                        <span class="node-badge requirement">${req.id}</span>
-                        <span class="node-title">${req.title}</span>
-                        <span class="node-subtext">${req.file}:${req.line}</span>
+                    const badgeClass = req.type === 'FA' ? 'requirement' : 'code';
+                    const reqCard = document.createElement('div');
+                    reqCard.className = 'trace-flow-card req-card';
+                    reqCard.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="node-badge ${badgeClass}">${req.id}</span>
+                            <i class="fa-solid fa-chevron-down flow-toggle-icon" style="font-size: 10px; color: var(--text-muted); transition: var(--transition-smooth);"></i>
+                        </div>
+                        <div class="card-title">${req.title}</div>
+                        <div class="card-file-info"><i class="fa-regular fa-folder-open"></i> ${req.file}:${req.line}</div>
                     `;
-                    
-                    reqHeader.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        reqNode.classList.toggle('expanded');
+                    reqCard.addEventListener('click', () => {
+                        reqRow.classList.toggle('collapsed-req');
                     });
-                    
-                    const reqChildren = document.createElement('div');
-                    reqChildren.className = 'tree-node-children';
-                    
-                    // Render code files implementing this requirement
+                    reqCol.appendChild(reqCard);
+                    reqRow.appendChild(reqCol);
+
+                    // Code References Column
+                    const codeCol = document.createElement('div');
+                    codeCol.className = 'code-col';
+
                     const refs = DOCS_DATA.references[req.id] || [];
-                    
+
                     if (refs.length === 0) {
-                        reqChildren.innerHTML = '<div class="code-ref-node" style="color:var(--text-muted)"><i class="fa-solid fa-triangle-exclamation"></i> Nicht im Code referenziert</div>';
+                        const emptyCard = document.createElement('div');
+                        emptyCard.className = 'trace-flow-card placeholder-card';
+                        emptyCard.style.borderLeft = '4px solid var(--text-muted)';
+                        emptyCard.style.opacity = '0.7';
+                        emptyCard.style.cursor = 'default';
+                        emptyCard.innerHTML = `
+                            <div class="card-title" style="color:var(--text-muted); font-style:italic;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Nicht im Code referenziert
+                            </div>
+                        `;
+                        codeCol.appendChild(emptyCard);
                     } else {
                         refs.forEach(ref => {
-                            const refLeaf = document.createElement('div');
-                            refLeaf.className = 'code-ref-node';
-                            
                             const isCode = ref.file.endsWith('.ts') || ref.file.endsWith('.tsx') || ref.file.endsWith('.ino') || ref.file.endsWith('.cpp');
-                            const iconClass = isCode ? 'fa-solid fa-code code-file-icon' : 'fa-regular fa-file-lines';
+                            const iconClass = isCode ? 'fa-solid fa-code' : 'fa-regular fa-file-lines';
+                            const codeCard = document.createElement('div');
+                            codeCard.className = 'trace-flow-card code-card';
                             
-                            refLeaf.innerHTML = `
-                                <i class="${iconClass}"></i>
-                                <span><strong>${ref.file}</strong> (Zeile ${ref.line})</span>
-                                <span class="code-snippet">${escapeHtml(ref.context)}</span>
+                            const filename = ref.file.split('/').pop();
+                            const c4El = getC4ElementForFile(ref.file, req.id);
+                            
+                            // Style code references visually as their corresponding C4 components/containers
+                            const c4BadgeClass = c4El.type === 'container' ? 'usecase' : (c4El.type === 'component' ? 'code' : 'requirement');
+                            const borderLeftColor = c4El.type === 'container' ? 'var(--primary)' : (c4El.type === 'component' ? '#8b5cf6' : '#627c78');
+                            const badgeLabel = c4El.type === 'container' ? 'C4 Container' : 'C4 Component';
+                            
+                            codeCard.style.borderLeft = `4px solid ${borderLeftColor}`;
+                            codeCard.innerHTML = `
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <i class="${iconClass}" style="color:${borderLeftColor}"></i>
+                                        <strong style="color:var(--text-primary)">${c4El.name}</strong>
+                                    </div>
+                                    <span class="node-badge ${c4BadgeClass}" style="font-size:8px; padding:2px 4px;">${badgeLabel}</span>
+                                </div>
+                                <div class="card-file-info" style="font-size:10px; margin-top:2px;">
+                                    <i class="fa-regular fa-file-code"></i> ${filename} (Zeile ${ref.line})
+                                </div>
+                                <div class="code-snippet-box">${escapeHtml(ref.context)}</div>
                             `;
-                            
-                            refLeaf.addEventListener('click', (e) => {
-                                e.stopPropagation();
+
+                            codeCard.addEventListener('click', () => {
                                 openCodeView(ref.file, ref.line);
                             });
-                            
-                            reqChildren.appendChild(refLeaf);
+
+                            codeCol.appendChild(codeCard);
                         });
                     }
                     
-                    reqNode.appendChild(reqHeader);
-                    reqNode.appendChild(reqChildren);
-                    ucChildren.appendChild(reqNode);
+                    reqRow.appendChild(codeCol);
+                    reqsContainer.appendChild(reqRow);
                 });
             }
-            
-            ucNode.appendChild(ucHeader);
-            ucNode.appendChild(ucChildren);
-            elements.traceTree.appendChild(ucNode);
+
+            flowRow.appendChild(reqsContainer);
+            flowContainer.appendChild(flowRow);
         });
+
+        elements.traceTree.appendChild(flowContainer);
     }
 
     function escapeHtml(text) {
