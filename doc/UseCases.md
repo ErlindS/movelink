@@ -28,9 +28,9 @@ Hier werden die primären Interaktionen zwischen dem Trainierenden und dem MoveL
   2. **Eingabe**: Der Trainierende klickt auf "Training starten".
      **Ausgabe**: Die App zeigt die Detailansicht des ausgewählten Trainings sowie die Start-Schaltfläche.
   3. **Eingabe**: Der Trainierende drückt den "Start"-Button.
-     **Ausgabe**: Die App demonstriert grafisch die auszuführende Übungsbewegung.
+     **Ausgabe**: Die App demonstriert grafisch die auszuführende Übungsbewegung. *(Bezug: FA8)*
   4. **Eingabe**: Der Trainierende führt die Bewegung aus.
-     **Ausgabe**: Die App visualisiert die Bewegung in Echtzeit, vergleicht sie mit der Zielvorgabe und gibt positives Feedback bei korrekter Ausführung.
+     **Ausgabe**: Die App visualisiert die Bewegung in Echtzeit, vergleicht sie mit der Zielvorgabe und gibt positives Feedback bei korrekter Ausführung. *(Bezug: FA5, FA6, FA9)*
 
 ---
 

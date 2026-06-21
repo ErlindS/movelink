@@ -78,6 +78,11 @@
                             <i class="fa-solid fa-cubes"></i> C4-Modell
                         </button>
                     </li>
+                    <li>
+                        <button class="nav-btn" data-target="flow-tab">
+                            <i class="fa-solid fa-arrows-spin"></i> Daten- &amp; Kontrollfluss
+                        </button>
+                    </li>
                 </ul>
             </nav>
             
@@ -238,6 +243,49 @@
                                 </div>
                             </div>
                         </aside>
+                    </div>
+                </section>
+                
+                <!-- Tab 6: Daten- & Kontrollfluss -->
+                <section id="flow-tab" class="tab-content">
+                    <div class="glass-card" style="padding: 24px;">
+                        <div class="card-header" style="margin-bottom: 20px;">
+                            <h2 class="card-title">Daten- und Kontrollfluss (End-to-End)</h2>
+                            <p class="card-subtitle">E2E-Ablauf von den physischen Sensor-Rohdaten bis zur persistenten Datenbankaufzeichnung.</p>
+                        </div>
+                        <div class="flow-container" style="display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; width: 100%;">
+                            <div class="mermaid" style="background: rgba(255, 255, 255, 0.02); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 800px; display: flex; justify-content: center;">
+sequenceDiagram
+    autonumber
+    participant Sensor as LSM6DS3 (Phys. Sensor)
+    participant MC as XIAO MCU (Firmware)
+    participant App as Mobile App (useBLE Hook)
+    participant UI as LiveChart / UI State
+    participant WebS as WebSocket Client
+    participant Backend as Node.js Backend
+    participant DB as PostgreSQL Datenbank
+
+    Note over Sensor, MC: Sensorik & Inferenz (50 Hz)
+    Sensor->>MC: Analoge/Digitale Rohwerte (Beschleunigung & Gyro)
+    Note over MC: Edge Impulse SDK
+    MC->>MC: CNN-Inferenz zur Übungsklassifizierung (z.B. Curl)
+    
+    Note over MC, App: Bluetooth Low Energy
+    MC->>App: BLE Notification (IMU-Rohdaten & Klassifikation)
+    
+    Note over App, UI: State Management & UI
+    App->>UI: Update State & LiveChart Visualisierung
+    
+    Note over UI, Backend: Echtzeit-Synchronisation
+    UI->>WebS: Sende Trainingsdaten
+    WebS->>Backend: WebSocket-Datenpaket
+    
+    Note over Backend, DB: Persistierung
+    Backend->>DB: SQL INSERT (Trainingsverlauf & Metadaten)
+    DB-->>Backend: Bestätigung (INSERT OK)
+    Backend-->>WebS: Bestätigung (Sync OK)
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>

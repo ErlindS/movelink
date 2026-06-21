@@ -87,7 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 'trace-tree-tab': 'E2E Trace-Baum',
                 'matrix-tab': 'Matrix-Ansicht',
                 'graph-tab': 'Netzwerk-Graph',
-                'c4-tab': 'C4-Modell Explorer'
+                'c4-tab': 'C4-Modell Explorer',
+                'flow-tab': 'Daten- & Kontrollfluss'
             };
             elements.activeTabTitle.textContent = labelMap[target];
             
@@ -100,6 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 initNetworkGraph();
             } else if (target === 'c4-tab') {
                 renderC4Explorer();
+            } else if (target === 'flow-tab') {
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.init(undefined, document.querySelectorAll('#flow-tab .mermaid'));
+                }
             }
         });
     });

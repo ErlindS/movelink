@@ -47,15 +47,28 @@ export function useBLE() {
     // BLE is not available on web
     if (Platform.OS === 'web') return;
 
-    manager.current = new BleManager();
-
-    const subscription = manager.current.onStateChange((state) => {
-      if (state === State.PoweredOn) subscription.remove();
-    }, true);
+    let subscription: { remove: () => void } | null = null;
+    try {
+      manager.current = new BleManager();
+      subscription = manager.current.onStateChange((state) => {
+        if (state === State.PoweredOn) subscription?.remove();
+      }, true);
+    } catch (e) {
+      console.warn("BleManager could not be initialized. This is expected inside Expo Go. Standing by for Dev Client build.");
+      manager.current = null;
+    }
 
     return () => {
-      subscription.remove();
-      manager.current?.destroy();
+      if (subscription) {
+        try {
+          subscription.remove();
+        } catch (e) {}
+      }
+      if (manager.current) {
+        try {
+          manager.current.destroy();
+        } catch (e) {}
+      }
     };
   }, []);
 
@@ -92,16 +105,22 @@ export function useBLE() {
           const reading = parseIMUPacket(characteristic.value);
           if (!reading) return;
           setReading(reading);
-          if (isRecording) addReading(reading);
+          if (useTrainingStore.getState().isRecording) {
+            useTrainingStore.getState().addReading(reading);
+          }
         }
       );
     } catch {
       setStatus('error');
     }
-  }, [isRecording, handleDisconnect]);
+  }, [handleDisconnect]);
 
   const startScan = useCallback(() => {
-    if (!manager.current || Platform.OS === 'web') return;
+    if (!manager.current || Platform.OS === 'web') {
+      console.warn("Scanning requires a development client build with native BLE support.");
+      return;
+    }
+
     setStatus('scanning');
 
     manager.current.startDeviceScan(
@@ -125,9 +144,13 @@ export function useBLE() {
   const disconnectDevice = useCallback(async () => {
     if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
     const { deviceId } = useBLEStore.getState();
-    if (deviceId) await manager.current?.cancelDeviceConnection(deviceId);
+    if (deviceId && Platform.OS !== 'web' && manager.current) {
+      try {
+        await manager.current.cancelDeviceConnection(deviceId);
+      } catch (e) {}
+    }
     disconnect();
-  }, []);
+  }, [disconnect]);
 
   return { startScan, stopScan, disconnectDevice };
 }

@@ -385,6 +385,37 @@ def create_app_components_diagram():
     draw_c4_arrow(d, 408, 125, 370, 85, "Nutzt API", purple)
     return d
 
+def create_data_control_flow_diagram():
+    d = Drawing(480, 185)
+    d.add(Rect(0, 0, 480, 185, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    
+    teal = colors.HexColor('#00a685')
+    purple = colors.HexColor('#8b5cf6')
+    grey = colors.HexColor('#666666')
+    
+    # Draw 5 blocks
+    draw_c4_box(d, 15, 60, 80, 60, "LSM6DS3 Sensor", "Hardware IMU", "Erfasst Rohbeschleunigung & Gyro mit 50Hz.", "external")
+    draw_c4_box(d, 105, 60, 80, 60, "XIAO MCU", "nRF52840 MCU", "Filtert Rohwerte, führt Edge Impulse Inferenz aus.", "component")
+    draw_c4_box(d, 200, 60, 80, 60, "Mobile App", "React Native", "Empfängt BLE-Pakete, aktualisiert UI State.", "container")
+    draw_c4_box(d, 295, 60, 80, 60, "Backend API", "Node.js Express", "Empfängt Trainingsdaten per WebSockets.", "container")
+    draw_c4_box(d, 390, 60, 80, 60, "Datenbank", "PostgreSQL", "Speichert historische Trainingsdaten.", "external")
+    
+    # --- Forward Data Flow (Upper path, y=95) ---
+    draw_c4_arrow(d, 95, 95, 105, 95, "Rohwerte", grey)
+    draw_c4_arrow(d, 185, 95, 200, 95, "BLE Daten", teal)
+    draw_c4_arrow(d, 280, 95, 295, 95, "WS Daten", teal)
+    draw_c4_arrow(d, 375, 95, 390, 95, "SQL Insert", grey)
+    
+    # --- Backward Control & Feedback Flow (Lower path, y=85) ---
+    draw_c4_arrow(d, 390, 85, 375, 85, "Ack OK", grey, is_dashed=True)
+    draw_c4_arrow(d, 295, 85, 280, 85, "Sync OK", teal, is_dashed=True)
+    draw_c4_arrow(d, 200, 85, 185, 85, "BLE Ctrl", teal, is_dashed=True)
+    
+    # Explanatory annotations
+    d.add(String(240, 25, "Datenfluss: Sensorik (50Hz) -> Inferenz -> BLE Notification -> UI State -> WebSockets -> DB", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
+    d.add(String(240, 13, "Kontroll- & Feedbackfluss: Datenbank-Ack -> Sync-Bestätigung -> BLE-Steuerung", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
+    return d
+
 # --- Main PDF Generator ---
 def main():
     root_dir = Path(__file__).parent.resolve()
@@ -689,6 +720,15 @@ def main():
     story.append(Paragraph("Dieses Diagramm zeigt die internen Komponenten des React Native Containers (Mobile App), aufgeteilt in UI-Elemente und Custom Hooks, die mit BLE und dem WebSocket-Server interagieren.", styles['NormalText']))
     story.append(Spacer(1, 5))
     story.append(create_app_components_diagram())
+    story.append(Spacer(1, 10))
+    
+    story.append(PageBreak())
+    
+    # ------------------ SECTION 5: DATA AND CONTROL FLOW ------------------
+    story.append(Paragraph("5. End-to-End Daten- und Kontrollfluss", styles['Heading1']))
+    story.append(Paragraph("Die folgende Abbildung veranschaulicht den E2E-Datenstrom (Sensorsignal-Erfassung, lokale Inferenz, kabellose Übertragung und persistente Aufzeichnung) sowie den Kontrollfluss (Bestätigungsschleifen und Steuerbefehle) über das gesamte MoveLink-System.", styles['NormalText']))
+    story.append(Spacer(1, 10))
+    story.append(create_data_control_flow_diagram())
     story.append(Spacer(1, 10))
     
     # Build Document

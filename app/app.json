@@ -15,12 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.erlinds.movelink",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "MoveLink benötigt Bluetooth, um IMU-Sensordaten vom XIAO nRF52840 zu empfangen.",
         "NSBluetoothPeripheralUsageDescription": "MoveLink benötigt Bluetooth, um IMU-Sensordaten vom XIAO nRF52840 zu empfangen."
       }
     },
     "android": {
+      "package": "com.erlinds.movelink",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0D0D0D"
@@ -45,10 +47,15 @@
         "react-native-ble-plx",
         {
           "isBackgroundEnabled": false,
-          "modes": ["peripheral", "central"],
+          "modes": [
+            "peripheral",
+            "central"
+          ],
           "bluetoothAlwaysPermission": "MoveLink benötigt Bluetooth, um IMU-Sensordaten zu empfangen."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

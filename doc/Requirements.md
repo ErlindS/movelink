@@ -27,6 +27,12 @@ Das System muss die empfangenen Sensordaten und Bewegungen in Echtzeit visualisi
 **FA7**: Historische Analyse
 Das System muss historische Bewegungsdaten grafisch und statistisch anzeigen können. *(Bezug: UC-3)*
 
+**FA8**: Übungs-Demonstration
+Das System muss eine grafische Demonstration der auszuführenden Übungsbewegung anzeigen, sobald das Training gestartet wird. *(Bezug: UC-2)*
+
+**FA9**: Biofeedback und Auswertung
+Das System muss den Bewegungsfortschritt in Echtzeit visualisieren, mit der Zielvorgabe vergleichen und bei korrekter Durchführung positives Feedback (visuell und haptisch) ausgeben. *(Bezug: UC-2)*
+
 ---
 
 ## Nicht-funktionale Anforderungen (Muss-Kriterien)

@@ -1,14 +1,15 @@
 /**
- * @implements FA2, FA3, FA4, FA5, FA6
+ * @implements FA1, FA4, FA6, FA8, FA9
  */
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/Colors';
-import { useBLEStore, useTrainingStore } from '@/store';
+import { useBLEStore, useTrainingStore, EXERCISE_TARGETS, ExerciseType } from '@/store';
 import { useBLE } from '@/hooks/useBLE';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { SensorCard } from '@/components/SensorCard';
@@ -17,6 +18,9 @@ import { AnimatedValue } from '@/components/AnimatedValue';
 import { GradientButton } from '@/components/GradientButton';
 import { FadeSlide } from '@/components/FadeSlide';
 import { AnimatedLogo } from '@/components/AnimatedLogo';
+import { GlassCard } from '@/components/GlassCard';
+import { ExerciseDemo } from '@/components/ExerciseDemo';
+import { ProgressRing } from '@/components/ProgressRing';
 
 function RecBadge() {
   const opacity = useSharedValue(1);
@@ -37,12 +41,55 @@ function RecBadge() {
 }
 
 export default function TrainingScreen() {
-  const { status, deviceName, latestReading } = useBLEStore();
-  const { isRecording, liveBuffer, startSession, stopSession } = useTrainingStore();
+  const { status: bleStatus, deviceName, latestReading } = useBLEStore();
+  const { 
+    status: trainingStatus,
+    exercise,
+    exerciseState,
+    repCount,
+    currentAngle,
+    countdown,
+    isRecording,
+    liveBuffer,
+    startTraining,
+    stopTraining,
+    resetTraining,
+    setCountdown,
+    startSession
+  } = useTrainingStore();
+  
   const { startScan, disconnectDevice } = useBLE();
   useWebSocket();
 
-  const isConnected = status === 'connected';
+  const [selectedEx, setSelectedEx] = useState<ExerciseType>('squat');
+
+  const isConnected = bleStatus === 'connected';
+
+  // Countdown controller
+  useEffect(() => {
+    if (trainingStatus !== 'preparing') return;
+    
+    setCountdown(3);
+    const timer = setInterval(() => {
+      const currentVal = useTrainingStore.getState().countdown;
+      const nextVal = currentVal - 1;
+      
+      if (nextVal <= 0) {
+        clearInterval(timer);
+        if (Platform.OS !== 'web') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        }
+        startSession();
+      } else {
+        setCountdown(nextVal);
+        if (Platform.OS !== 'web') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [trainingStatus]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -58,49 +105,125 @@ export default function TrainingScreen() {
           <Text style={styles.pageTitle}>Training</Text>
         </FadeSlide>
 
-        {/* Sensor */}
-        <FadeSlide delay={100}>
-          <SensorCard status={status} deviceName={deviceName} onScan={startScan} onDisconnect={disconnectDevice} />
-        </FadeSlide>
-
-        {/* Live readings */}
-        {isConnected && latestReading && (
-          <FadeSlide delay={140}>
-            <View style={styles.readingsBlock}>
-              <Text style={styles.sectionLabel}>Accelerometer · m/s²</Text>
-              <View style={styles.grid}>
-                <AnimatedValue label="X" value={latestReading.accelX} unit="m/s²" color={Colors.accentX} />
-                <AnimatedValue label="Y" value={latestReading.accelY} unit="m/s²" color={Colors.accentY} />
-                <AnimatedValue label="Z" value={latestReading.accelZ} unit="m/s²" color={Colors.accentZ} />
-              </View>
-              <Text style={styles.sectionLabel}>Gyroskop · rad/s</Text>
-              <View style={styles.grid}>
-                <AnimatedValue label="X" value={latestReading.gyroX} unit="rad/s" color={Colors.accentX} />
-                <AnimatedValue label="Y" value={latestReading.gyroY} unit="rad/s" color={Colors.accentY} />
-                <AnimatedValue label="Z" value={latestReading.gyroZ} unit="rad/s" color={Colors.accentZ} />
-              </View>
-            </View>
+        {/* 1. BLE Connection Status (Always visible at top when not actively training) */}
+        {trainingStatus === 'idle' && (
+          <FadeSlide delay={100}>
+            <SensorCard status={bleStatus} deviceName={deviceName} onScan={startScan} onDisconnect={disconnectDevice} />
           </FadeSlide>
         )}
 
-        {isConnected && (
-          <FadeSlide delay={180}>
-            <LiveChart data={liveBuffer} />
-          </FadeSlide>
+        {/* 2. PREPARING STATE: Demonstration and Countdown */}
+        {isConnected && trainingStatus === 'preparing' && (
+          <View style={styles.preparingContainer}>
+            <FadeSlide delay={100}>
+              <ExerciseDemo 
+                exercise={exercise} 
+                label={exercise === 'squat' ? 'Kniebeugen Vorführung' : 'Bizeps-Curls Vorführung'} 
+              />
+            </FadeSlide>
+
+            <FadeSlide delay={150}>
+              <GlassCard style={styles.countdownCard}>
+                <Text style={styles.countdownTitle}>Bereite dich vor...</Text>
+                <View style={styles.countdownCircle}>
+                  <Text style={styles.countdownNumber}>{countdown}</Text>
+                </View>
+                <Text style={styles.countdownSub}>Nimm deine Ausgangsposition ein!</Text>
+              </GlassCard>
+            </FadeSlide>
+
+            <FadeSlide delay={200}>
+              <GradientButton label="✖  Abbrechen" variant="ghost" onPress={resetTraining} />
+            </FadeSlide>
+          </View>
         )}
 
-        {isConnected && (
-          <FadeSlide delay={220}>
-            {isRecording ? (
-              <GradientButton label="⬛  Training stoppen" variant="stop" onPress={stopSession} />
-            ) : (
-              <GradientButton label="▶  Training starten" variant="primary" onPress={startSession} />
+        {/* 3. RECORDING STATE: Realtime Tracking, Angle Ring and Reps */}
+        {isConnected && trainingStatus === 'recording' && (
+          <View style={styles.trackingContainer}>
+            <FadeSlide delay={100}>
+              <View style={styles.trackingHeader}>
+                <Text style={styles.trackingTitle}>
+                  {exercise === 'squat' ? '🏋️ Kniebeugen' : '💪 Bizeps-Curls'}
+                </Text>
+                <Text style={styles.trackingSub}>Ausführung läuft...</Text>
+              </View>
+            </FadeSlide>
+
+            <FadeSlide delay={150}>
+              <ProgressRing 
+                angle={currentAngle} 
+                targetAngle={EXERCISE_TARGETS[exercise]} 
+                repCount={repCount} 
+                exerciseState={exerciseState} 
+              />
+            </FadeSlide>
+
+            {/* Optional Collapsible Diagnostic Raw Data */}
+            <FadeSlide delay={200}>
+              <LiveChart data={liveBuffer} />
+            </FadeSlide>
+
+            {/* Real-time numerical grids */}
+            {latestReading && (
+              <FadeSlide delay={250}>
+                <View style={styles.readingsBlock}>
+                  <Text style={styles.sectionLabel}>Accelerometer · m/s²</Text>
+                  <View style={styles.grid}>
+                    <AnimatedValue label="X" value={latestReading.accelX} unit="m/s²" color={Colors.accentX} />
+                    <AnimatedValue label="Y" value={latestReading.accelY} unit="m/s²" color={Colors.accentY} />
+                    <AnimatedValue label="Z" value={latestReading.accelZ} unit="m/s²" color={Colors.accentZ} />
+                  </View>
+                </View>
+              </FadeSlide>
             )}
-          </FadeSlide>
+
+            <FadeSlide delay={300}>
+              <GradientButton label="⬛  Training beenden" variant="stop" onPress={stopTraining} />
+            </FadeSlide>
+          </View>
         )}
 
-        {/* Idle hint */}
-        {!isConnected && status === 'idle' && (
+        {/* 4. IDLE STATE: Exercise Selection & Start Trigger */}
+        {isConnected && trainingStatus === 'idle' && (
+          <View style={styles.idleActiveContainer}>
+            <FadeSlide delay={140}>
+              <Text style={styles.sectionLabel}>Wähle deine Übung</Text>
+              <View style={styles.exerciseSelector}>
+                <TouchableOpacity 
+                  style={[styles.exerciseCard, selectedEx === 'squat' && styles.exerciseCardActive]} 
+                  onPress={() => setSelectedEx('squat')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.exerciseIcon}>🏋️</Text>
+                  <Text style={styles.exerciseLabel}>Kniebeugen</Text>
+                  <Text style={styles.exerciseDesc}>Ziel: {EXERCISE_TARGETS.squat}°</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.exerciseCard, selectedEx === 'curl' && styles.exerciseCardActive]} 
+                  onPress={() => setSelectedEx('curl')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.exerciseIcon}>💪</Text>
+                  <Text style={styles.exerciseLabel}>Bizeps-Curls</Text>
+                  <Text style={styles.exerciseDesc}>Ziel: {EXERCISE_TARGETS.curl}°</Text>
+                </TouchableOpacity>
+              </View>
+            </FadeSlide>
+
+            <FadeSlide delay={180}>
+              <GradientButton 
+                label={`▶  ${selectedEx === 'squat' ? 'Kniebeugen' : 'Bizeps-Curls'} starten`} 
+                variant="primary" 
+                onPress={() => startTraining(selectedEx)} 
+              />
+            </FadeSlide>
+          </View>
+        )}
+
+        {/* 5. NO SENSOR CONNECTED HINT */}
+        {!isConnected && bleStatus === 'idle' && (
           <FadeSlide delay={200}>
             <LinearGradient
               colors={['rgba(0,212,170,0.08)', 'transparent']}
@@ -109,7 +232,7 @@ export default function TrainingScreen() {
               <Text style={styles.idleIcon}>📡</Text>
               <Text style={styles.idleTitle}>Kein Sensor verbunden</Text>
               <Text style={styles.idleBody}>
-                Schalte deinen XIAO nRF52840 ein und tippe auf "Verbinden".
+                Schalte deinen XIAO nRF52840 ein und tippe oben auf "Verbinden".
               </Text>
             </LinearGradient>
           </FadeSlide>
@@ -148,4 +271,48 @@ const styles = StyleSheet.create({
   idleIcon: { fontSize: 40, marginBottom: 4 },
   idleTitle: { color: Colors.text, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   idleBody: { color: Colors.textSub, fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
+
+  // Preparing State
+  preparingContainer: { gap: 16 },
+  countdownCard: { padding: 24, alignItems: 'center', gap: 14 },
+  countdownTitle: { color: Colors.textSub, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  countdownCircle: {
+    width: 90, height: 90, borderRadius: 45,
+    backgroundColor: Colors.surfaceActive,
+    borderWidth: 2, borderColor: Colors.primaryGlow,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: Colors.primary, shadowRadius: 10, shadowOpacity: 0.1,
+  },
+  countdownNumber: { color: Colors.primaryLight, fontSize: 38, fontWeight: '900' },
+  countdownSub: { color: Colors.text, fontSize: 14, fontWeight: '600', textAlign: 'center' },
+
+  // Recording Tracking State
+  trackingContainer: { gap: 16 },
+  trackingHeader: { alignItems: 'center', marginBottom: 4 },
+  trackingTitle: { color: Colors.text, fontSize: 22, fontWeight: '800' },
+  trackingSub: { color: Colors.textSub, fontSize: 12, fontWeight: '500' },
+
+  // Idle Selection State
+  idleActiveContainer: { gap: 16 },
+  exerciseSelector: { flexDirection: 'row', gap: 12 },
+  exerciseCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 20,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    gap: 6,
+  },
+  exerciseCardActive: {
+    backgroundColor: Colors.surfaceActive,
+    borderColor: Colors.primaryGlow,
+    shadowColor: Colors.primary,
+    shadowRadius: 12,
+    shadowOpacity: 0.08,
+  },
+  exerciseIcon: { fontSize: 28 },
+  exerciseLabel: { color: Colors.text, fontSize: 15, fontWeight: '700' },
+  exerciseDesc: { color: Colors.textSub, fontSize: 11, fontWeight: '500' },
 });
