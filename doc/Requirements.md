@@ -1,22 +1,48 @@
-Funktionale Anforderungen
-• FA1: Das System muss einen Reiter oder eine Navigationsmöglichkeit für Hardwaregeräte
-/ Trainings / vergangene Trainingseinheiten anzeigen. (aus UC-1, UC-2, UC-3)
-• FA2: Das System muss mir eine Liste von verfügbaren Hardwaregeräte und mit welchen
-Hardwaregeräten ich verbunden bin anzeigen. (aus UC-1)
-• FA3: Das System muss einen verbindungsaufbau mit dem Hardwaregerät herstellen
-können. (aus UC-1)
-• FA4: Das System muss eine Detailansicht für ein ausgewähltes Training anzeigen. (aus
-UC-2)
-• FA5: Das System muss Bewegungsdatenströme empfangen und verarbeiten können. (aus
-UC-2)
-• FA6: Das System muss die empfangenen Bewegungen in Echtzeit visualisieren. (aus
-UC-2)
-• FA7: Das System muss historische Bewegungsdaten grafisch anzeigen können. (aus
-UC-3)
-Nicht-funktionale Anforderungen – Muss-Kriterien
-• NF1 – Latenz: Die E2E-Latenz vom Sensor bis zur Darstellung muss ≤ 100 ms sein.
-• NF2 – Zuverlässigkeit: Bei einem Verbindungsabbruch muss die App den Nutzer
-benachrichtigen und automatisch Reconnect-Versuche starten.
-• NF3 – Usability: Das Pairing darf maximal zwei Nutzerinteraktionen erfordern.
-Rahmenbedingungen
-• R1: Die Applikationen muss auf android devices laufen.
+# Systemanforderungen (Requirements)
+
+Dieses Dokument definiert die funktionalen und nicht-funktionalen Anforderungen sowie die Randbedingungen des MoveLink-Systems.
+
+---
+
+## Funktionale Anforderungen
+
+**FA1**: Dashboard und Navigation
+Das System muss eine Navigationsstruktur (Reiter/Menü) für Hardwaregeräte, Trainings und vergangene Trainingseinheiten bereitstellen. *(Bezug: UC-1, UC-2, UC-3)*
+
+**FA2**: Geräte-Scanning
+Das System muss eine Liste verfügbarer Bluetooth-Hardwaregeräte anzeigen und den aktuellen Verbindungsstatus visualisieren. *(Bezug: UC-1)*
+
+**FA3**: Verbindungsaufbau
+Das System muss in der Lage sein, eine stabile Bluetooth-Verbindung mit dem IMU-Sensor herzustellen. *(Bezug: UC-1)*
+
+**FA4**: Trainings-Detailansicht
+Das System muss eine detaillierte Ansicht für ein ausgewähltes Training anzeigen. *(Bezug: UC-2)*
+
+**FA5**: Datenstrom-Verarbeitung
+Das System muss kontinuierliche Bewegungsdatenströme vom Sensor empfangen, filtern und verarbeiten können. *(Bezug: UC-2)*
+
+**FA6**: Echtzeit-Visualisierung
+Das System muss die empfangenen Sensordaten und Bewegungen in Echtzeit visualisieren. *(Bezug: UC-2)*
+
+**FA7**: Historische Analyse
+Das System muss historische Bewegungsdaten grafisch und statistisch anzeigen können. *(Bezug: UC-3)*
+
+---
+
+## Nicht-funktionale Anforderungen (Muss-Kriterien)
+
+**NF1**: Latenz
+Die End-to-End-Latenz von der physischen Sensorbewegung bis zur visuellen Darstellung in der App muss ≤ 100 ms sein.
+
+**NF2**: Zuverlässigkeit und Reconnect
+Bei Verbindungsabbrüchen muss die App den Nutzer umgehend benachrichtigen und automatische Wiederverbindungsversuche (Reconnect) starten.
+
+**NF3**: Benutzbarkeit (Usability)
+Das Bluetooth-Pairing mit dem Sensor darf maximal zwei manuelle Interaktionen erfordern.
+
+---
+
+## Randbedingungen
+
+**R1**: Plattform-Kompatibilität
+Die mobile Applikation muss nativ oder als hybride App auf Android-Geräten lauffähig sein.

@@ -114,6 +114,55 @@ def markdown_to_flowables(text, styles):
             flowables.append(Spacer(1, 4))
             continue
             
+        # Horizontal Rule
+        if line_strip == '---' or line_strip == '***':
+            line_table = Table([['']], colWidths=[487], rowHeights=[1], style=TableStyle([
+                ('LINEABOVE', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
+                ('TOPPADDING', (0,0), (-1,-1), 0),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ]))
+            flowables.append(Spacer(1, 6))
+            flowables.append(line_table)
+            flowables.append(Spacer(1, 6))
+            continue
+            
+        # Blockquote
+        if line_strip.startswith('>'):
+            quote_text = line_strip[1:].strip()
+            quote_style = ParagraphStyle(
+                'BlockQuote',
+                parent=styles['NormalText'],
+                fontName='Helvetica-Oblique',
+                leftIndent=15,
+                textColor=colors.HexColor('#4b5563')
+            )
+            flowables.append(Paragraph(clean_md_tags(quote_text), quote_style))
+            flowables.append(Spacer(1, 4))
+            continue
+
+        # Check for definition header like **UC-1**: or **FA1**:
+        is_def_header = re.match(r'^\*\*(UC-\d+|FA\d+|NF\d+|R\d+)\*\*:\s*(.*)$', line_strip)
+        if is_def_header:
+            item_id = is_def_header.group(1)
+            title = is_def_header.group(2)
+            def_heading_style = ParagraphStyle(
+                'DefHeading',
+                parent=styles['Normal'],
+                fontName='Helvetica-Bold',
+                fontSize=11,
+                leading=14,
+                textColor=colors.HexColor('#0c1816'),
+                spaceBefore=10,
+                spaceAfter=4,
+                keepWithNext=True
+            )
+            clean_title = clean_md_tags(title)
+            formatted_text = f'<b><font color="#00a685">{item_id}</font></b>: {clean_title}'
+            flowables.append(Paragraph(formatted_text, def_heading_style))
+            continue
+
         # Headers
         if line.startswith('# '):
             flowables.append(Paragraph(clean_md_tags(line[2:]), styles['Heading1']))
@@ -133,8 +182,20 @@ def markdown_to_flowables(text, styles):
             match = re.match(r'^(\d+)\.(.*)$', line_strip)
             num = match.group(1)
             content = match.group(2).strip()
-            flowables.append(Paragraph(f"{num}. {clean_md_tags(content)}", styles['BulletStyle']))
-            flowables.append(Spacer(1, 3))
+            
+            left_indent = 15
+            if line.startswith('  ') or line.startswith('\t'):
+                left_indent = 25
+                
+            num_style = ParagraphStyle(
+                'NumList',
+                parent=styles['Normal'],
+                leftIndent=left_indent,
+                firstLineIndent=-10,
+                spaceAfter=3
+            )
+            flowables.append(Paragraph(f"{num}. {clean_md_tags(content)}", num_style))
+            continue
         # Regular text
         else:
             flowables.append(Paragraph(clean_md_tags(line_strip), styles['NormalText']))
