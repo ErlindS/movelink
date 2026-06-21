@@ -1097,7 +1097,7 @@ body {
 
 .c4-board {
     display: grid;
-    gap: 24px;
+    gap: 65px;
     width: 100%;
     max-width: 800px;
     transition: var(--transition-smooth);
@@ -1227,10 +1227,10 @@ body {
 }
 
 .c4-connector-text {
-    font-size: 8px;
-    font-weight: 600;
-    fill: var(--text-muted);
-    font-family: monospace;
+    font-size: 10px;
+    font-weight: 700;
+    fill: var(--text-primary);
+    font-family: var(--font-body);
 }
 
 /* Zoom Out button and Breadcrumbs styling */

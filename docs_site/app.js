@@ -1099,8 +1099,8 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         containers: {
             elements: [
-                { id: 'app', type: 'container', title: 'Mobile App Container', description: 'React Native / Expo App für Smartphones. Bietet UI für Verbindung, Live-Visualisierung und Verlauf.', tech: 'React Native, TypeScript, Zustand', deployable: true, file: 'app/architecture.md' },
                 { id: 'firmware', type: 'container', title: 'Sensor Firmware Container', description: 'Arduino C++ Code auf dem XIAO-Mikrocontroller. Erfasst Sensordaten, wendet Filter an und sendet BLE Pakete.', tech: 'Arduino C/C++, Edge Impulse SDK', deployable: true, file: 'embedded/architecture.md' },
+                { id: 'app', type: 'container', title: 'Mobile App Container', description: 'React Native / Expo App für Smartphones. Bietet UI für Verbindung, Live-Visualisierung und Verlauf.', tech: 'React Native, TypeScript, Zustand', deployable: true, file: 'app/architecture.md' },
                 { id: 'backend', type: 'container', title: 'Backend Container', description: 'Node.js/Express API und PostgreSQL Datenbank. Verwaltet Nutzer und speichert Trainingsverlauf.', tech: 'Node.js, Express, PostgreSQL', deployable: true, file: 'doc/Pflichtenheft/pflichtenheft.tex' }
             ],
             connections: [
@@ -1482,7 +1482,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Draw line
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', `M ${start.x} ${start.y} L ${end.x} ${end.y}`);
+            
+            let pathData = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+            let isSegmented = false;
+            
+            if (state.c4Level === 'components' && state.c4ActiveContainer === 'firmware' && conn.from === 'imu_reader' && conn.to === 'ble_service') {
+                const startX = boxA.x + boxA.w / 2;
+                const startY = boxA.y + boxA.h;
+                const endX = boxB.x + boxB.w / 2;
+                const endY = boxB.y + boxB.h;
+                
+                pathData = `M ${startX} ${startY} L ${startX} ${startY + 30} L ${endX} ${startY + 30} L ${endX} ${endY}`;
+                isSegmented = true;
+            }
+            
+            path.setAttribute('d', pathData);
             path.setAttribute('stroke', strokeColor);
             path.setAttribute('stroke-width', '2');
             path.setAttribute('fill', 'none');
@@ -1497,17 +1511,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Add text label centered on the line
             if (conn.text) {
-                const midX = (start.x + end.x) / 2;
-                const midY = (start.y + end.y) / 2;
+                let midX = (start.x + end.x) / 2;
+                let midY = (start.y + end.y) / 2;
+                
+                if (isSegmented) {
+                    const startX = boxA.x + boxA.w / 2;
+                    const startY = boxA.y + boxA.h;
+                    const endX = boxB.x + boxB.w / 2;
+                    
+                    midX = (startX + endX) / 2;
+                    midY = startY + 30;
+                }
 
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.textContent = conn.text;
-                text.setAttribute('font-size', '9px');
+                text.setAttribute('font-size', '11px');
                 text.setAttribute('font-family', 'var(--font-body)');
-                text.setAttribute('font-weight', '500');
-                text.setAttribute('fill', isDark ? '#a3b8b5' : '#4a5c59');
+                text.setAttribute('font-weight', '600');
+                text.setAttribute('fill', isDark ? '#f0f4f3' : '#1e2e2b');
                 text.setAttribute('text-anchor', 'middle');
                 text.setAttribute('dominant-baseline', 'middle');
                 text.setAttribute('x', midX);
@@ -1520,15 +1543,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Add a styled background rectangle for the text
                 const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                rect.setAttribute('x', bbox.x - 6);
-                rect.setAttribute('y', bbox.y - 3);
-                rect.setAttribute('width', bbox.width + 12);
-                rect.setAttribute('height', bbox.height + 6);
-                rect.setAttribute('fill', isDark ? '#070e0d' : '#f3f7f6'); // Match body background
-                rect.setAttribute('rx', '4');
-                rect.setAttribute('ry', '4');
-                rect.setAttribute('stroke', isDark ? 'rgba(0, 212, 170, 0.15)' : 'rgba(0, 180, 144, 0.15)');
-                rect.setAttribute('stroke-width', '1');
+                rect.setAttribute('x', bbox.x - 8);
+                rect.setAttribute('y', bbox.y - 4);
+                rect.setAttribute('width', bbox.width + 16);
+                rect.setAttribute('height', bbox.height + 8);
+                rect.setAttribute('fill', isDark ? '#0b1614' : '#eaf2f0'); // Pill background matching theme
+                rect.setAttribute('rx', '6');
+                rect.setAttribute('ry', '6');
+                rect.setAttribute('stroke', strokeColor); // Border matching the line color
+                rect.setAttribute('stroke-width', '1.2');
 
                 g.appendChild(rect);
                 g.appendChild(text);

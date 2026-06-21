@@ -1,6 +1,7 @@
 import sys
 import json
 import re
+import math
 from pathlib import Path
 
 # Auto-install ReportLab if not present
@@ -21,6 +22,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Preformatted
 from reportlab.pdfgen import canvas
+from reportlab.graphics.shapes import Drawing, Rect, String, Line, Polygon
 
 # --- Numbered Canvas for Page X of Y ---
 class NumberedCanvas(canvas.Canvas):
@@ -139,6 +141,188 @@ def markdown_to_flowables(text, styles):
             flowables.append(Spacer(1, 4))
             
     return flowables
+
+# --- C4 Diagram Render Helpers ---
+def draw_c4_box(d, x, y, w, h, title, tech, desc, box_type):
+    # Set colors based on box_type
+    if box_type == 'actor':
+        fill = colors.HexColor('#0d3a58')
+        stroke = colors.HexColor('#0284c7')
+        text_color = colors.HexColor('#e0f2fe')
+        desc_color = colors.HexColor('#bae6fd')
+        tech_color = colors.HexColor('#7dd3fc')
+        rx, ry = 18, 18
+    elif box_type == 'external':
+        fill = colors.HexColor('#262626')
+        stroke = colors.HexColor('#4a4a4a')
+        text_color = colors.HexColor('#f5f5f5')
+        desc_color = colors.HexColor('#d4d4d4')
+        tech_color = colors.HexColor('#a3a3a3')
+        rx, ry = 6, 6
+    elif box_type == 'component':
+        fill = colors.HexColor('#1f1c2c')
+        stroke = colors.HexColor('#8b5cf6')
+        text_color = colors.HexColor('#f5f3ff')
+        desc_color = colors.HexColor('#ddd6fe')
+        tech_color = colors.HexColor('#c084fc')
+        rx, ry = 6, 6
+    else: # system-context or container
+        fill = colors.HexColor('#0a1d1a')
+        stroke = colors.HexColor('#00a685')
+        text_color = colors.HexColor('#f0f4f3')
+        desc_color = colors.HexColor('#ccd7d5')
+        tech_color = colors.HexColor('#5eead4')
+        rx, ry = 6, 6
+
+    # Draw background box
+    d.add(Rect(x, y, w, h, rx=rx, ry=ry, fillColor=fill, strokeColor=stroke, strokeWidth=1.5))
+    
+    # Draw Title (bold)
+    d.add(String(x + w/2, y + h - 18, title, fontName='Helvetica-Bold', fontSize=9.5, textAnchor='middle', fillColor=text_color))
+    
+    # Draw Tech (italic/oblique)
+    d.add(String(x + w/2, y + h - 28, f"[{tech}]", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=tech_color))
+    
+    # Wrap and draw description
+    def wrap_text(text, max_chars=28):
+        words = text.split(' ')
+        lines = []
+        curr_line = ""
+        for w in words:
+            if len(curr_line) + len(w) + 1 <= max_chars:
+                curr_line += (" " if curr_line else "") + w
+            else:
+                lines.append(curr_line)
+                curr_line = w
+        if curr_line:
+            lines.append(curr_line)
+        return lines
+
+    desc_lines = wrap_text(desc, max_chars=28)
+    start_y = y + (h/2) - 5 + (len(desc_lines) * 4)
+    for idx, line in enumerate(desc_lines):
+        line_y = start_y - idx * 9
+        d.add(String(x + w/2, line_y, line, fontName='Helvetica', fontSize=7, textAnchor='middle', fillColor=desc_color))
+
+def draw_c4_arrow(d, x1, y1, x2, y2, label, stroke_color, is_dashed=False):
+    # Draw main line
+    line = Line(x1, y1, x2, y2, strokeColor=stroke_color, strokeWidth=1.2)
+    if is_dashed:
+        line.strokeDashArray = [4, 4]
+    d.add(line)
+    
+    # Calculate arrowhead geometry
+    dx = x2 - x1
+    dy = y2 - y1
+    dist = math.sqrt(dx*dx + dy*dy)
+    if dist > 0:
+        ux = dx / dist
+        uy = dy / dist
+        
+        # 6pt back, 3pt perpendicular
+        back_x = x2 - ux * 6
+        back_y = y2 - uy * 6
+        perp_x = -uy * 3
+        perp_y = ux * 3
+        
+        arrow = Polygon(
+            [x2, y2, back_x + perp_x, back_y + perp_y, back_x - perp_x, back_y - perp_y],
+            fillColor=stroke_color,
+            strokeColor=stroke_color
+        )
+        d.add(arrow)
+        
+    # Draw midpoint text label
+    if label:
+        mid_x = (x1 + x2) / 2
+        mid_y = (y1 + y2) / 2
+        
+        # Estimate text width
+        p_w = len(label) * 4.2 + 8
+        p_h = 10
+        
+        # Background rect for text label
+        d.add(Rect(mid_x - p_w/2, mid_y - p_h/2, p_w, p_h, rx=2, ry=2, fillColor=colors.HexColor('#ffffff'), strokeColor=colors.HexColor('#cccccc'), strokeWidth=0.5))
+        d.add(String(mid_x, mid_y - 2.5, label, fontName='Helvetica', fontSize=6.5, textAnchor='middle', fillColor=colors.HexColor('#333333')))
+
+def create_system_context_diagram():
+    d = Drawing(480, 130)
+    d.add(Rect(0, 0, 480, 130, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    teal = colors.HexColor('#00a685')
+    grey = colors.HexColor('#666666')
+    
+    # Draw boxes
+    draw_c4_box(d, 20, 30, 110, 70, "Trainierender", "Person", "Benutzer, der seine Übungsausführung in Echtzeit analysieren möchte.", "actor")
+    draw_c4_box(d, 185, 30, 110, 70, "MoveLink System", "Software System", "Erfasst, filtert und visualisiert Bewegungsdaten, klassifiziert Übungen lokal.", "system")
+    draw_c4_box(d, 350, 30, 110, 70, "Datenbank", "PostgreSQL", "Speichert Benutzerprofile und historische Trainingsdaten.", "external")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 130, 65, 185, 65, "Nutzt für Training", teal)
+    draw_c4_arrow(d, 295, 65, 350, 65, "Speichert Daten", grey, is_dashed=True)
+    return d
+
+def create_container_diagram():
+    d = Drawing(480, 130)
+    d.add(Rect(0, 0, 480, 130, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    teal = colors.HexColor('#00a685')
+    
+    # Draw boxes
+    draw_c4_box(d, 20, 30, 110, 70, "Sensor Firmware", "Arduino C/C++", "Erfasst Sensordaten, wendet Filter an und sendet BLE Pakete.", "container")
+    draw_c4_box(d, 185, 30, 110, 70, "Mobile App", "React Native", "Bietet UI für Verbindung, Live-Visualisierung und Verlauf.", "container")
+    draw_c4_box(d, 350, 30, 110, 70, "Backend", "Node.js / Express", "Verwaltet Nutzer und speichert Trainingsverlauf.", "container")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 130, 65, 185, 65, "BLE Data Stream", teal)
+    draw_c4_arrow(d, 295, 65, 350, 65, "HTTPS / WebSockets", teal)
+    return d
+
+def create_firmware_components_diagram():
+    d = Drawing(480, 135)
+    d.add(Rect(0, 0, 480, 135, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    purple = colors.HexColor('#8b5cf6')
+    
+    # Draw boxes
+    draw_c4_box(d, 20, 40, 110, 70, "LSM6DS3 Reader", "C++ Module", "Periodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz.", "component")
+    draw_c4_box(d, 185, 40, 110, 70, "Edge Impulse SDK", "Inferenzbibliothek", "Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.", "component")
+    draw_c4_box(d, 350, 40, 110, 70, "BLE Service", "ArduinoBLE", "Stellt Characteristics bereit und verwaltet Verbindungsnotifikationen.", "component")
+    
+    # Draw direct arrows
+    draw_c4_arrow(d, 130, 75, 185, 75, "Liefert Sensor-Rohdaten", purple)
+    draw_c4_arrow(d, 295, 75, 350, 75, "Überträgt Klassifikation", purple)
+    
+    # Draw segmented arrow (imu_reader -> ble_service)
+    d.add(Line(75, 40, 75, 15, strokeColor=purple, strokeWidth=1.2))
+    d.add(Line(75, 15, 405, 15, strokeColor=purple, strokeWidth=1.2))
+    d.add(Line(405, 15, 405, 40, strokeColor=purple, strokeWidth=1.2))
+    arrow = Polygon([405, 40, 402, 34, 408, 34], fillColor=purple, strokeColor=purple)
+    d.add(arrow)
+    label = "Streamt Rohdaten"
+    p_w = len(label) * 4.2 + 8
+    d.add(Rect(240 - p_w/2, 15 - 5, p_w, 10, rx=2, ry=2, fillColor=colors.white, strokeColor=colors.HexColor('#cccccc'), strokeWidth=0.5))
+    d.add(String(240, 15 - 2.5, label, fontName='Helvetica', fontSize=6.5, textAnchor='middle', fillColor=colors.HexColor('#333333')))
+    return d
+
+def create_app_components_diagram():
+    d = Drawing(480, 220)
+    d.add(Rect(0, 0, 480, 220, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    purple = colors.HexColor('#8b5cf6')
+    
+    # Row 2 (Top, y=125)
+    draw_c4_box(d, 15, 125, 100, 75, "SensorCard UI", "React Native", "Steuert den Verbindungszustand und das Bluetooth-Pairing.", "component")
+    draw_c4_box(d, 127, 125, 100, 75, "LiveChart UI", "SVG Canvas", "Echtzeit-Zeichnung des IMU-Verlaufs.", "component")
+    draw_c4_box(d, 239, 125, 100, 75, "SessionCard UI", "React Native", "Zusammenfassung einer vergangenen Trainingseinheit.", "component")
+    draw_c4_box(d, 351, 125, 114, 75, "ProfileCard UI", "React Native", "Darstellung der Benutzerdaten und Authentifizierung.", "component")
+    
+    # Row 1 (Bottom, y=25)
+    draw_c4_box(d, 70, 25, 130, 60, "useBLE Hook", "TypeScript Hook", "Custom Hook für Scanning und BLE-Verbindung.", "component")
+    draw_c4_box(d, 280, 25, 130, 60, "useWebSocket Hook", "TypeScript Hook", "Verbindung zum Backend zwecks Live-Datentransfer.", "component")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 65, 125, 110, 85, "Steuert BLE", purple)
+    draw_c4_arrow(d, 177, 125, 160, 85, "Liest IMU", purple)
+    draw_c4_arrow(d, 289, 125, 320, 85, "Lädt Daten", purple)
+    draw_c4_arrow(d, 408, 125, 370, 85, "Nutzt API", purple)
+    return d
 
 # --- Main PDF Generator ---
 def main():
@@ -413,6 +597,39 @@ def main():
                 story.append(Spacer(1, 3))
         story.append(Spacer(1, 10))
         
+    story.append(PageBreak())
+    
+    # ------------------ SECTION 4: C4 MODEL DIAGRAMS ------------------
+    story.append(Paragraph("4. System-Architektur (C4 Modell)", styles['Heading1']))
+    story.append(Paragraph("In diesem Abschnitt wird die Systemarchitektur auf den verschiedenen C4-Ebenen (System-Kontext, Container und Komponenten) visualisiert.", styles['NormalText']))
+    story.append(Spacer(1, 10))
+    
+    story.append(Paragraph("4.1 System-Kontext-Diagramm", styles['Heading2']))
+    story.append(Paragraph("Das System-Kontext-Diagramm zeigt die Position von MoveLink in Bezug auf Benutzer und das externe Datenbanksystem.", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_system_context_diagram())
+    story.append(Spacer(1, 15))
+    
+    story.append(Paragraph("4.2 Container-Diagramm", styles['Heading2']))
+    story.append(Paragraph("Das Container-Diagramm veranschaulicht die Aufteilung des MoveLink Systems in eigenständige, ausführbare Subsysteme (Mobile App, Firmware und Backend) sowie deren Kommunikationspfade.", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_container_diagram())
+    story.append(Spacer(1, 15))
+    
+    story.append(PageBreak())
+    
+    story.append(Paragraph("4.3 Komponenten-Diagramm (Sensor-Firmware)", styles['Heading2']))
+    story.append(Paragraph("Das Komponenten-Diagramm zeigt das Innenleben der Sensor-Firmware, die auf dem Xiao-Mikrocontroller läuft, sowie die Kopplung von Sensorik, Inferenz (Edge Impulse) und Bluetooth BLE.", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_firmware_components_diagram())
+    story.append(Spacer(1, 15))
+    
+    story.append(Paragraph("4.4 Komponenten-Diagramm (Mobile App)", styles['Heading2']))
+    story.append(Paragraph("Dieses Diagramm zeigt die internen Komponenten des React Native Containers (Mobile App), aufgeteilt in UI-Elemente und Custom Hooks, die mit BLE und dem WebSocket-Server interagieren.", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_app_components_diagram())
+    story.append(Spacer(1, 10))
+    
     # Build Document
     print(f"Building PDF report in {pdf_out_path}...")
     doc.build(story, canvasmaker=NumberedCanvas)
