@@ -1,6 +1,20 @@
 const DOCS_DATA = {
   "files": [
     {
+      "path": "README.md",
+      "title": "movelink",
+      "content": "# movelink",
+      "headings": [
+        {
+          "level": 1,
+          "text": "movelink",
+          "line": 1
+        }
+      ],
+      "c4_level": null,
+      "deployable": null
+    },
+    {
       "path": "Befehle_App_Build.md",
       "title": "Wichtige Terminal-Befehle für MoveLink (React Native / Expo)",
       "content": "# Wichtige Terminal-Befehle für MoveLink (React Native / Expo)\n\nDiese Datei dokumentiert die wichtigsten Befehle, die wir genutzt haben, um Fehler mit dem Gradle-Cache zu beheben und die eigenständige Android App (.apk) zu generieren.\n\n## 1. Normaler Entwicklungs-Modus (Schnell)\nWenn die App (oder der Dev Client) bereits auf deinem Handy installiert ist, brauchst du nicht mehr den kompletten nativen Code neu zu kompilieren. Du startest einfach nur den lokalen Server, der sich per WLAN mit deinem Handy verbindet.\n\n```powershell\nnpx expo start\n```\n\n## 2. Kompletten Cache leeren und App neu kompilieren (Fehlerbehebung)\nWenn du jemals wieder seltsame Fehler wie `unsupported class file` oder `class not found in jar` beim Android-Build siehst, bedeutet das meistens, dass der Gradle-Cache beschädigt ist. \nDiese drei Schritte reinigen alles und bauen den nativen Ordner frisch auf:\n\n```powershell\n# 1. Stoppt laufende Hintergrundprozesse (Daemons) von Gradle\ncd app/android\n.\\gradlew --stop\n\n# 2. Löscht den kompletten beschädigten Gradle-Cache (Windows PowerShell)\nRemove-Item -Recurse -Force \"$env:USERPROFILE\\.gradle\\caches\"\n\n# 3. Zwingt Expo dazu, den gesamten /android Ordner sauber neu zu generieren\ncd ..\nnpx expo prebuild --clean\n```\n\n## 3. Eine fertige, eigenständige Android App (APK) bauen\nUm eine APK zu bauen, die du unabhängig vom PC auf dem Handy nutzen kannst, nutzt du den `assembleRelease` Befehl.\n\n**Wichtig:** Falls du auf deinem PC mehrere Java-Versionen installiert hast (z.B. Java 25), musst du Gradle zwingen, das kompatible **Java 17** aus deinem Android Studio zu verwenden, bevor du den Befehl ausführst.\n\n```powershell\n# Zuerst in den App-Ordner wechseln\ncd app\n\n# Java-Pfad temporär setzen, in den android-Ordner wechseln und den Release-Build starten\n$env:JAVA_HOME=\"C:\\Program Files\\Android\\Android Studio\\jbr\"; cd android; .\\gradlew assembleRelease\n```\n\n*Nach erfolgreichem Durchlauf findest du die fertige APK hier:*\n`app/android/app/build/outputs/apk/release/app-release.apk`\n",
@@ -55,16 +69,74 @@ const DOCS_DATA = {
       "deployable": null
     },
     {
-      "path": "README.md",
-      "title": "movelink",
-      "content": "# movelink",
+      "path": "embedded/architecture.md",
+      "title": "MoveLink Embedded Firmware - Container-Architektur",
+      "content": "# MoveLink Embedded Firmware - Container-Architektur\n\nDieses Dokument beschreibt die Embedded Sensor-Firmware als eigenständige, deploybare Einheit im C4-Modell.\n\n## C4-Architektur-Ebene\n* **C4-Ebene:** Container\n* **Deployable:** Ja\n* **Deployment-Artefakt:** Binär-Firmware (flashed via USB/Serial)\n* **Technologie-Stack:** Arduino C/C++, LSM6DS3 IMU Library, Edge Impulse SDK, Bluetooth Low Energy\n\n## Beschreibung\nDie Sensor-Firmware läuft auf dem XIAO nRF52840 Sense Controller. Sie erfasst Beschleunigungs- und Rotationsdaten über den integrierten LSM6DS3-Sensor mit einer festen Abtastrate (50Hz), wendet Signalfilterungen zur Rauschunterdrückung an und streamt die Datenpakete als binäres Array via BLE Characteristics an die Mobile App. Alternativ führt sie Edge-Impulse-Inferenzmodelle direkt auf dem Mikrocontroller aus, um Trainingsübungen (z.B. Bizeps-Curls) lokal zu klassifizieren und Fehler über die integrierten RGB-LEDs anzuzeigen.\n\n```mermaid\nflowchart TD\n    Sensor[MPU6050/LSM6DS3 IMU Sensor] -->|I2C Rohdaten| Firmware[XIAO nRF52840 Arduino Firmware]\n    Firmware -->|Inferenz / Signalfilterung| BLE[BLE Characteristic]\n    BLE -->|Paket-Stream| App[React Native Mobile App]\n```\n\n## Komponenten in diesem Container\n1. **Sensordatenerfassung (Loop)**: Liest kontinuierlich Beschleunigung (X, Y, Z) und Gyroskop (X, Y, Z). (Erfüllt: FA5)\n2. **Inferenz-Engine (Edge Impulse)**: Klassifiziert Übungsausführungen lokal auf dem Chip. (Erfüllt: FA5)\n3. **LED- & Display-Controller**: Bietet direktes visuelles Feedback an den Nutzer bei Fehlern. (Erfüllt: FA5)\n",
       "headings": [
         {
           "level": 1,
-          "text": "movelink",
+          "text": "MoveLink Embedded Firmware - Container-Architektur",
           "line": 1
+        },
+        {
+          "level": 2,
+          "text": "C4-Architektur-Ebene",
+          "line": 5
+        },
+        {
+          "level": 2,
+          "text": "Beschreibung",
+          "line": 11
+        },
+        {
+          "level": 2,
+          "text": "Komponenten in diesem Container",
+          "line": 21
         }
       ],
+      "c4_level": "Container",
+      "deployable": "Ja"
+    },
+    {
+      "path": "embedded/src/architecture.md",
+      "title": "Embedded Sensor-Firmware",
+      "content": "# Embedded Sensor-Firmware\n\nDie Firmware liest Sensorwerte aus und überträgt diese über Bluetooth Low Energy (BLE) an die App.\n\n## Datenfluss Firmware\n\n```mermaid\nflowchart TD\n    Sensor[MPU6050 Beschleunigungssensor] -->|I2C Rohdaten| Arduino[Arduino / ESP32 Controller]\n    Arduino -->|Signalfilterung & Skalierung| BLE[Bluetooth Low Energy Characteristic]\n    BLE -->|Notifikationen / Byte-Array| App[Mobile App]\n```\n\n- **Sensordatenerfassung**: Erfolgt in einer festen Frequenz (z.B. 50Hz).\n- **Filterung**: Tiefpassfilter zur Rauschminderung auf dem Mikrocontroller.\n- **BLE-Transfer**: Effiziente Übertragung als binäres Datenpaket.\n",
+      "headings": [
+        {
+          "level": 1,
+          "text": "Embedded Sensor-Firmware",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "text": "Datenfluss Firmware",
+          "line": 5
+        }
+      ],
+      "c4_level": null,
+      "deployable": null
+    },
+    {
+      "path": "doc/Requirements.md",
+      "title": "doc/Requirements.md",
+      "content": "Funktionale Anforderungen\n• FA1: Das System muss einen Reiter oder eine Navigationsmöglichkeit für Hardwaregeräte\n/ Trainings / vergangene Trainingseinheiten anzeigen. (aus UC-1, UC-2, UC-3)\n• FA2: Das System muss mir eine Liste von verfügbaren Hardwaregeräte und mit welchen\nHardwaregeräten ich verbunden bin anzeigen. (aus UC-1)\n• FA3: Das System muss einen verbindungsaufbau mit dem Hardwaregerät herstellen\nkönnen. (aus UC-1)\n• FA4: Das System muss eine Detailansicht für ein ausgewähltes Training anzeigen. (aus\nUC-2)\n• FA5: Das System muss Bewegungsdatenströme empfangen und verarbeiten können. (aus\nUC-2)\n• FA6: Das System muss die empfangenen Bewegungen in Echtzeit visualisieren. (aus\nUC-2)\n• FA7: Das System muss historische Bewegungsdaten grafisch anzeigen können. (aus\nUC-3)\nNicht-funktionale Anforderungen – Muss-Kriterien\n• NF1 – Latenz: Die E2E-Latenz vom Sensor bis zur Darstellung muss ≤ 100 ms sein.\n• NF2 – Zuverlässigkeit: Bei einem Verbindungsabbruch muss die App den Nutzer\nbenachrichtigen und automatisch Reconnect-Versuche starten.\n• NF3 – Usability: Das Pairing darf maximal zwei Nutzerinteraktionen erfordern.\nRahmenbedingungen\n• R1: Die Applikationen muss auf android devices laufen.\n",
+      "headings": [],
+      "c4_level": null,
+      "deployable": null
+    },
+    {
+      "path": "doc/firstnotes.md",
+      "title": "doc/firstnotes.md",
+      "content": "Mikrocontroller <--- Datenpakete ---> App\n\n\nBackend <- API -> Frontend\n(Backend?)\n\nProblemstellung:\n\nDarstellung von Trainingsdatensätzen zur Bewegungsanalyse.\n\nProjektebene\nStakeholder:\n- Trainierenden (Fokus)\n- Entwickler\n- Dienstleister\n- Hochschule \n\n\nAnforderungen an die App:\n\n2 Zustände:\n\n1 Zustand (Fokus) aktives Trainig:\n- Intention: visuelle Darstellung des Trainingsfortschritts in Echtzeit\n\n- FA: In Echtzeit eine Bewertung abliefern\n- FA: Darstellung der Ausführung\n\n- NFA: Eine eigenständige Applikation\n- NFA: Das Darstellen der darf Höchstens 1 Sekunden dauern\n\n- Rahmenbedingung: Auf Android, Mac und Windows funktionsfähig\n- Technologien: Flutter & MAUI\n\n\nIch habe einen XIOA nRF52840 Gerät. Ich möchte die Daten in Echtzeit in einem Frontend anzeigen z.B. React. Wie sinnvoll und komplex wäre es einen Server dazwischen zu packen?\n\n\n",
+      "headings": [],
+      "c4_level": null,
+      "deployable": null
+    },
+    {
+      "path": "doc/UseCases.md",
+      "title": "doc/UseCases.md",
+      "content": "UC-1: Trainingsgerät verbinden\nAkteur: Trainierender Vorbedingung: Trainingsgerät eingeschaltet\nBeschreibung: Als Trainierender möchte ich mein Trainingsgerät mit der App verbinden\nkönnen, um Trainingsdaten erfassen zu können.\n1. Eingabe: Ich als trainierender öffne die App, Ausgabe: Ich sehe eine Möglichkeit/Reiter\nHardwaregeräte anzuzeigen.\n2. Eingabe: Ich als trainierender klicke auf den Reiter Hardwaregeräte, Ausgabe: Ich\nsehe eine Liste der verfügbaren Hardwaregeräte und mit welchen Hardwaregeräten ich\nverbunden bin.\n3. Eingabe: Ich als trainierender klicke auf ein Hardwaregerät in der Liste auf verbinden,\nAusgabe: Ich sehe eine Detailansicht des ausgewählten Hardwaregeräts und dass dies mit\nder App verbunden ist.\nUC-2: Echtzeit-Training überwachen\nAkteur: Trainierender Vorbedingung: Trainingsgerät verbunden\nBeschreibung: Ich als Trainierender möchte mein Training in Echtzeit überwachen können, um\ndirekt Feedback zu meiner Ausführung zu erhalten.\n1. Eingabe: Ich als trainierender öffne die App, Ausgabe: Ich sehe eine Möglichkeit/Reiter\nmein Training zu starten.\n2. Eingabe: Ich als trainierender klicke auf den Reiter \"Training starten\", Ausgabe: Ich sehe\neine Detailansicht des ausgewählten Trainings und die Möglichkeit mein Training zu\nstarten.\n3. Eingabe: Ich als trainierender drücke den Start Button in der Detailansicht des\nTrainings, Ausgabe: Die App demonstriert mir Bewegungen, welche nachzumachen sind.\n4. Eingabe: Ich als trainierender mache die Bewegung nach, Ausgabe: Die App visualisiert\ndie Bewegung in Echtzeit und vergleicht diese mit der Demonstration. Gibt positives\nFeedback, wenn die Bewegung korrekt ausgeführt wurde.\nUC-3: Trainingsdaten einsehen\nAkteur: Trainierender Vorbedingung: Vergangene Trainingseinheit vorhanden\nBeschreibung: Ich als Trainierender möchte vergangene Trainingseinheiten einsehen können,\num meine Fortschritte zu verfolgen.\n1. Eingabe: Ich als trainierender öffne die App, Ausgabe: Ich sehe eine Möglichkeit/Reiter\nvergangene Trainingseinheiten anzuzeigen.\n2. Eingabe: Ich als trainierender klicke auf den Reiter \"Trainingseinheiten\", Ausgabe: Ich\nsehe eine Liste der vergangenen Trainingseinheiten an.\n3. Eingabe: Ich wähle eine Trainingseinheit aus der Liste aus, Ausgabe: Die App zeigt die\nhistorischen Bewegungsdaten grafisch an.",
+      "headings": [],
       "c4_level": null,
       "deployable": null
     },
@@ -487,9 +559,9 @@ const DOCS_DATA = {
     ],
     "FA2": [
       {
-        "file": "app/app/(tabs)/index.tsx",
-        "line": 2,
-        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
+        "file": "doc/Pflichtenheft/pflichtenheft.tex",
+        "line": 218,
+        "context": "\\item \\textbf{FA2:} Das System muss mir eine Liste von verfügbaren Hardwareger\\\"ate und mit welchen Hardwareger\\\"aten ich verbunden bin anzeigen. (aus UC-1)"
       },
       {
         "file": "app/components/SensorCard.tsx",
@@ -497,9 +569,9 @@ const DOCS_DATA = {
         "context": "* @implements FA2, FA3, NF3"
       },
       {
-        "file": "doc/Pflichtenheft/pflichtenheft.tex",
-        "line": 218,
-        "context": "\\item \\textbf{FA2:} Das System muss mir eine Liste von verfügbaren Hardwareger\\\"ate und mit welchen Hardwareger\\\"aten ich verbunden bin anzeigen. (aus UC-1)"
+        "file": "app/app/(tabs)/index.tsx",
+        "line": 2,
+        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
       },
       {
         "file": "app/architecture.md",
@@ -519,9 +591,9 @@ const DOCS_DATA = {
     ],
     "FA3": [
       {
-        "file": "app/app/(tabs)/index.tsx",
-        "line": 2,
-        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
+        "file": "doc/Pflichtenheft/pflichtenheft.tex",
+        "line": 219,
+        "context": "\\item \\textbf{FA3:} Das System muss einen verbindungsaufbau mit dem Hardwareger\\\"at herstellen k\\\"onnen. (aus UC-1)"
       },
       {
         "file": "app/components/SensorCard.tsx",
@@ -534,9 +606,9 @@ const DOCS_DATA = {
         "context": "* @implements FA3, FA5, NF2"
       },
       {
-        "file": "doc/Pflichtenheft/pflichtenheft.tex",
-        "line": 219,
-        "context": "\\item \\textbf{FA3:} Das System muss einen verbindungsaufbau mit dem Hardwareger\\\"at herstellen k\\\"onnen. (aus UC-1)"
+        "file": "app/app/(tabs)/index.tsx",
+        "line": 2,
+        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
       },
       {
         "file": "app/architecture.md",
@@ -583,21 +655,36 @@ const DOCS_DATA = {
     ],
     "FA4": [
       {
-        "file": "app/app/(tabs)/index.tsx",
-        "line": 2,
-        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
-      },
-      {
         "file": "doc/Pflichtenheft/pflichtenheft.tex",
         "line": 220,
         "context": "\\item \\textbf{FA4:} Das System muss eine Detailansicht f\\\"ur ein ausgew\\\"ahltes Training anzeigen. (aus UC-2)"
+      },
+      {
+        "file": "app/app/(tabs)/index.tsx",
+        "line": 2,
+        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
       }
     ],
     "FA5": [
       {
-        "file": "app/app/(tabs)/index.tsx",
+        "file": "embedded/src/Executable.ino",
         "line": 2,
-        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
+        "context": "* @implements FA5"
+      },
+      {
+        "file": "embedded/src/Training_Skript/Training_Skript.ino",
+        "line": 2,
+        "context": "// @implements FA5"
+      },
+      {
+        "file": "doc/Pflichtenheft/pflichtenheft.tex",
+        "line": 221,
+        "context": "\\item \\textbf{FA5:} Das System muss Bewegungsdatenstr\\\"ome empfangen und verarbeiten k\\\"onnen. (aus UC-2)"
+      },
+      {
+        "file": "app/store/index.ts",
+        "line": 2,
+        "context": "* @implements FA5"
       },
       {
         "file": "app/hooks/useBLE.ts",
@@ -610,29 +697,9 @@ const DOCS_DATA = {
         "context": "* @implements FA5"
       },
       {
-        "file": "app/store/index.ts",
+        "file": "app/app/(tabs)/index.tsx",
         "line": 2,
-        "context": "* @implements FA5"
-      },
-      {
-        "file": "doc/Pflichtenheft/pflichtenheft.tex",
-        "line": 221,
-        "context": "\\item \\textbf{FA5:} Das System muss Bewegungsdatenstr\\\"ome empfangen und verarbeiten k\\\"onnen. (aus UC-2)"
-      },
-      {
-        "file": "embedded/src/Executable.ino",
-        "line": 2,
-        "context": "* @implements FA5"
-      },
-      {
-        "file": "embedded/src/Training_Skript/Training_Skript.ino",
-        "line": 2,
-        "context": "// @implements FA5"
-      },
-      {
-        "file": "app/architecture.md",
-        "line": 27,
-        "context": "5. **BLE-Hook (useBLE)**: Kapselt die Bluetooth-Gerätekommunikation und den Reconnect. (Erfüllt: FA3, FA5, NF2)"
+        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
       },
       {
         "file": "doc/AI_DOCUMENTATION_GUIDE.md",
@@ -653,13 +720,18 @@ const DOCS_DATA = {
         "file": "embedded/architecture.md",
         "line": 24,
         "context": "3. **LED- & Display-Controller**: Bietet direktes visuelles Feedback an den Nutzer bei Fehlern. (Erfüllt: FA5)"
+      },
+      {
+        "file": "app/architecture.md",
+        "line": 27,
+        "context": "5. **BLE-Hook (useBLE)**: Kapselt die Bluetooth-Gerätekommunikation und den Reconnect. (Erfüllt: FA3, FA5, NF2)"
       }
     ],
     "FA6": [
       {
-        "file": "app/app/(tabs)/index.tsx",
-        "line": 2,
-        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
+        "file": "doc/Pflichtenheft/pflichtenheft.tex",
+        "line": 222,
+        "context": "\\item \\textbf{FA6:} Das System muss die empfangenen Bewegungen in Echtzeit visualisieren. (aus UC-2)"
       },
       {
         "file": "app/components/LiveChart.tsx",
@@ -667,9 +739,9 @@ const DOCS_DATA = {
         "context": "* @implements FA6"
       },
       {
-        "file": "doc/Pflichtenheft/pflichtenheft.tex",
-        "line": 222,
-        "context": "\\item \\textbf{FA6:} Das System muss die empfangenen Bewegungen in Echtzeit visualisieren. (aus UC-2)"
+        "file": "app/app/(tabs)/index.tsx",
+        "line": 2,
+        "context": "* @implements FA2, FA3, FA4, FA5, FA6"
       },
       {
         "file": "app/architecture.md",
@@ -679,9 +751,9 @@ const DOCS_DATA = {
     ],
     "FA7": [
       {
-        "file": "app/app/(tabs)/history.tsx",
-        "line": 2,
-        "context": "* @implements FA7"
+        "file": "doc/Pflichtenheft/pflichtenheft.tex",
+        "line": 223,
+        "context": "\\item \\textbf{FA7:} Das System muss historische Bewegungsdaten grafisch anzeigen k\\\"onnen. (aus UC-3)"
       },
       {
         "file": "app/components/SessionCard.tsx",
@@ -689,9 +761,9 @@ const DOCS_DATA = {
         "context": "* @implements FA7"
       },
       {
-        "file": "doc/Pflichtenheft/pflichtenheft.tex",
-        "line": 223,
-        "context": "\\item \\textbf{FA7:} Das System muss historische Bewegungsdaten grafisch anzeigen k\\\"onnen. (aus UC-3)"
+        "file": "app/app/(tabs)/history.tsx",
+        "line": 2,
+        "context": "* @implements FA7"
       },
       {
         "file": "app/architecture.md",
@@ -723,14 +795,14 @@ const DOCS_DATA = {
     ],
     "NF2": [
       {
-        "file": "app/hooks/useBLE.ts",
-        "line": 2,
-        "context": "* @implements FA3, FA5, NF2"
-      },
-      {
         "file": "doc/Pflichtenheft/pflichtenheft.tex",
         "line": 230,
         "context": "\\item \\textbf{NF2 -- Zuverl\\\"assigkeit:} Bei einem Verbindungsabbruch muss die App den Nutzer benachrichtigen und automatisch Reconnect-Versuche starten."
+      },
+      {
+        "file": "app/hooks/useBLE.ts",
+        "line": 2,
+        "context": "* @implements FA3, FA5, NF2"
       },
       {
         "file": "app/architecture.md",
@@ -745,14 +817,14 @@ const DOCS_DATA = {
     ],
     "NF3": [
       {
-        "file": "app/components/SensorCard.tsx",
-        "line": 2,
-        "context": "* @implements FA2, FA3, NF3"
-      },
-      {
         "file": "doc/Pflichtenheft/pflichtenheft.tex",
         "line": 231,
         "context": "\\item \\textbf{NF3 -- Usability:} Das Pairing darf maximal zwei Nutzerinteraktionen erfordern."
+      },
+      {
+        "file": "app/components/SensorCard.tsx",
+        "line": 2,
+        "context": "* @implements FA2, FA3, NF3"
       },
       {
         "file": "app/architecture.md",
