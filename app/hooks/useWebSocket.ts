@@ -1,5 +1,5 @@
 /**
- * @implements FA5
+ * @implements FA1.5
  */
 import { useEffect, useRef, useCallback } from 'react';
 import { useBLEStore, useTrainingStore } from '@/store';

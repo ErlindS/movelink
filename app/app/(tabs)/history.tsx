@@ -1,5 +1,5 @@
 /**
- * @implements FA7
+ * @implements FA1.6, FA1.7
  */
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, ActivityIndicator, StatusBar, TouchableOpacity } from 'react-native';

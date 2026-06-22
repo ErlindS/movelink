@@ -1,5 +1,5 @@
 /**
- * @implements FA6
+ * @implements FA1.5
  */
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';

@@ -8,13 +8,13 @@ EXCLUDE_DIRS = {
     '.git', 'node_modules', '.gradle', '.expo', 'android', 'ios', 'docs_site', 'build', 'dist', 'bin', 'obj'
 }
 
-# Regex to match Use Case and Requirement IDs
-ID_PATTERN = re.compile(r'\b(UC-\d+|FA\d+|NF\d+|R\d+)\b')
+# Regex to match Use Case and Requirement IDs (supports sub-requirements with decimals like FA1.1.1)
+ID_PATTERN = re.compile(r'\b(UC-\d+|FA\d+(?:\.\d+)*|NF\d+(?:\.\d+)*|R\d+(?:\.\d+)*)\b')
 
 # Regex to match definitions in Markdown
 # Looks for headings or list items starting with the ID
 DEF_PATTERN = re.compile(
-    r'^\s*(?:[-*•+]\s+|\d+\.\s+)?(?:\*\*)?(UC-\d+|FA\d+|NF\d+|R\d+)(?:\*\*)?\s*[:-–]\s*(.*)$'
+    r'^\s*(?:[-*•+]\s+|\d+\.\s+)?(?:\*\*)?(UC-\d+|FA\d+(?:\.\d+)*|NF\d+(?:\.\d+)*|R\d+(?:\.\d+)*)(?:\*\*)?\s*[:-–]\s*(.*)$'
 )
 
 def scan_files(root_dir):

@@ -1,4 +1,4 @@
-// @implements FA5, NF1
+// @implements FA2.1, NF1
 #include "IMUReader.h"
 #include <LSM6DS3.h>
 #include <Wire.h>
@@ -12,12 +12,12 @@ static float ei_get_sign(float number) {
     return (number >= 0.0) ? 1.0 : -1.0;
 }
 
-// @implements FA5, NF1
+// @implements FA2.1, NF1
 bool initIMU() {
     return myIMU.begin();
 }
 
-// @implements FA5, NF1
+// @implements FA2.1, NF1
 void readSensorData(float* buffer, size_t startIndex) {
     // 1. Beschleunigung einlesen
     buffer[startIndex + 0] = myIMU.readFloatAccelX();

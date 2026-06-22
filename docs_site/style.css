@@ -1740,5 +1740,83 @@ body.light-mode .trace-confluence-table tr:hover {
     margin: 20px auto 0 auto;
 }
 
-
-
+/* Architecture Matrix Custom Styles */
+.matrix-toggle-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.matrix-toggle-container button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+.arch-matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 20px;
+    background-color: var(--card-bg);
+}
+.arch-matrix-table th, .arch-matrix-table td {
+    border: 1px solid var(--border-color);
+    text-align: center;
+    vertical-align: middle;
+    padding: 0;
+}
+.arch-matrix-table th {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: 700;
+    height: 45px;
+    padding: 10px;
+}
+.arch-matrix-table tbody tr {
+    height: 40px;
+}
+.arch-matrix-table td.svg-cell {
+    padding: 0;
+    position: relative;
+    background: rgba(0, 212, 170, 0.02);
+}
+.arch-matrix-table td.uc-cell, 
+.arch-matrix-table td.fa-cell {
+    font-weight: 700;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+.arch-matrix-table td.sub-fa-cell,
+.arch-matrix-table td.component-cell,
+.arch-matrix-table td.detail-fa-cell {
+    color: var(--text-secondary);
+}
+.arch-matrix-table td.class-cell {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--primary);
+    font-family: monospace;
+    font-size: 11px;
+}
+.arch-matrix-description {
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(0, 212, 170, 0.03);
+    border-radius: 12px;
+    border-left: 4px solid var(--primary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+.arch-matrix-description h3 {
+    font-family: var(--font-heading);
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+.arch-matrix-description p {
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}
+.arch-matrix-description ol, .arch-matrix-description ul {
+    margin-left: 20px;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}

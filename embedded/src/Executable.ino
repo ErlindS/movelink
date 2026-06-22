@@ -1,5 +1,5 @@
 /* 
- * @implements FA5, FA9, NF1
+ * @implements FA2.1, FA2.2, FA2.3, FA2.4, FA2.5, NF1
  * Includes ---------------------------------------------------------------- */
 #include <Erlind-project-1_inferencing.h> // For model parameters/defines
 #include "../components/sensordatenerfassung/IMUReader.h"

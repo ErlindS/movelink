@@ -3,13 +3,13 @@
 
 #include <Arduino.h>
 
-// @implements FA9
+// @implements FA2.4
 void initFeedback();
 
-// @implements FA9
+// @implements FA2.4
 void updateFeedback(const String& best_label, float best_val, float anomaly_score);
 
-// @implements FA9
+// @implements FA2.4
 void sendJsonToPC(String label, float confidence, float anomaly, String tipp);
 
 #endif // VISUAL_FEEDBACK_H

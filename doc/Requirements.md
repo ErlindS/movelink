@@ -6,11 +6,11 @@ Dieses Dokument definiert die funktionalen und nicht-funktionalen Anforderungen 
 
 ## Funktionale Anforderungen //Was für Instanzen existieren denn eigentlich.
 
-**UC1**, **UC2**, **UC3** -> **FA1**: Es wird eine Applikation angeboten, welche als Input für die Steuerung für den Benutzer dient.
+**FA1**: Es wird eine Applikation angeboten, welche als Input für die Steuerung für den Benutzer dient. (UC-1, UC-2, UC-3)
 
-**UC1**, **UC2** -> **FA2**: Zu dem System wird ein Trainingsgerät benötigt, welche als Input für der Bewegungen des Benutzers dient.
+**FA2**: Zu dem System wird ein Trainingsgerät benötigt, welche als Input für der Bewegungen des Benutzers dient. (UC-1, UC-2)
 
-**UC1**, **UC3** -> **FA3**: Es wird eine Datenbank benötigt, welche die Daten des Benutzers speichert.
+**FA3**: Es wird eine Datenbank benötigt, welche die Daten des Benutzers speichert. (UC-1, UC-3)
 
 ---
 

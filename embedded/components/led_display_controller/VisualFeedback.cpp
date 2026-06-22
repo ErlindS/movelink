@@ -1,4 +1,4 @@
-// @implements FA9
+// @implements FA2.4
 #include "VisualFeedback.h"
 #include <U8X8lib.h>
 
@@ -9,7 +9,7 @@ static const int RED_ledPin = 11;
 static const int BLUE_ledPin = 12;
 static const int GREEN_ledPin = 13;
 
-// @implements FA9
+// @implements FA2.4
 void initFeedback() {
     u8x8.begin();
     
@@ -22,7 +22,7 @@ void initFeedback() {
     digitalWrite(GREEN_ledPin, HIGH);
 }
 
-// @implements FA9
+// @implements FA2.4
 void updateFeedback(const String& best_label, float best_val, float anomaly_score) {
     u8x8.clear();
     u8x8.setFont(u8x8_font_amstrad_cpc_extended_r);
@@ -66,7 +66,7 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
     u8x8.refreshDisplay();
 }
 
-// @implements FA9
+// @implements FA2.4
 void sendJsonToPC(String label, float confidence, float anomaly, String tipp) {
     Serial.print("{\"event\": \"inferenz_ergebnis\", ");
     Serial.print("\"klasse\": \"" + label + "\", ");

@@ -1,5 +1,5 @@
 /**
- * @implements FA1, FA4, FA6, FA8, FA9
+ * @implements FA1.1, FA1.4, FA1.5
  */
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, Platform, TouchableOpacity } from 'react-native';

@@ -60,8 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
         codeModal: document.getElementById('codeModal'),
         codeModalTitle: document.getElementById('codeModalTitle'),
         codeModalBlock: document.getElementById('codeModalBlock'),
-        codeModalClose: document.getElementById('codeModalClose')
+        codeModalClose: document.getElementById('codeModalClose'),
+
+        // Matrix Toggle Elements
+        toggleArchMatrixBtn: document.getElementById('toggleArchMatrixBtn'),
+        toggleClassicMatrixBtn: document.getElementById('toggleClassicMatrixBtn'),
+        archMatrixView: document.getElementById('archMatrixView'),
+        classicMatrixView: document.getElementById('classicMatrixView')
     };
+
 
     // 3. Setup Navigation & Tabs
     elements.navButtons.forEach(btn => {
@@ -98,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTraceTree();
             } else if (target === 'matrix-tab') {
                 renderTraceMatrix();
+                renderDynamicArchMatrix();
             } else if (target === 'graph-tab') {
                 initNetworkGraph();
             } else if (target === 'c4-tab') {
@@ -134,8 +142,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // 4.5 Setup Matrix Toggle Click Listeners
+    if (elements.toggleArchMatrixBtn && elements.toggleClassicMatrixBtn) {
+        elements.toggleArchMatrixBtn.addEventListener('click', () => {
+            elements.toggleArchMatrixBtn.classList.add('active');
+            elements.toggleClassicMatrixBtn.classList.remove('active');
+            elements.archMatrixView.style.display = 'block';
+            elements.classicMatrixView.style.display = 'none';
+        });
+
+        elements.toggleClassicMatrixBtn.addEventListener('click', () => {
+            elements.toggleClassicMatrixBtn.classList.add('active');
+            elements.toggleArchMatrixBtn.classList.remove('active');
+            elements.archMatrixView.style.display = 'none';
+            elements.classicMatrixView.style.display = 'block';
+        });
+    }
+
     // 5. Setup Search
     elements.docSearch.addEventListener('input', (e) => {
+
         state.searchQuery = e.target.value.toLowerCase();
         renderFileList();
     });
@@ -754,6 +780,460 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         elements.traceMatrix.appendChild(tbody);
+    }
+
+    // 10.5 Render C4 Architecture Traceability Matrix (Drawing-Based, Dynamic)
+    function renderDynamicArchMatrix() {
+        const tbody = document.querySelector('.arch-matrix-table tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        // 1. Gather Use Cases
+        const useCases = Object.values(DOCS_DATA.definitions)
+            .filter(d => d.type === 'UC')
+            .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+
+        // 2. Gather Container files
+        const containerFiles = DOCS_DATA.files.filter(f => f.c4_level === 'Container');
+        
+        // Helper to resolve component name and path dynamically from container markdown content
+        function parseContainerComponents(containerFile) {
+            const mappings = [];
+            if (!containerFile || !containerFile.content) return mappings;
+            
+            const lines = containerFile.content.split('\n');
+            lines.forEach(line => {
+                // Pattern 1: **FA2.1** -> **[Sensordatenerfassung (Loop)](file:///...)**: ...
+                const arrowMatch = line.match(/\*\*(FA\d+(?:\.\d+)*(?:\s*,\s*FA\d+(?:\.\d+)*)*)\*\*\s*->\s*(?:\*\*)?\[([^\]]+)\]\(([^)]+)\)/);
+                if (arrowMatch) {
+                    const reqs = arrowMatch[1].split(',').map(r => r.trim());
+                    const compName = arrowMatch[2].trim();
+                    const compLink = arrowMatch[3].trim().replace('file:///c:/Users/erlin/repo/movelink/', '');
+                    reqs.forEach(reqId => {
+                        mappings.push({ reqId, name: compName, path: compLink });
+                    });
+                    return;
+                }
+
+                // Pattern 2: 1. **[SideNav](file:///...)**: ... (Erfüllt: FA1.1)
+                const fulfillsMatch = line.match(/(?:\*\*)?\[([^\]]+)\]\(([^)]+)\)(?:\*\*)?.*\(Erfüllt:\s*(FA\d+(?:\.\d+)*(?:\s*,\s*FA\d+(?:\.\d+)*)*).*\)/i);
+                if (fulfillsMatch) {
+                    const compName = fulfillsMatch[1].trim();
+                    const compLink = fulfillsMatch[2].trim().replace('file:///c:/Users/erlin/repo/movelink/', '');
+                    const reqs = fulfillsMatch[3].split(',').map(r => r.trim());
+                    reqs.forEach(reqId => {
+                        mappings.push({ reqId, name: compName, path: compLink });
+                    });
+                    return;
+                }
+
+                // Pattern 3: 1. **ProfileController / Auth Service**: ... (Erfüllt: FA3.1)
+                const textFulfillsMatch = line.match(/\*\*(.*?)\*\*\s*:.*\(Erfüllt:\s*(FA\d+(?:\.\d+)*(?:\s*,\s*FA\d+(?:\.\d+)*)*).*\)/i);
+                if (textFulfillsMatch) {
+                    const compName = textFulfillsMatch[1].trim();
+                    const reqs = textFulfillsMatch[2].split(',').map(r => r.trim());
+                    reqs.forEach(reqId => {
+                        mappings.push({ reqId, name: compName, path: '' });
+                    });
+                    return;
+                }
+            });
+
+            return mappings;
+        }
+
+        // Helper to resolve classes dynamically
+        function getComponentClasses(componentPath) {
+            if (!componentPath) return [];
+            
+            const classes = [];
+            const normalizedLink = componentPath.replace('file:///c:/Users/erlin/repo/movelink/', '').replace('../', '');
+            
+            // Case 1: Component link is a direct code file
+            const isCodeFile = normalizedLink.endsWith('.ts') || normalizedLink.endsWith('.tsx') || normalizedLink.endsWith('.cpp') || normalizedLink.endsWith('.ino') || normalizedLink.endsWith('.h') || normalizedLink.endsWith('.py');
+            
+            let targetFiles = [];
+            if (isCodeFile) {
+                targetFiles.push(normalizedLink);
+            } else if (normalizedLink.endsWith('.md')) {
+                // Component is a markdown file.
+                // Let's find all files in the same directory as this markdown file!
+                const dirPath = normalizedLink.substring(0, normalizedLink.lastIndexOf('/'));
+                
+                // Find all files in DOCS_DATA.codeContents that start with this dirPath
+                const codeFiles = Object.keys(DOCS_DATA.codeContents || {});
+                codeFiles.forEach(file => {
+                    if (file.startsWith(dirPath + '/') && file !== normalizedLink) {
+                        targetFiles.push(file);
+                    }
+                });
+                
+                // Also look inside the component's markdown file content for code links
+                const fileObj = DOCS_DATA.files.find(f => f.path === normalizedLink);
+                if (fileObj && fileObj.content) {
+                    const codeLinkMatches = fileObj.content.match(/\[([^\]]+\.(?:ts|tsx|cpp|ino|h|py))\]\(([^)]+)\)/g);
+                    if (codeLinkMatches) {
+                        codeLinkMatches.forEach(match => {
+                            const pathMatch = match.match(/\(([^)]+)\)/);
+                            if (pathMatch) {
+                                const path = pathMatch[1].replace('file:///c:/Users/erlin/repo/movelink/', '').replace('../', '');
+                                // If it is indeed a code file, add it
+                                if (!targetFiles.includes(path)) {
+                                    targetFiles.push(path);
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Now, scan targetFiles to extract class / function names
+            targetFiles.forEach(file => {
+                const content = DOCS_DATA.codeContents[file];
+                if (!content) return;
+
+                const lines = content.split('\n');
+                lines.forEach((line, index) => {
+                    const lineNum = index + 1;
+                    let name = '';
+                    
+                    const classMatch = line.match(/(?:class|interface|struct)\s+(\w+)/);
+                    const funcMatch = line.match(/(?:function|void|int|float|double|bool)\s+(\w+)\s*\(/);
+                    const constFuncMatch = line.match(/const\s+(\w+)\s*=\s*(?:\(\)|function|\w+)/);
+
+                    if (classMatch) name = classMatch[1];
+                    else if (funcMatch) name = funcMatch[1] + '()';
+                    else if (constFuncMatch) name = constFuncMatch[1];
+
+                    if (name && !['if', 'for', 'while', 'switch', 'catch', 'setup', 'loop'].includes(name.replace('()', ''))) {
+                        if (!classes.some(c => c.name === name && c.file === file)) {
+                            classes.push({ name, file, line: lineNum });
+                        }
+                    }
+                });
+
+                if (classes.filter(c => c.file === file).length === 0) {
+                    const filename = file.split('/').pop();
+                    classes.push({ name: filename, file, line: 1 });
+                }
+            });
+
+            return classes;
+        }
+
+        // Helper to resolve class names dynamically from code files (fallback when no component path is found)
+        function getClassForReq(reqId) {
+            const refs = DOCS_DATA.references[reqId] || [];
+            const classes = [];
+            for (const ref of refs) {
+                if (ref.file.endsWith('.ts') || ref.file.endsWith('.tsx') || ref.file.endsWith('.cpp') || ref.file.endsWith('.ino') || ref.file.endsWith('.h') || ref.file.endsWith('.py')) {
+                    let name = '';
+                    const context = ref.context || '';
+                    if (context.includes('@implements')) continue;
+
+                    const classMatch = context.match(/(?:class|interface|struct)\s+(\w+)/);
+                    const funcMatch = context.match(/(?:function|void|int|float|double|bool)\s+(\w+)\s*\(/);
+                    const constFuncMatch = context.match(/const\s+(\w+)\s*=\s*(?:\(\)|function|\w+)/);
+
+                    if (classMatch) name = classMatch[1];
+                    else if (funcMatch) name = funcMatch[1] + '()';
+                    else if (constFuncMatch) name = constFuncMatch[1];
+                    else {
+                        const filename = ref.file.split('/').pop();
+                        name = `${filename}:${ref.line}`;
+                    }
+
+                    classes.push({ name, file: ref.file, line: ref.line });
+                }
+            }
+            return classes;
+        }
+
+        // 3. Structure data hierarchically: Container -> Sub-FA -> Detail-FA
+        const containerIds = ['FA1', 'FA2', 'FA3'];
+        const containerNames = {
+            'FA1': 'Applikation (Mobile App)',
+            'FA2': 'Trainingsgerät (Sensor-Firmware)',
+            'FA3': 'Datenbank & Backend'
+        };
+
+        const tree = containerIds.map(containerId => {
+            const containerFile = containerFiles.find(f => {
+                if (containerId === 'FA1' && f.path.includes('app/')) return true;
+                if (containerId === 'FA2' && f.path.includes('embedded/')) return true;
+                if (containerId === 'FA3' && f.path.includes('database/')) return true;
+                return false;
+            });
+
+            const containerTitle = containerNames[containerId] || (containerFile ? containerFile.title : containerId);
+            const containerComponents = parseContainerComponents(containerFile);
+
+            // Find all Sub-FAs for this container (like FA1.1, FA1.2...)
+            const subFAs = Object.values(DOCS_DATA.definitions)
+                .filter(d => d.id.startsWith(containerId + '.') && (d.id.match(/\./g) || []).length === 1)
+                .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+
+            const subFATree = subFAs.map(subFa => {
+                // Find all Detail-FAs (like FA1.1.1, FA1.1.2...)
+                const detailFAs = Object.values(DOCS_DATA.definitions)
+                    .filter(d => d.id.startsWith(subFa.id + '.') && (d.id.match(/\./g) || []).length === 2)
+                    .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+
+                const compMap = containerComponents.find(c => c.reqId === subFa.id);
+                const componentName = compMap ? compMap.name : '-';
+                const componentPath = compMap ? compMap.path : '';
+
+                // Resolve classes: if component is mapped, extract dynamically. Otherwise, fallback to @implements references.
+                const classes = compMap ? getComponentClasses(compMap.path) : getClassForReq(subFa.id);
+
+                return {
+                    id: subFa.id,
+                    title: subFa.title,
+                    detailFAs: detailFAs,
+                    component: componentName,
+                    componentPath: componentPath,
+                    classes: classes
+                };
+            });
+
+            // Fallback placeholder rows if no sub-elements exist yet
+            if (subFATree.length === 0) {
+                subFATree.push({
+                    id: '',
+                    title: '(unbenannt)',
+                    detailFAs: [],
+                    component: '-',
+                    componentPath: '',
+                    classes: []
+                });
+            }
+
+            return {
+                id: containerId,
+                title: containerTitle,
+                subFAs: subFATree
+            };
+        });
+
+        // 4. Generate rows & rowspans
+        const renderedRows = [];
+
+        tree.forEach(container => {
+            let containerTotalRows = 0;
+            container.subFAs.forEach(sub => {
+                const subRows = sub.detailFAs.length > 0 ? sub.detailFAs.length : 1;
+                containerTotalRows += subRows;
+            });
+
+            container.subFAs.forEach((sub, subIdx) => {
+                const subRows = sub.detailFAs.length > 0 ? sub.detailFAs.length : 1;
+
+                if (sub.detailFAs.length === 0) {
+                    renderedRows.push({
+                        container: container,
+                        containerRowSpan: subIdx === 0 ? containerTotalRows : 0,
+                        subFa: sub,
+                        subFaRowSpan: 1,
+                        detailFa: null,
+                        classes: sub.classes,
+                        isFirstRow: subIdx === 0
+                    });
+                } else {
+                    sub.detailFAs.forEach((det, detIdx) => {
+                        renderedRows.push({
+                            container: container,
+                            containerRowSpan: (subIdx === 0 && detIdx === 0) ? containerTotalRows : 0,
+                            subFa: sub,
+                            subFaRowSpan: detIdx === 0 ? subRows : 0,
+                            detailFa: det,
+                            classes: sub.classes,
+                            isFirstRow: subIdx === 0 && detIdx === 0
+                        });
+                    });
+                }
+            });
+        });
+
+        // Compute dynamic rowspans for Column 1: Use Cases
+        const totalRows = renderedRows.length;
+        const ucCount = useCases.length;
+        const ucSpans = [];
+        let remaining = totalRows;
+        for (let i = 0; i < ucCount; i++) {
+            const span = i === ucCount - 1 ? remaining : Math.floor(totalRows / ucCount);
+            ucSpans.push(span);
+            remaining -= span;
+        }
+
+        let ucCurrentIndex = 0;
+        let ucRowCount = 0;
+
+        // 5. Render rows to tbody
+        renderedRows.forEach((row, idx) => {
+            const tr = document.createElement('tr');
+            let trHtml = '';
+
+            // Column 1: Use Cases (UC) - spanned dynamically
+            if (idx === 0 || ucRowCount >= ucSpans[ucCurrentIndex]) {
+                if (idx > 0) {
+                    ucCurrentIndex++;
+                }
+                ucRowCount = 0;
+                const uc = useCases[ucCurrentIndex] || { id: `UC-${ucCurrentIndex+1}`, title: '' };
+                const span = ucSpans[ucCurrentIndex];
+
+                trHtml += `
+                    <td rowspan="${span}" class="uc-cell" data-uc-id="${uc.id}">
+                        <strong>${uc.id}</strong><br>
+                        <span style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">${uc.title}</span>
+                    </td>
+                `;
+
+                if (idx === 0) {
+                    trHtml += `
+                        <td rowspan="${totalRows}" class="svg-cell">
+                            <svg id="archMatrixSvg" width="100%" height="100%" style="display: block; position: absolute; top: 0; left: 0;">
+                                <defs>
+                                    <marker id="arrow-white-matrix" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f0f4f3" />
+                                    </marker>
+                                    <marker id="arrow-orange-matrix" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f97316" />
+                                    </marker>
+                                    <marker id="arrow-green-matrix" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#22c55e" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </td>
+                    `;
+                }
+            }
+            ucRowCount++;
+
+            // Column 3: FA Ebene 1 (Containers)
+            if (row.containerRowSpan > 0) {
+                trHtml += `
+                    <td rowspan="${row.containerRowSpan}" class="fa-cell" data-fa-id="${row.container.id}">
+                        <strong>${row.container.id}</strong><br>
+                        <span style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">${row.container.title}</span>
+                    </td>
+                `;
+            }
+
+            // Column 4: Sub-FA Ebene 2
+            if (row.subFaRowSpan > 0) {
+                trHtml += `
+                    <td rowspan="${row.subFaRowSpan}" class="sub-fa-cell">
+                        <strong>${row.subFa.id}</strong> ${row.subFa.title}
+                    </td>
+                    <td rowspan="${row.subFaRowSpan}" class="component-cell">
+                        ${row.subFa.componentPath ? `
+                            <div class="jira-like-link" onclick="window.app.openCodeView('${row.subFa.componentPath}', 1)" style="font-weight: 600;" title="Klicke, um Komponente anzuzeigen">
+                                ${row.subFa.component}
+                            </div>
+                        ` : row.subFa.component}
+                    </td>
+                `;
+            }
+
+            // Column 6: Detail-FA Ebene 3
+            if (row.detailFa) {
+                trHtml += `
+                    <td class="detail-fa-cell">
+                        <strong>${row.detailFa.id}</strong> ${row.detailFa.title}
+                    </td>
+                `;
+            } else {
+                trHtml += `<td class="detail-fa-cell" style="color: var(--text-muted);">-</td>`;
+            }
+
+            // Column 7: Klassenebene (Klasse)
+            if (row.classes && row.classes.length > 0) {
+                const classLinks = row.classes.map(cls => `
+                    <div class="jira-like-link" onclick="window.app.openCodeView('${cls.file}', ${cls.line})" style="font-size: 11px; margin-bottom: 2px; text-decoration: underline; color: var(--primary);" title="Öffne ${cls.file}">
+                        <i class="fa-solid fa-code"></i> ${cls.name}
+                    </div>
+                `).join('');
+                trHtml += `<td class="class-cell">${classLinks}</td>`;
+            } else {
+                trHtml += `<td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>`;
+            }
+
+            tr.innerHTML = trHtml;
+            tbody.appendChild(tr);
+        });
+
+        // Trigger layout drawing of paths
+        setTimeout(() => {
+            drawArchMatrixArrows();
+        }, 50);
+    }
+
+    function drawArchMatrixArrows() {
+        const svg = document.getElementById('archMatrixSvg');
+        if (!svg) return;
+
+        // Clear existing paths (keep defs)
+        const paths = svg.querySelectorAll('path');
+        paths.forEach(p => p.remove());
+
+        const svgRect = svg.getBoundingClientRect();
+
+        // Find UC cells and get Y centers relative to SVG
+        const ucElements = {};
+        document.querySelectorAll('.arch-matrix-table .uc-cell').forEach(el => {
+            const id = el.getAttribute('data-uc-id');
+            const rect = el.getBoundingClientRect();
+            ucElements[id] = rect.top + rect.height / 2 - svgRect.top;
+        });
+
+        // Find FA cells and get Y centers relative to SVG
+        const faElements = {};
+        document.querySelectorAll('.arch-matrix-table .fa-cell').forEach(el => {
+            const id = el.getAttribute('data-fa-id');
+            const rect = el.getBoundingClientRect();
+            faElements[id] = rect.top + rect.height / 2 - svgRect.top;
+        });
+
+        // Dynamically build connections from actual requirements database
+        const connections = [];
+        const containerIds = ['FA1', 'FA2', 'FA3'];
+        
+        containerIds.forEach(containerId => {
+            const def = DOCS_DATA.definitions[containerId];
+            if (def && def.links) {
+                def.links.forEach(ucId => {
+                    let color = '#f0f4f3';
+                    let marker = 'arrow-white-matrix';
+                    if (containerId === 'FA2') {
+                        color = '#f97316';
+                        marker = 'arrow-orange-matrix';
+                    } else if (containerId === 'FA3') {
+                        color = '#22c55e';
+                        marker = 'arrow-green-matrix';
+                    }
+                    connections.push({ from: ucId, to: containerId, color, marker });
+                });
+            }
+        });
+
+        connections.forEach(conn => {
+            const yFrom = ucElements[conn.from];
+            const yTo = faElements[conn.to];
+
+            if (yFrom !== undefined && yTo !== undefined) {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const d = `M 5 ${yFrom} C 40 ${yFrom}, 80 ${yTo}, 115 ${yTo}`;
+                path.setAttribute('d', d);
+                path.setAttribute('stroke', conn.color);
+                path.setAttribute('stroke-width', '2.5');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('marker-end', `url(#${conn.marker})`);
+                svg.appendChild(path);
+            }
+        });
     }
 
     // 11. Render Network Dependency Graph (Vis.js)
@@ -1867,7 +2347,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.activeTab === 'c4-tab') {
             drawC4Connections();
         }
+        if (state.activeTab === 'matrix-tab' && elements.toggleArchMatrixBtn && elements.toggleArchMatrixBtn.classList.contains('active')) {
+            drawArchMatrixArrows();
+        }
     });
+
 
     // Also draw connections on scroll to prevent alignment lag
     const c4BoardContainer = document.getElementById('c4BoardContainer');

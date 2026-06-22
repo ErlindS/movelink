@@ -1,5 +1,5 @@
 /**
- * @implements FA8
+ * @implements FA1.4
  */
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';

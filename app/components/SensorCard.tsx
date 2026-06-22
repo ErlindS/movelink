@@ -1,5 +1,5 @@
 /**
- * @implements FA2, FA3, NF3
+ * @implements FA1.2, FA1.3, NF3
  */
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Switch } from 'react-native';

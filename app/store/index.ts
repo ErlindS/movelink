@@ -1,5 +1,5 @@
 /**
- * @implements FA5, FA9
+ * @implements FA1.5, FA1.6
  */
 import { create } from 'zustand';
 import { Platform } from 'react-native';

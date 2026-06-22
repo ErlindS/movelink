@@ -1,4 +1,4 @@
-# @implements R2
+# @implements FA2.6
 # Generiert das physische 3D-Druck-Gehäuse für den Xiao nRF52840 Sense Controller.
 
 import bpy

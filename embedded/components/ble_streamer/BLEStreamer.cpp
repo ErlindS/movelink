@@ -1,4 +1,4 @@
-// @implements FA3, FA5
+// @implements FA2.5
 #include "BLEStreamer.h"
 #include <ArduinoBLE.h>
 

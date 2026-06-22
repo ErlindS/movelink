@@ -1,5 +1,5 @@
 /**
- * @implements FA1
+ * @implements FA1.1
  */
 import React from 'react';
 import { View } from 'react-native';
