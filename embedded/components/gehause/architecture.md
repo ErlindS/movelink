@@ -25,6 +25,13 @@ Das Gehäuse umschließt den XIAO-Mikrocontroller sowie die Peripherie (Display,
 - **Implementiert in:** [Gehause.py](file:///c:/Users/erlin/repo/movelink/embedded/src/Gehause.py) (Blender Python API)
 - **Erfüllt Anforderungen:**
   - **R2: Physisches Gehäuse**: Stabile Fixierung des Sensors am Arm, Schutz gegen Schweiß und Erschütterungen.
+  - **Sollte beinhalten**:
+  - Runde Ecken
+  - Halterung Für USB-C
+  - Halterung für an/aus schalter
+  - Die Maße sollten so gewählt sein, dass nicht wackelt
+  - Verschlussmöglichkeit
+  - Halterung für G-Hook
 
 ## Schnittstellen
 Das Gehäuse hat keine softwareseitigen Verbindungen, interagiert aber mechanisch mit:

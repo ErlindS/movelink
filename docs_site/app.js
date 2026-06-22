@@ -404,9 +404,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lowerPath.startsWith('embedded/') || lowerPath.includes('/embedded/')) {
             return { name: 'Sensor Firmware Container', type: 'container', id: 'firmware' };
         }
-        if (lowerPath.startsWith('doc/') || lowerPath.includes('backend') || lowerPath.includes('pflichtenheft')) {
+        if (lowerPath.startsWith('doc/') || lowerPath.startsWith('database/') || lowerPath.includes('backend') || lowerPath.includes('pflichtenheft')) {
             return { name: 'Backend Container', type: 'container', id: 'backend' };
         }
+
 
         // Fallback
         return { name: 'MoveLink System', type: 'system-context', id: 'system' };
@@ -1162,13 +1163,14 @@ document.addEventListener('DOMContentLoaded', () => {
             elements: [
                 { id: 'firmware', type: 'container', title: 'Sensor Firmware Container', description: 'Arduino C++ Code auf dem XIAO-Mikrocontroller. Erfasst Sensordaten, wendet Filter an und sendet BLE Pakete.', tech: 'Arduino C/C++, Edge Impulse SDK', deployable: true, file: 'embedded/architecture.md' },
                 { id: 'app', type: 'container', title: 'Mobile App Container', description: 'React Native / Expo App für Smartphones. Bietet UI für Verbindung, Live-Visualisierung und Verlauf.', tech: 'React Native, TypeScript, Zustand', deployable: true, file: 'app/architecture.md' },
-                { id: 'backend', type: 'container', title: 'Backend Container', description: 'Node.js/Express API und PostgreSQL Datenbank. Verwaltet Nutzer und speichert Trainingsverlauf.', tech: 'Node.js, Express, PostgreSQL', deployable: true, file: 'doc/Pflichtenheft/pflichtenheft.tex' }
+                { id: 'backend', type: 'container', title: 'Backend & Database Container', description: 'Node.js/Express API und PostgreSQL/SQLite Datenbank. Speichert Benutzerprofile und historische Trainingsdaten.', tech: 'Node.js, Express, PostgreSQL / SQLite', deployable: true, file: 'database/architecture.md' }
             ],
             connections: [
                 { from: 'firmware', to: 'app', text: 'BLE Data Stream' },
                 { from: 'app', to: 'backend', text: 'HTTPS / WebSockets' }
             ]
         },
+
         components: {
             app: {
                 title: "Mobile App Komponenten",
