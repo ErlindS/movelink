@@ -368,11 +368,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return { name: 'useWebSocket Hook', type: 'component', id: 'use_ws', container: 'app' };
         }
 
+        if (lowerPath.includes('imureader')) {
+            return { name: 'Sensordatenerfassung (Loop)', type: 'component', id: 'imu_reader', container: 'firmware' };
+        }
+        if (lowerPath.includes('inferenceengine')) {
+            return { name: 'Inferenz-Engine (Edge Impulse)', type: 'component', id: 'inference_engine', container: 'firmware' };
+        }
+        if (lowerPath.includes('visualfeedback')) {
+            return { name: 'LED- & Display-Controller', type: 'component', id: 'led_display_controller', container: 'firmware' };
+        }
         if (lowerPath.includes('executable.ino') && (reqId === 'FA5' || reqId === 'FA4')) {
-            return { name: 'Edge Impulse SDK', type: 'component', id: 'inference_engine', container: 'firmware' };
+            return { name: 'Inferenz-Engine (Edge Impulse)', type: 'component', id: 'inference_engine', container: 'firmware' };
+        }
+        if (lowerPath.includes('executable.ino') && reqId === 'FA9') {
+            return { name: 'LED- & Display-Controller', type: 'component', id: 'led_display_controller', container: 'firmware' };
+        }
+        if (lowerPath.includes('executable.ino')) {
+            return { name: 'Sensordatenerfassung (Loop)', type: 'component', id: 'imu_reader', container: 'firmware' };
+        }
+        if (lowerPath.includes('gehause.py') || lowerPath.includes('gehäuse')) {
+            return { name: 'Gehäuse', type: 'component', id: 'gehause', container: 'firmware' };
         }
         if (lowerPath.includes('imu') || lowerPath.includes('sensor')) {
-            return { name: 'LSM6DS3 Reader', type: 'component', id: 'imu_reader', container: 'firmware' };
+            return { name: 'Sensordatenerfassung (Loop)', type: 'component', id: 'imu_reader', container: 'firmware' };
         }
         if (lowerPath.includes('ble')) {
             return { name: 'BLE Service', type: 'component', id: 'ble_service', container: 'firmware' };
@@ -397,9 +415,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTraceTree() {
         elements.traceTree.innerHTML = '';
         
-        // Hide tree-controls since everything is displayed fully expanded horizontally
+        // Hide tree-controls since everything is displayed in a clean table grid
         const controls = document.querySelector('.tree-controls');
         if (controls) controls.style.display = 'none';
+
+        const filter = state.treeFilter.toLowerCase();
 
         // Find all Use Cases (UC-X)
         const useCases = Object.values(DOCS_DATA.definitions)
@@ -411,12 +431,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const flowContainer = document.createElement('div');
-        flowContainer.className = 'trace-flow-container';
-
+        // Build flat table rows with pre-calculated rowspans
+        const tableRows = [];
+        
         useCases.forEach(uc => {
-            const filter = state.treeFilter.toLowerCase();
-            
             // Find linked requirements
             const linkedReqs = Object.values(DOCS_DATA.definitions)
                 .filter(d => d.type !== 'UC' && d.links.includes(uc.id))
@@ -427,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 uc.title.toLowerCase().includes(filter);
                                 
             if (!matchesFilter) {
-                // If Use Case itself doesn't match, check if any of its requirements match the filter
+                // Check if any of its requirements or code files match the filter
                 const reqMatches = linkedReqs.some(req => 
                     req.id.toLowerCase().includes(filter) || 
                     req.title.toLowerCase().includes(filter) ||
@@ -439,153 +457,190 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!matchesFilter) return; // Skip if filter is set and doesn't match
 
-            const flowRow = document.createElement('div');
-            flowRow.className = 'trace-flow-row';
-
-            // 1. Use Case Column
-            const ucCol = document.createElement('div');
-            ucCol.className = 'uc-col';
-            
-            const ucCard = document.createElement('div');
-            ucCard.className = 'trace-flow-card uc-card';
-            ucCard.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="node-badge usecase">${uc.id}</span>
-                    <i class="fa-solid fa-chevron-down flow-toggle-icon" style="font-size: 10px; color: var(--text-muted); transition: var(--transition-smooth);"></i>
-                </div>
-                <div class="card-title">${uc.title}</div>
-                <div class="card-file-info"><i class="fa-regular fa-folder-open"></i> ${uc.file}:${uc.line}</div>
-            `;
-            ucCard.addEventListener('click', () => {
-                flowRow.classList.toggle('collapsed-row');
-            });
-            ucCol.appendChild(ucCard);
-            flowRow.appendChild(ucCol);
-
-            // 2. Requirements Container (stores requirement rows)
-            const reqsContainer = document.createElement('div');
-            reqsContainer.className = 'trace-flow-requirements-container';
-
+            const ucRows = [];
             if (linkedReqs.length === 0) {
-                // Placeholder Row for no linked requirements
-                const reqRow = document.createElement('div');
-                reqRow.className = 'trace-flow-requirement-row';
-
-                const reqCol = document.createElement('div');
-                reqCol.className = 'req-col';
-                reqCol.innerHTML = `
-                    <div class="trace-flow-card placeholder-card" style="border-left: 4px solid var(--text-muted); opacity:0.7;">
-                        <div class="card-title" style="color:var(--text-muted); font-style:italic;">
-                            <i class="fa-solid fa-info-circle"></i> Keine Anforderungen verknüpft
-                        </div>
-                    </div>
-                `;
-
-                const codeCol = document.createElement('div');
-                codeCol.className = 'code-col';
-                codeCol.innerHTML = `
-                    <div class="trace-flow-card placeholder-card" style="border-left: 4px solid var(--text-muted); opacity:0.7;">
-                        <div class="card-title" style="color:var(--text-muted); font-style:italic;">
-                            -
-                        </div>
-                    </div>
-                `;
-
-                reqRow.appendChild(reqCol);
-                reqRow.appendChild(codeCol);
-                reqsContainer.appendChild(reqRow);
+                ucRows.push({
+                    uc: uc,
+                    req: null,
+                    ref: null,
+                    ucSpan: 0,
+                    reqSpan: 0
+                });
             } else {
                 linkedReqs.forEach(req => {
-                    const reqRow = document.createElement('div');
-                    reqRow.className = 'trace-flow-requirement-row';
-
-                    // Requirement Column
-                    const reqCol = document.createElement('div');
-                    reqCol.className = 'req-col';
-                    
-                    const badgeClass = req.type === 'FA' ? 'requirement' : 'code';
-                    const reqCard = document.createElement('div');
-                    reqCard.className = 'trace-flow-card req-card';
-                    reqCard.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span class="node-badge ${badgeClass}">${req.id}</span>
-                            <i class="fa-solid fa-chevron-down flow-toggle-icon" style="font-size: 10px; color: var(--text-muted); transition: var(--transition-smooth);"></i>
-                        </div>
-                        <div class="card-title">${req.title}</div>
-                        <div class="card-file-info"><i class="fa-regular fa-folder-open"></i> ${req.file}:${req.line}</div>
-                    `;
-                    reqCard.addEventListener('click', () => {
-                        reqRow.classList.toggle('collapsed-req');
-                    });
-                    reqCol.appendChild(reqCard);
-                    reqRow.appendChild(reqCol);
-
-                    // Code References Column
-                    const codeCol = document.createElement('div');
-                    codeCol.className = 'code-col';
-
                     const refs = DOCS_DATA.references[req.id] || [];
-
                     if (refs.length === 0) {
-                        const emptyCard = document.createElement('div');
-                        emptyCard.className = 'trace-flow-card placeholder-card';
-                        emptyCard.style.borderLeft = '4px solid var(--text-muted)';
-                        emptyCard.style.opacity = '0.7';
-                        emptyCard.style.cursor = 'default';
-                        emptyCard.innerHTML = `
-                            <div class="card-title" style="color:var(--text-muted); font-style:italic;">
-                                <i class="fa-solid fa-triangle-exclamation"></i> Nicht im Code referenziert
-                            </div>
-                        `;
-                        codeCol.appendChild(emptyCard);
+                        ucRows.push({
+                            uc: uc,
+                            req: req,
+                            ref: null,
+                            ucSpan: 0,
+                            reqSpan: 0
+                        });
                     } else {
                         refs.forEach(ref => {
-                            const isCode = ref.file.endsWith('.ts') || ref.file.endsWith('.tsx') || ref.file.endsWith('.ino') || ref.file.endsWith('.cpp');
-                            const iconClass = isCode ? 'fa-solid fa-code' : 'fa-regular fa-file-lines';
-                            const codeCard = document.createElement('div');
-                            codeCard.className = 'trace-flow-card code-card';
-                            
-                            const filename = ref.file.split('/').pop();
-                            const c4El = getC4ElementForFile(ref.file, req.id);
-                            
-                            // Style code references visually as their corresponding C4 components/containers
-                            const c4BadgeClass = c4El.type === 'container' ? 'usecase' : (c4El.type === 'component' ? 'code' : 'requirement');
-                            const borderLeftColor = c4El.type === 'container' ? 'var(--primary)' : (c4El.type === 'component' ? '#8b5cf6' : '#627c78');
-                            const badgeLabel = c4El.type === 'container' ? 'C4 Container' : 'C4 Component';
-                            
-                            codeCard.style.borderLeft = `4px solid ${borderLeftColor}`;
-                            codeCard.innerHTML = `
-                                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                                    <div style="display:flex; align-items:center; gap:8px;">
-                                        <i class="${iconClass}" style="color:${borderLeftColor}"></i>
-                                        <strong style="color:var(--text-primary)">${c4El.name}</strong>
-                                    </div>
-                                    <span class="node-badge ${c4BadgeClass}" style="font-size:8px; padding:2px 4px;">${badgeLabel}</span>
-                                </div>
-                                <div class="card-file-info" style="font-size:10px; margin-top:2px;">
-                                    <i class="fa-regular fa-file-code"></i> ${filename} (Zeile ${ref.line})
-                                </div>
-                                <div class="code-snippet-box">${escapeHtml(ref.context)}</div>
-                            `;
-
-                            codeCard.addEventListener('click', () => {
-                                openCodeView(ref.file, ref.line);
+                            ucRows.push({
+                                uc: uc,
+                                req: req,
+                                ref: ref,
+                                ucSpan: 0,
+                                reqSpan: 0
                             });
-
-                            codeCol.appendChild(codeCard);
                         });
                     }
-                    
-                    reqRow.appendChild(codeCol);
-                    reqsContainer.appendChild(reqRow);
                 });
             }
 
-            flowRow.appendChild(reqsContainer);
-            flowContainer.appendChild(flowRow);
+            // Set ucSpan on first row
+            if (ucRows.length > 0) {
+                ucRows[0].ucSpan = ucRows.length;
+            }
+
+            // Calculate reqSpan
+            let currentReqId = null;
+            let currentReqStartIndex = 0;
+            ucRows.forEach((row, index) => {
+                if (row.req) {
+                    if (row.req.id !== currentReqId) {
+                        if (currentReqId !== null) {
+                            ucRows[currentReqStartIndex].reqSpan = index - currentReqStartIndex;
+                        }
+                        currentReqId = row.req.id;
+                        currentReqStartIndex = index;
+                    }
+                } else {
+                    if (currentReqId !== null) {
+                        ucRows[currentReqStartIndex].reqSpan = index - currentReqStartIndex;
+                    }
+                    currentReqId = null;
+                }
+            });
+            if (currentReqId !== null) {
+                ucRows[currentReqStartIndex].reqSpan = ucRows.length - currentReqStartIndex;
+            }
+
+            tableRows.push(...ucRows);
         });
 
-        elements.traceTree.appendChild(flowContainer);
+        // Create Confluence style Table
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'trace-table-container';
+
+        const table = document.createElement('table');
+        table.className = 'trace-confluence-table';
+        
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Anwendungsfall (Use Case)</th>
+                    <th>Systemanforderung</th>
+                    <th class="text-center">@Priorität</th>
+                    <th class="text-center">Status</th>
+                    <th>C4 Komponente</th>
+                    <th>Quellcode-Referenz</th>
+                </tr>
+            </thead>
+            <tbody id="traceTableBody"></tbody>
+        `;
+        
+        const tbody = table.querySelector('tbody');
+
+        tableRows.forEach(row => {
+            const tr = document.createElement('tr');
+            let rowHtml = '';
+
+            // 1. UC Column
+            if (row.ucSpan > 0) {
+                rowHtml += `
+                    <td rowspan="${row.ucSpan}" class="matrix-cell uc-cell">
+                        <div class="trace-badge-container">
+                            <span class="node-badge usecase">${row.uc.id}</span>
+                            <span class="trace-title">${row.uc.title}</span>
+                        </div>
+                    </td>
+                `;
+            }
+
+            // 2. Req Column, Priority, Status
+            if (row.req) {
+                if (row.reqSpan > 0) {
+                    const reqBadgeClass = row.req.type === 'FA' ? 'requirement' : (row.req.type === 'NF' ? 'code' : 'usecase');
+                    
+                    // Priority mappings
+                    let priorityLabel = 'LOW';
+                    let priorityClass = 'priority-low';
+                    if (row.req.type === 'FA') {
+                        priorityLabel = 'CRITICAL';
+                        priorityClass = 'priority-critical';
+                    } else if (row.req.type === 'NF') {
+                        priorityLabel = 'MEDIUM';
+                        priorityClass = 'priority-medium';
+                    }
+
+                    // Status mappings (CLOSED if implements are found, otherwise OPEN)
+                    const refs = DOCS_DATA.references[row.req.id] || [];
+                    const isImplemented = refs.length > 0;
+                    const statusLabel = isImplemented ? 'CLOSED' : 'OPEN';
+                    const statusClass = isImplemented ? 'status-closed' : 'status-open';
+
+                    rowHtml += `
+                        <td rowspan="${row.reqSpan}" class="matrix-cell req-cell">
+                            <div class="trace-badge-container">
+                                <span class="node-badge ${reqBadgeClass}">${row.req.id}</span>
+                                <span class="trace-title">${row.req.title}</span>
+                            </div>
+                        </td>
+                        <td rowspan="${row.reqSpan}" class="text-center">
+                            <span class="priority-badge ${priorityClass}">${priorityLabel}</span>
+                        </td>
+                        <td rowspan="${row.reqSpan}" class="text-center">
+                            <span class="status-badge ${statusClass}">${statusLabel}</span>
+                        </td>
+                    `;
+                }
+            } else {
+                rowHtml += `
+                    <td class="text-muted italic">Keine Anforderungen verknüpft</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                `;
+            }
+
+            // 3. C4 Component & Reference Link
+            if (row.ref) {
+                const isCode = row.ref.file.endsWith('.ts') || row.ref.file.endsWith('.tsx') || row.ref.file.endsWith('.ino') || row.ref.file.endsWith('.cpp');
+                const iconClass = isCode ? 'fa-solid fa-code' : 'fa-regular fa-file-lines';
+                const c4El = getC4ElementForFile(row.ref.file, row.req ? row.req.id : '');
+                const borderLeftColor = c4El.type === 'container' ? 'var(--primary)' : (c4El.type === 'component' ? '#8b5cf6' : '#627c78');
+                const filename = row.ref.file.split('/').pop();
+
+                rowHtml += `
+                    <td>
+                        <div class="component-ref-cell">
+                            <span class="c4-color-dot" style="background-color: ${borderLeftColor}"></span>
+                            <strong>${c4El.name}</strong>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="jira-like-link" onclick="window.app.openCodeView('${row.ref.file}', ${row.ref.line})" title="Klicke, um Code anzuzeigen">
+                            <i class="${iconClass}"></i>
+                            <span>${filename} (Z. ${row.ref.line})</span>
+                        </div>
+                    </td>
+                `;
+            } else {
+                rowHtml += `
+                    <td class="text-muted italic">-</td>
+                    <td class="text-muted italic"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-z)"></i> Nicht referenziert</td>
+                `;
+            }
+
+            tr.innerHTML = rowHtml;
+            tbody.appendChild(tr);
+        });
+
+        tableContainer.appendChild(table);
+        elements.traceTree.appendChild(tableContainer);
     }
 
     function escapeHtml(text) {
@@ -1134,15 +1189,85 @@ document.addEventListener('DOMContentLoaded', () => {
             firmware: {
                 title: "Sensor-Firmware Komponenten",
                 elements: [
-                    { id: 'imu_reader', type: 'component', title: 'LSM6DS3 Reader', description: 'Periodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz.', tech: 'C++ Module', file: 'embedded/architecture.md' },
-                    { id: 'inference_engine', type: 'component', title: 'Edge Impulse SDK', description: 'Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.', tech: 'Inferenzbibliothek', file: 'embedded/src/Executable.ino' },
-                    { id: 'ble_service', type: 'component', title: 'BLE Service', description: 'Stellt Characteristics bereit und verwaltet Verbindungsnotifikationen.', tech: 'ArduinoBLE', file: 'embedded/architecture.md' }
+                    { id: 'imu_reader', type: 'component', title: 'Sensordatenerfassung (Loop)', description: 'Periodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz.', tech: 'C++ Module', file: 'embedded/components/sensordatenerfassung/architecture.md' },
+                    { id: 'inference_engine', type: 'component', title: 'Inferenz-Engine (Edge Impulse)', description: 'Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.', tech: 'Inferenzbibliothek', file: 'embedded/components/inferenz_engine/architecture.md' },
+                    { id: 'led_display_controller', type: 'component', title: 'LED- & Display-Controller', description: 'Gibt dem Trainierenden direktes visuelles Feedback zur Qualität der Übungsausführung.', tech: 'C++ Module', file: 'embedded/components/led_display_controller/architecture.md' },
+                    { id: 'gehause', type: 'component', title: 'Gehäuse', description: 'Physisches, schützendes 3D-Druck-Gehäuse des Sensors.', tech: '3D CAD Model (Blender Python)', file: 'embedded/components/gehause/architecture.md' }
                 ],
                 connections: [
                     { from: 'imu_reader', to: 'inference_engine', text: 'Liefert Sensor-Rohdaten' },
-                    { from: 'imu_reader', to: 'ble_service', text: 'Streamt Rohdaten' },
-                    { from: 'inference_engine', to: 'ble_service', text: 'Überträgt Klassifikation' }
+                    { from: 'inference_engine', to: 'led_display_controller', text: 'Steuert Status-LED/Display' }
                 ]
+            }
+        },
+        classes: {
+            imu_reader: {
+                title: "Sensordatenerfassung Klassen & Funktionen",
+                elements: [
+                    { id: 'init_imu', type: 'class', title: 'initIMU()', description: 'Initialisiert die LSM6DS3 IMU-Hardware über den I2C-Bus.', tech: 'C++ Function', file: 'embedded/components/sensordatenerfassung/IMUReader.cpp', line: 12 },
+                    { id: 'read_sensor_data', type: 'class', title: 'readSensorData()', description: 'Liest Beschleunigungs- und Drehratenwerte mit 50Hz, clampt auf 2G und skaliert in m/s².', tech: 'C++ Function', file: 'embedded/components/sensordatenerfassung/IMUReader.cpp', line: 17 }
+                ],
+                connections: []
+            },
+            inference_engine: {
+                title: "Inferenz-Engine Klassen & Funktionen",
+                elements: [
+                    { id: 'run_model_inference', type: 'class', title: 'runModelInference()', description: 'Erstellt das Signal aus dem DSP-Puffer und führt den CNN-Klassifikator aus.', tech: 'C++ Function', file: 'embedded/components/inferenz_engine/InferenceEngine.cpp', line: 7 }
+                ],
+                connections: []
+            },
+            led_display_controller: {
+                title: "LED- & Display-Controller Klassen & Funktionen",
+                elements: [
+                    { id: 'init_feedback', type: 'class', title: 'initFeedback()', description: 'Initialisiert OLED-Display (U8x8) und konfiguriert RGB LED Pins (11, 12, 13) als Ausgang.', tech: 'C++ Function', file: 'embedded/components/led_display_controller/VisualFeedback.cpp', line: 12 },
+                    { id: 'update_feedback', type: 'class', title: 'updateFeedback()', description: 'Steuert Low-Active RGB-LEDs (Blau=Idle, Grün=Perfekt, Rot=Fehler) und zeigt Statusmeldungen an.', tech: 'C++ Function', file: 'embedded/components/led_display_controller/VisualFeedback.cpp', line: 25 },
+                    { id: 'send_json_to_pc', type: 'class', title: 'sendJsonToPC()', description: 'Formatiert Inferenzwerte, Konfidenz und Tipps als JSON-String und sendet diese via Serial.', tech: 'C++ Function', file: 'embedded/components/led_display_controller/VisualFeedback.cpp', line: 68 }
+                ],
+                connections: [
+                    { from: 'update_feedback', to: 'send_json_to_pc', text: 'ruft auf' }
+                ]
+            },
+            gehause: {
+                title: "Gehäuse Design-Skripte",
+                elements: [
+                    { id: 'create_ultimate_whoop_case', type: 'class', title: 'create_ultimate_whoop_case()', description: 'Baut Unterteil, Armbandlaschen, USB-C-Anschluss, Deckel und Schnapper per Blender API auf.', tech: 'Python Function', file: 'embedded/src/Gehause.py', line: 3 }
+                ],
+                connections: []
+            },
+            sensor_card: {
+                title: "SensorCard UI Komponenten",
+                elements: [
+                    { id: 'sensor_card_comp', type: 'class', title: 'SensorCard()', description: 'Funktionale React-Komponente, die das BLE-Koppel-UI und Verbindungsstatus anzeigt.', tech: 'JSX React Component', file: 'app/components/SensorCard.tsx', line: 5 }
+                ],
+                connections: []
+            },
+            live_chart: {
+                title: "LiveChart UI Komponenten",
+                elements: [
+                    { id: 'live_chart_comp', type: 'class', title: 'LiveChart()', description: 'Zeichnet eintreffende IMU-Beschleunigungs- und Drehratendaten in Echtzeit auf einem SVG-Canvas.', tech: 'JSX React Component', file: 'app/components/LiveChart.tsx', line: 5 }
+                ],
+                connections: []
+            },
+            session_card: {
+                title: "SessionCard UI Komponenten",
+                elements: [
+                    { id: 'session_card_comp', type: 'class', title: 'SessionCard()', description: 'Zeigt Metadaten und Diagramme vergangener Trainingseinheiten an.', tech: 'JSX React Component', file: 'app/components/SessionCard.tsx', line: 5 }
+                ],
+                connections: []
+            },
+            use_ble: {
+                title: "useBLE Hook Funktionen",
+                elements: [
+                    { id: 'use_ble_hook', type: 'class', title: 'useBLE()', description: 'Führt das Bluetooth LE Scanning aus, stellt die Verbindung her und abonniert die IMU-Characteristic.', tech: 'React Custom Hook', file: 'app/hooks/useBLE.ts', line: 5 }
+                ],
+                connections: []
+            },
+            use_ws: {
+                title: "useWebSocket Hook Funktionen",
+                elements: [
+                    { id: 'use_ws_hook', type: 'class', title: 'useWebSocket()', description: 'Öffnet einen WebSocket-Kanal zum Backend für das Echtzeit-Streaming der Bewegungsdaten.', tech: 'React Custom Hook', file: 'app/hooks/useWebSocket.ts', line: 5 }
+                ],
+                connections: []
             }
         }
     };
@@ -1172,12 +1297,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Breadcrumbs update
         let breadcrumbHtml = `<span class="breadcrumb-item clickable" id="c4BcSystem" style="color: var(--primary); cursor: pointer;"><i class="fa-solid fa-network-wired"></i> System-Kontext</span>`;
         
-        if (state.c4Level === 'containers' || state.c4Level === 'components') {
+        if (state.c4Level === 'containers' || state.c4Level === 'components' || state.c4Level === 'code') {
             breadcrumbHtml += ` <span class="separator">&gt;</span> <span class="breadcrumb-item clickable" id="c4BcContainers" style="color: var(--primary); cursor: pointer;">MoveLink System</span>`;
         }
-        if (state.c4Level === 'components') {
+        if (state.c4Level === 'components' || state.c4Level === 'code') {
             const containerName = state.c4ActiveContainer === 'app' ? 'Mobile App Container' : 'Sensor Firmware Container';
-            breadcrumbHtml += ` <span class="separator">&gt;</span> <span class="breadcrumb-item active">${containerName}</span>`;
+            breadcrumbHtml += ` <span class="separator">&gt;</span> <span class="breadcrumb-item clickable" id="c4BcComponents" style="color: var(--primary); cursor: pointer;">${containerName}</span>`;
+        }
+        if (state.c4Level === 'code') {
+            const componentName = getComponentName(state.c4ActiveComponent);
+            breadcrumbHtml += ` <span class="separator">&gt;</span> <span class="breadcrumb-item active">${componentName}</span>`;
         }
         breadcrumbs.innerHTML = breadcrumbHtml;
         
@@ -1191,6 +1320,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 zoomToLevel('containers');
             });
         }
+        const bcComponents = document.getElementById('c4BcComponents');
+        if (bcComponents) {
+            bcComponents.addEventListener('click', () => {
+                zoomToLevel('components', state.c4ActiveContainer);
+            });
+        }
         
         // 2. Zoom Out Button update
         if (state.c4Level === 'context') {
@@ -1200,7 +1335,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         zoomOutBtn.onclick = () => {
-            if (state.c4Level === 'components') {
+            if (state.c4Level === 'code') {
+                zoomToLevel('components', state.c4ActiveContainer);
+            } else if (state.c4Level === 'components') {
                 zoomToLevel('containers');
             } else if (state.c4Level === 'containers') {
                 zoomToLevel('context');
@@ -1253,12 +1390,46 @@ document.addEventListener('DOMContentLoaded', () => {
             
             elementsList.forEach(el => {
                 const card = createC4Card(el);
+                
+                // Clicking component drills down to code/class level
+                card.title = "Klicke zum Betrachten der Code-Ebene (Klassen & Funktionen)";
+                card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    zoomToLevel('code', state.c4ActiveContainer, el.id);
+                });
+                
                 board.appendChild(card);
             });
+        }
+        else if (state.c4Level === 'code') {
+            board.classList.add('c4-grid-components');
+            const componentData = C4_DATA.classes[state.c4ActiveComponent];
+            
+            if (componentData && componentData.elements) {
+                componentData.elements.forEach(el => {
+                    const card = createC4Card(el);
+                    board.appendChild(card);
+                });
+            } else {
+                board.innerHTML = `
+                    <div class="detail-placeholder" style="grid-column: span 3; text-align: center;">
+                        <i class="fa-solid fa-code"></i>
+                        <p>Keine detaillierten Klassen oder Funktionen für diese Komponente modelliert.</p>
+                    </div>
+                `;
+            }
         }
 
         // Trigger connector rendering after browser layout
         setTimeout(drawC4Connections, 100);
+    }
+
+    function getComponentName(id) {
+        for (const containerId in C4_DATA.components) {
+            const comp = C4_DATA.components[containerId].elements.find(e => e.id === id);
+            if (comp) return comp.title;
+        }
+        return id;
     }
 
     function createC4Card(el) {
@@ -1291,9 +1462,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return card;
     }
 
-    function zoomToLevel(level, containerId = null) {
+    function zoomToLevel(level, containerId = null, componentId = null) {
         state.c4Level = level;
         state.c4ActiveContainer = containerId;
+        state.c4ActiveComponent = componentId;
         renderC4Explorer();
         
         // Clear details
@@ -1322,29 +1494,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el.type === 'system-context') c4LevelLabel = 'System Kontext';
         if (el.type === 'container') c4LevelLabel = 'Container (Deployable)';
         if (el.type === 'component') c4LevelLabel = 'Component';
+        if (el.type === 'class') c4LevelLabel = 'Klasse / Funktion';
         if (el.type === 'external') c4LevelLabel = 'Externes System';
         
         let badgeClass = el.type === 'container' ? 'usecase' : (el.type === 'component' ? 'code' : 'requirement');
         
         let fileLinkHtml = '';
         if (el.file) {
-            fileLinkHtml = `
-                <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">
-                    Dokumentiert in: <span class="btn-text-link" onclick="window.app.showTraceDetails('${el.title}')" style="cursor:pointer">${el.file}</span>
-                </div>
-                <button class="btn btn-secondary" onclick="window.app.showTraceDetails('${el.title}')" style="width:100%; margin-top: 8px;">
-                    <i class="fa-regular fa-file-lines"></i> Dokumentation anzeigen
-                </button>
-            `;
-            
-            // If it's a specific component, we can link to the code modal directly as well!
-            if (isComponent && el.file.endsWith('.ts') || el.file.endsWith('.tsx') || el.file.endsWith('.ino')) {
+            const isSource = el.file.endsWith('.ts') || el.file.endsWith('.tsx') || el.file.endsWith('.ino') || el.file.endsWith('.cpp') || el.file.endsWith('.py');
+            if (isSource) {
+                const lineNum = el.line || 1;
                 fileLinkHtml = `
                     <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">
-                        Quellcodedatei: <span class="btn-text-link" onclick="window.app.openCodeView('${el.file}', 1)">${el.file}</span>
+                        Quellcode: <span class="btn-text-link" onclick="window.app.openCodeView('${el.file}', ${lineNum})">${el.file}:${lineNum}</span>
                     </div>
-                    <button class="btn btn-secondary" onclick="window.app.openCodeView('${el.file}', 1)" style="width:100%; margin-top: 8px;">
+                    <button class="btn btn-secondary" onclick="window.app.openCodeView('${el.file}', ${lineNum})" style="width:100%; margin-top: 8px;">
                         <i class="fa-solid fa-code"></i> Code im Editor anzeigen
+                    </button>
+                `;
+            } else {
+                fileLinkHtml = `
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">
+                        Dokumentiert in: <span class="btn-text-link" onclick="window.app.showTraceDetails('${el.title}')" style="cursor:pointer">${el.file}</span>
+                    </div>
+                    <button class="btn btn-secondary" onclick="window.app.showTraceDetails('${el.title}')" style="width:100%; margin-top: 8px;">
+                        <i class="fa-regular fa-file-lines"></i> Dokumentation anzeigen
                     </button>
                 `;
             }
@@ -1424,6 +1598,8 @@ document.addEventListener('DOMContentLoaded', () => {
             connections = C4_DATA.containers.connections || [];
         } else if (state.c4Level === 'components' && state.c4ActiveContainer) {
             connections = C4_DATA.components[state.c4ActiveContainer].connections || [];
+        } else if (state.c4Level === 'code' && state.c4ActiveComponent) {
+            connections = (C4_DATA.classes[state.c4ActiveComponent] && C4_DATA.classes[state.c4ActiveComponent].connections) || [];
         }
 
         if (connections.length === 0) {
@@ -1483,6 +1659,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (state.c4Level === 'components') {
                 strokeColor = '#8b5cf6';
                 markerId = 'arrow-purple';
+            } else if (state.c4Level === 'code') {
+                strokeColor = '#f97316';
+                markerId = 'arrow-orange';
             }
 
             // Draw line

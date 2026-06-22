@@ -1413,3 +1413,153 @@ body {
     transform: rotate(-90deg);
 }
 
+/* Confluence-Style Traceability Table */
+.trace-table-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    box-shadow: 0 8px 32px var(--card-shadow);
+}
+
+.trace-confluence-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.trace-confluence-table th, 
+.trace-confluence-table td {
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.trace-confluence-table th {
+    background-color: rgba(0, 0, 0, 0.25);
+    color: var(--primary);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 13px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+body.light-mode .trace-confluence-table th {
+    background-color: rgba(0, 166, 133, 0.05);
+}
+
+.trace-confluence-table tr {
+    transition: var(--transition-smooth);
+}
+
+.trace-confluence-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.015);
+}
+
+body.light-mode .trace-confluence-table tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Badges for Confluence Grid */
+.priority-badge, .status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+/* Priority Colors */
+.priority-badge.priority-critical {
+    background-color: #ef4444; /* bright red */
+    color: #ffffff;
+}
+.priority-badge.priority-medium {
+    background-color: #3b82f6; /* blue */
+    color: #ffffff;
+}
+.priority-badge.priority-low {
+    background-color: var(--text-muted);
+    color: #ffffff;
+}
+
+/* Status Colors */
+.status-badge.status-closed {
+    background-color: #22c55e; /* green */
+    color: #ffffff;
+}
+.status-badge.status-open {
+    background-color: #7c8e8b; /* gray/blue */
+    color: #ffffff;
+}
+
+/* Cell elements */
+.trace-badge-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.trace-badge-container .trace-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.component-ref-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.c4-color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.jira-like-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+}
+
+.jira-like-link:hover {
+    text-decoration: underline;
+    color: var(--primary-hover);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.italic {
+    font-style: italic;
+}
+
+/* C4 Code Card (Class/Function) Styling */
+.c4-card.class {
+    background-color: #17100e;
+    border-color: rgba(249, 115, 22, 0.4);
+    border-left: 4px solid #f97316;
+}
+
+.c4-card.class:hover {
+    border-color: #f97316;
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.25);
+}
+
+
+

@@ -52,3 +52,6 @@ Das Bluetooth-Pairing mit dem Sensor darf maximal zwei manuelle Interaktionen er
 
 **R1**: Plattform-Kompatibilität
 Die mobile Applikation muss nativ oder als hybride App auf Android-Geräten lauffähig sein.
+
+**R2**: Physisches Gehäuse
+Für das Trainingsgeräte braucht es einen Sensor. Dieser Sensor sollte bestenfalls nicht lose auf der Haut getragen werden
