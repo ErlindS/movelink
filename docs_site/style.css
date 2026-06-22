@@ -1642,5 +1642,103 @@ body.light-mode .trace-confluence-table tr:hover {
     padding-top: 8px;
 }
 
+/* Custom layouts to represent Left-to-Right Data Flow in C4 Model Explorer */
+
+/* 1. App Components Layout */
+.c4-grid-app {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1.2fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 40px;
+    width: 100%;
+    max-width: 950px;
+    transition: var(--transition-smooth);
+    align-items: center;
+}
+
+.c4-grid-app [data-id="firmware_ghost"] {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+}
+
+.c4-grid-app [data-id="use_ble"] {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.c4-grid-app [data-id="sensor_card"] {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.c4-grid-app [data-id="live_chart"] {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.c4-grid-app [data-id="profile_card"] {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.c4-grid-app [data-id="session_card"] {
+    grid-column: 3;
+    grid-row: 3;
+}
+
+.c4-grid-app [data-id="use_ws"] {
+    grid-column: 4;
+    grid-row: 1;
+}
+
+.c4-grid-app [data-id="backend_ghost"] {
+    grid-column: 5;
+    grid-row: 1 / span 2;
+}
+
+/* 2. Firmware Components Layout */
+.c4-grid-firmware {
+    display: grid;
+    grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 40px;
+    width: 100%;
+    max-width: 950px;
+    transition: var(--transition-smooth);
+    align-items: center;
+}
+
+.c4-grid-firmware [data-id="imu_reader"] {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+}
+
+.c4-grid-firmware [data-id="inference_engine"] {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+}
+
+.c4-grid-firmware [data-id="ble_streamer"] {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.c4-grid-firmware [data-id="led_display_controller"] {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.c4-grid-firmware [data-id="app_ghost"] {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+}
+
+.c4-grid-firmware [data-id="gehause"] {
+    grid-column: 1 / span 4;
+    grid-row: 3;
+    max-width: 300px;
+    margin: 20px auto 0 auto;
+}
+
 
 

@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize State
     const state = {
@@ -34,27 +35,27 @@ document.addEventListener('DOMContentLoaded', () => {
         tabContents: document.querySelectorAll('.tab-content'),
         activeTabTitle: document.getElementById('activeTabTitle'),
         themeToggle: document.getElementById('themeToggle'),
-        
+
         // Stats
         statFiles: document.getElementById('statFiles'),
         statReqs: document.getElementById('statReqs'),
         statLinks: document.getElementById('statLinks'),
-        
+
         // Tree
         traceTree: document.getElementById('traceTree'),
         treeFilter: document.getElementById('treeFilter'),
         expandAllTree: document.getElementById('expandAllTree'),
         collapseAllTree: document.getElementById('collapseAllTree'),
-        
+
         // Matrix
         traceMatrix: document.getElementById('traceMatrix'),
-        
+
         // Graph
         networkGraph: document.getElementById('networkGraph'),
         fitGraphBtn: document.getElementById('fitGraphBtn'),
         togglePhysicsBtn: document.getElementById('togglePhysicsBtn'),
         graphDetailContent: document.getElementById('graphDetailContent'),
-        
+
         // Modal
         codeModal: document.getElementById('codeModal'),
         codeModalTitle: document.getElementById('codeModalTitle'),
@@ -66,11 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-target');
-            
+
             // Toggle nav active class
             elements.navButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
+
             // Toggle tab active class
             elements.tabContents.forEach(tab => {
                 tab.classList.remove('active');
@@ -78,9 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     tab.classList.add('active');
                 }
             });
-            
+
             state.activeTab = target;
-            
+
             // Set header title
             const labelMap = {
                 'docs-tab': 'Dokumenten-Ansicht',
@@ -91,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'flow-tab': 'Daten- & Kontrollfluss'
             };
             elements.activeTabTitle.textContent = labelMap[target];
-            
+
             // Render target tab contents if needed
             if (target === 'trace-tree-tab') {
                 renderTraceTree();
@@ -123,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i> <span>Dunkler Modus</span>';
             state.theme = 'dark';
         }
-        
+
         // Re-initialize graph if it exists to adapt to new theme colors
         if (state.network && state.activeTab === 'graph-tab') {
             initNetworkGraph();
@@ -143,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateStats() {
         const fileCount = DOCS_DATA.files.length;
         const reqCount = Object.keys(DOCS_DATA.definitions).length;
-        
+
         let linkCount = 0;
         Object.values(DOCS_DATA.definitions).forEach(d => {
             linkCount += d.links.length;
@@ -151,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.values(DOCS_DATA.references).forEach(rList => {
             linkCount += rList.length;
         });
-        
+
         elements.statFiles.textContent = fileCount;
         elements.statReqs.textContent = reqCount;
         elements.statLinks.textContent = linkCount;
@@ -160,27 +161,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7. Render File Navigation Sidebar
     function renderFileList() {
         elements.fileList.innerHTML = '';
-        
+
         // Group files by directory
         const groups = {};
-        
+
         DOCS_DATA.files.forEach(file => {
             if (state.searchQuery) {
-                const matchesSearch = 
+                const matchesSearch =
                     file.path.toLowerCase().includes(state.searchQuery) ||
                     file.title.toLowerCase().includes(state.searchQuery) ||
                     file.content.toLowerCase().includes(state.searchQuery);
-                    
+
                 if (!matchesSearch) return;
             }
-            
+
             const parts = file.path.split('/');
             const dir = parts.length > 1 ? parts.slice(0, -1).join('/') : 'Wurzelverzeichnis';
-            
+
             if (!groups[dir]) groups[dir] = [];
             groups[dir].push(file);
         });
-        
+
         Object.keys(groups).forEach(dir => {
             const dirHeader = document.createElement('div');
             dirHeader.className = 'nav-section-title';
@@ -188,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dirHeader.style.fontSize = '9px';
             dirHeader.innerHTML = `<i class="fa-regular fa-folder"></i> ${dir}`;
             elements.fileList.appendChild(dirHeader);
-            
+
             groups[dir].forEach(file => {
                 const li = document.createElement('li');
                 const btn = document.createElement('button');
@@ -206,18 +207,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // 8. Select and Render Active Markdown File
     function selectFile(filePath) {
         state.activeFile = filePath;
-        
+
         // Update active class in sidebar
         const buttons = elements.fileList.querySelectorAll('.doc-btn');
         buttons.forEach(btn => btn.classList.remove('active'));
-        
+
         // Re-render sidebar to highlight active
         renderFileList();
-        
+
         // Get file data
         const file = DOCS_DATA.files.find(f => f.path === filePath);
         if (!file) return;
-        
+
         let metaHtml = `<i class="fa-regular fa-folder-open"></i> ${file.path}`;
         if (file.c4_level) {
             const isDeployable = file.deployable && (file.deployable.toLowerCase() === 'ja' || file.deployable.toLowerCase() === 'yes');
@@ -229,11 +230,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         elements.docPathLabel.innerHTML = metaHtml;
-        
+
         // Render Markdown content
         let html = renderMarkdownWithTraceBadges(file.content);
         elements.markdownRender.innerHTML = html;
-        
+
         // Handle table wrapping
         const tables = elements.markdownRender.querySelectorAll('table');
         tables.forEach(table => {
@@ -243,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             table.parentNode.insertBefore(wrapper, table);
             wrapper.appendChild(table);
         });
-        
+
         // Trigger Mermaid and Prism
         try {
             mermaid.init(undefined, '.mermaid');
@@ -251,16 +252,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Mermaid render error:', e);
         }
         Prism.highlightAllUnder(elements.markdownRender);
-        
+
         // Render TOC
         renderTOC(file.headings);
-        
+
         // If we are not on the docs tab, switch to it
         if (state.activeTab !== 'docs-tab') {
             const docBtn = document.querySelector('[data-target="docs-tab"]');
             if (docBtn) docBtn.click();
         }
-        
+
         // Scroll to top
         elements.markdownRender.parentElement.scrollTop = 0;
     }
@@ -297,18 +298,18 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.docTocContainer.style.display = 'none';
             return;
         }
-        
+
         elements.docTocContainer.style.display = 'block';
-        
+
         headings.forEach(h => {
             const li = document.createElement('li');
             li.className = `level-${h.level}`;
-            
+
             // Create a slug for linking
             const slug = h.text.toLowerCase()
                 .replace(/[^\w\s-]/g, '')
                 .replace(/\s+/g, '-');
-                
+
             li.innerHTML = `<a href="#${slug}" onclick="event.preventDefault(); window.app.navigateToHeader('${slug}')">${h.text}</a>`;
             elements.tocList.appendChild(li);
         });
@@ -348,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. Fallbacks / mappings for source code files to logical components
         const lowerPath = filePath.toLowerCase();
-        
+
         if (lowerPath.includes('sensorcard.tsx')) {
             return { name: 'SensorCard UI', type: 'component', id: 'sensor_card', container: 'app' };
         }
@@ -414,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 9. Render E2E Traceability Tree (Horizontal Flow Chart)
     function renderTraceTree() {
         elements.traceTree.innerHTML = '';
-        
+
         // Hide tree-controls since everything is displayed in a clean table grid
         const controls = document.querySelector('.tree-controls');
         if (controls) controls.style.display = 'none';
@@ -425,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const useCases = Object.values(DOCS_DATA.definitions)
             .filter(d => d.type === 'UC')
             .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
-            
+
         if (useCases.length === 0) {
             elements.traceTree.innerHTML = '<div class="detail-placeholder"><i class="fa-solid fa-triangle-exclamation"></i> Kein Trace-Baum Daten vorhanden. Scrape erneut.</div>';
             return;
@@ -433,28 +434,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Build flat table rows with pre-calculated rowspans
         const tableRows = [];
-        
+
         useCases.forEach(uc => {
             // Find linked requirements
             const linkedReqs = Object.values(DOCS_DATA.definitions)
                 .filter(d => d.type !== 'UC' && d.links.includes(uc.id))
                 .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
-                
-            let matchesFilter = !filter || 
-                                uc.id.toLowerCase().includes(filter) || 
-                                uc.title.toLowerCase().includes(filter);
-                                
+
+            let matchesFilter = !filter ||
+                uc.id.toLowerCase().includes(filter) ||
+                uc.title.toLowerCase().includes(filter);
+
             if (!matchesFilter) {
                 // Check if any of its requirements or code files match the filter
-                const reqMatches = linkedReqs.some(req => 
-                    req.id.toLowerCase().includes(filter) || 
+                const reqMatches = linkedReqs.some(req =>
+                    req.id.toLowerCase().includes(filter) ||
                     req.title.toLowerCase().includes(filter) ||
                     (DOCS_DATA.references[req.id] && DOCS_DATA.references[req.id].some(ref => ref.file.toLowerCase().includes(filter)))
                 );
-                
+
                 if (reqMatches) matchesFilter = true;
             }
-            
+
             if (!matchesFilter) return; // Skip if filter is set and doesn't match
 
             const ucRows = [];
@@ -528,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const table = document.createElement('table');
         table.className = 'trace-confluence-table';
-        
+
         table.innerHTML = `
             <thead>
                 <tr>
@@ -542,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </thead>
             <tbody id="traceTableBody"></tbody>
         `;
-        
+
         const tbody = table.querySelector('tbody');
 
         tableRows.forEach(row => {
@@ -565,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (row.req) {
                 if (row.reqSpan > 0) {
                     const reqBadgeClass = row.req.type === 'FA' ? 'requirement' : (row.req.type === 'NF' ? 'code' : 'usecase');
-                    
+
                     // Priority mappings
                     let priorityLabel = 'LOW';
                     let priorityClass = 'priority-low';
@@ -671,12 +672,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 10. Render Traceability Matrix Grid
     function renderTraceMatrix() {
         elements.traceMatrix.innerHTML = '';
-        
+
         // Use cases
         const useCases = Object.values(DOCS_DATA.definitions)
             .filter(d => d.type === 'UC')
             .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
-            
+
         // Requirements
         const requirements = Object.values(DOCS_DATA.definitions)
             .filter(d => d.type !== 'UC')
@@ -684,34 +685,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (a.type !== b.type) return a.type.localeCompare(b.type);
                 return a.id.localeCompare(b.id, undefined, { numeric: true });
             });
-            
+
         if (useCases.length === 0 || requirements.length === 0) {
             elements.traceMatrix.innerHTML = '<tr><td>Keine Daten für Matrix vorhanden.</td></tr>';
             return;
         }
-        
+
         // 1. Create table header
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
-        
+
         headerRow.innerHTML = '<th class="row-header">Anforderung / ID</th>';
         useCases.forEach(uc => {
             headerRow.innerHTML += `<th class="matrix-header-rotated" title="${uc.title}">${uc.id}</th>`;
         });
-        
+
         thead.appendChild(headerRow);
         elements.traceMatrix.appendChild(thead);
-        
+
         // 2. Create table body
         const tbody = document.createElement('tbody');
-        
+
         requirements.forEach(req => {
             const row = document.createElement('tr');
-            
+
             // Row header with requirement details
             const rowHeader = document.createElement('td');
             rowHeader.className = 'row-header';
-            
+
             const badgeClass = req.type === 'FA' ? 'requirement' : (req.type === 'NF' ? 'code' : 'usecase');
             rowHeader.innerHTML = `
                 <div class="matrix-req-cell">
@@ -720,12 +721,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             row.appendChild(rowHeader);
-            
+
             // Check link state for each Use Case
             useCases.forEach(uc => {
                 const cell = document.createElement('td');
                 const isDirect = req.links.includes(uc.id);
-                
+
                 // Transitive connection check (e.g. if code references both, or other files link them)
                 let isTransitive = false;
                 if (!isDirect) {
@@ -735,7 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const intersection = reqFiles.filter(f => ucFiles.includes(f));
                     if (intersection.length > 0) isTransitive = true;
                 }
-                
+
                 if (isDirect) {
                     cell.innerHTML = `<span class="matrix-marker direct" onclick="window.app.showTraceDetails('${req.id}')" title="Direkt verknüpft (im Pflichtenheft definiert) aus ${uc.id}"><i class="fa-solid fa-circle-check"></i></span>`;
                 } else if (isTransitive) {
@@ -744,13 +745,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     cell.innerHTML = '-';
                     cell.style.color = 'var(--text-muted)';
                 }
-                
+
                 row.appendChild(cell);
             });
-            
+
             tbody.appendChild(row);
         });
-        
+
         elements.traceMatrix.appendChild(tbody);
     }
 
@@ -760,21 +761,21 @@ document.addEventListener('DOMContentLoaded', () => {
             state.network.destroy();
             state.network = null;
         }
-        
+
         const nodes = [];
         const edges = [];
         const uniqueEdges = new Set();
-        
+
         // Node design parameters based on active theme
         const isDark = document.body.classList.contains('dark-mode');
         const colors = {
             UC: { background: '#0d2e27', border: '#00d4aa', font: isDark ? '#f0f4f3' : '#1e2e2b' },
             FA: { background: '#1e1b4b', border: '#818cf8', font: isDark ? '#f0f4f3' : '#1e2e2b' },
             NF: { background: '#3b0764', border: '#d8b4fe', font: isDark ? '#f0f4f3' : '#1e2e2b' },
-            R:  { background: '#451a03', border: '#f97316', font: isDark ? '#f0f4f3' : '#1e2e2b' },
+            R: { background: '#451a03', border: '#f97316', font: isDark ? '#f0f4f3' : '#1e2e2b' },
             File: { background: isDark ? '#141b18' : '#e6eeec', border: isDark ? '#4a5c59' : '#a3b8b5', font: isDark ? '#a3b8b5' : '#4a5c59' }
         };
-        
+
         // 1. Add Use Case / Requirements Nodes
         Object.values(DOCS_DATA.definitions).forEach(def => {
             nodes.push({
@@ -790,7 +791,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 font: { color: colors[def.type].font, face: 'Inter' }
             });
-            
+
             // Add edges from Requirements to Use Cases
             def.links.forEach(link => {
                 const edgeKey = `${def.id}->${link}`;
@@ -806,16 +807,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
-        
+
         // 2. Add Code File Nodes & Edges to Requirements
         const fileNodesSet = new Set();
-        
+
         Object.keys(DOCS_DATA.references).forEach(itemId => {
             const refs = DOCS_DATA.references[itemId] || [];
-            
+
             refs.forEach(ref => {
                 const fileId = `file:${ref.file}`;
-                
+
                 // Add file node if not already added
                 if (!fileNodesSet.has(fileId)) {
                     fileNodesSet.add(fileId);
@@ -833,7 +834,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         font: { color: colors.File.font, face: 'monospace', size: 10 }
                     });
                 }
-                
+
                 // Add edge: File -> Requirement / Use Case
                 const edgeKey = `${fileId}->${itemId}`;
                 if (!uniqueEdges.has(edgeKey)) {
@@ -849,7 +850,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
-        
+
         // 3. Render Graph using Vis.js Network
         const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
         const options = {
@@ -880,15 +881,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 tooltipDelay: 200
             }
         };
-        
+
         state.network = new vis.Network(elements.networkGraph, data, options);
-        
+
         // Select event
         state.network.on('selectNode', (params) => {
             const nodeId = params.nodes[0];
             showGraphDetail(nodeId);
         });
-        
+
         // Deselect event
         state.network.on('deselectNode', () => {
             showGraphDetail(null);
@@ -905,11 +906,11 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             return;
         }
-        
+
         // Case A: Selected a file
         if (nodeId.startsWith('file:')) {
             const relPath = nodeId.substring(5);
-            
+
             // Find what requirements this file references
             const implementedReqs = [];
             Object.keys(DOCS_DATA.references).forEach(itemId => {
@@ -918,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     implementedReqs.push(itemId);
                 }
             });
-            
+
             elements.graphDetailContent.innerHTML = `
                 <div class="detail-header">
                     <span class="node-badge code detail-badge">DATEI</span>
@@ -929,14 +930,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="detail-section-title">Erfüllte / Referenzierte IDs</div>
                 <ul class="detail-links-list">
                     ${implementedReqs.map(reqId => {
-                        const def = DOCS_DATA.definitions[reqId] || { title: '' };
-                        return `
+                const def = DOCS_DATA.definitions[reqId] || { title: '' };
+                return `
                             <li class="detail-link-item" onclick="window.app.showTraceDetails('${reqId}')">
                                 <span class="node-badge ${reqId.startsWith('UC') ? 'usecase' : 'requirement'}">${reqId}</span>
                                 <span>${def.title.substring(0, 40)}...</span>
                             </li>
                         `;
-                    }).join('') || '<li style="font-size:12px;color:var(--text-muted)">Keine Verbindungen</li>'}
+            }).join('') || '<li style="font-size:12px;color:var(--text-muted)">Keine Verbindungen</li>'}
                 </ul>
                 
                 <button class="btn btn-secondary" onclick="window.app.openCodeView('${relPath}', 1)" style="width:100%">
@@ -948,10 +949,10 @@ document.addEventListener('DOMContentLoaded', () => {
         else {
             const def = DOCS_DATA.definitions[nodeId];
             if (!def) return;
-            
+
             const badgeClass = def.type === 'UC' ? 'usecase' : (def.type === 'FA' ? 'requirement' : 'code');
             const refs = DOCS_DATA.references[nodeId] || [];
-            
+
             // Build linked items HTML
             let linkedHtml = '';
             if (def.type === 'UC') {
@@ -976,13 +977,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${def.links.map(ucId => `
                             <li class="detail-link-item" onclick="window.app.showTraceDetails('${ucId}')">
                                 <span class="node-badge usecase">${ucId}</span>
-                                <span>${(DOCS_DATA.definitions[ucId] || {title:''}).title}</span>
+                                <span>${(DOCS_DATA.definitions[ucId] || { title: '' }).title}</span>
                             </li>
                         `).join('') || '<li style="font-size:12px;color:var(--text-muted)">Keine Use Case Verbindung</li>'}
                     </ul>
                 `;
             }
-            
+
             elements.graphDetailContent.innerHTML = `
                 <div class="detail-header">
                     <span class="node-badge ${badgeClass} detail-badge">${def.type}</span>
@@ -1029,10 +1030,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function showTraceDetails(id) {
         const def = DOCS_DATA.definitions[id];
         if (!def) return;
-        
+
         // Select file in sidebar
         selectFile(def.file);
-        
+
         // Wait briefly for render, then scroll to the text containing the ID definition
         setTimeout(() => {
             const badges = elements.markdownRender.querySelectorAll('.trace-badge');
@@ -1043,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     badge.style.backgroundColor = 'var(--accent-z)';
                     badge.style.color = '#000';
                     badge.style.boxShadow = '0 0 16px var(--accent-z)';
-                    
+
                     setTimeout(() => {
                         badge.style.backgroundColor = '';
                         badge.style.color = '';
@@ -1058,11 +1059,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 13. Open Source Code Modal View
     function openCodeView(filePath, lineNum) {
         elements.codeModalTitle.textContent = `Datei: ${filePath} (Zeile ${lineNum})`;
-        
+
         // Clear old content
         elements.codeModalBlock.textContent = 'Lade Inhalt...';
         elements.codeModal.classList.add('active');
-        
+
         // Identify file language for Prism syntax highlighting
         let langClass = 'language-tsx';
         if (filePath.endsWith('.ino') || filePath.endsWith('.cpp') || filePath.endsWith('.h')) {
@@ -1074,9 +1075,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (filePath.endsWith('.md')) {
             langClass = 'language-markdown';
         }
-        
+
         elements.codeModalBlock.className = langClass;
-        
+
         // Use pre-included code contents from data.js if available, or fetch
         if (DOCS_DATA.codeContents && DOCS_DATA.codeContents[filePath]) {
             displayCode(DOCS_DATA.codeContents[filePath], lineNum);
@@ -1115,18 +1116,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayCode(codeText, lineNum) {
         elements.codeModalBlock.textContent = codeText;
         Prism.highlightElement(elements.codeModalBlock);
-        
+
         // Scroll to the line
         setTimeout(() => {
             const pre = elements.codeModalBlock.parentElement;
             const lines = codeText.split('\n');
             const totalLines = lines.length;
-            
+
             // Simple scroll calculation: height of pre container divided by total lines
             const containerHeight = pre.scrollHeight;
             const approximateLineHeight = containerHeight / totalLines;
             const scrollTarget = (lineNum - 1) * approximateLineHeight - (pre.clientHeight / 2);
-            
+
             pre.scrollTop = Math.max(0, scrollTarget);
         }, 150);
     }
@@ -1172,18 +1173,22 @@ document.addEventListener('DOMContentLoaded', () => {
             app: {
                 title: "Mobile App Komponenten",
                 elements: [
+                    { id: 'firmware_ghost', type: 'external', title: 'Sensor-Firmware Container', description: 'Erfasst Sensordaten und klassifiziert Übungen lokal.', tech: 'C4 Container (nRF52840)' },
                     { id: 'sensor_card', type: 'component', title: 'SensorCard UI', description: 'Steuert den Verbindungszustand und das Bluetooth-Geräte-Pairing.', tech: 'React Native Component', file: 'app/components/architecture.md' },
                     { id: 'live_chart', type: 'component', title: 'LiveChart UI', description: 'Echtzeit-Zeichnung des Beschleunigungs- und Gyroskop-Verlaufs.', tech: 'SVG Canvas Component', file: 'app/components/architecture.md' },
                     { id: 'session_card', type: 'component', title: 'SessionCard UI', description: 'Zeigt eine Zusammenfassung einer vergangenen Trainingseinheit.', tech: 'React Native Component', file: 'app/components/SessionCard.tsx' },
                     { id: 'profile_card', type: 'component', title: 'ProfileCard UI', description: 'Komponente zur Darstellung der Benutzerdaten und Authentifizierung.', tech: 'React Native Component', file: 'app/components/ProfileCard/architecture.md' },
                     { id: 'use_ble', type: 'component', title: 'useBLE Hook', description: 'Custom React Hook für das Scanning und die BLE-Verbindung.', tech: 'TypeScript Hook', file: 'app/hooks/useBLE.ts' },
-                    { id: 'use_ws', type: 'component', title: 'useWebSocket Hook', description: 'Verbindung zum Backend zwecks Live-Datentransfer.', tech: 'TypeScript Hook', file: 'app/hooks/useWebSocket.ts' }
+                    { id: 'use_ws', type: 'component', title: 'useWebSocket Hook', description: 'Verbindung zum Backend zwecks Live-Datentransfer.', tech: 'TypeScript Hook', file: 'app/hooks/useWebSocket.ts' },
+                    { id: 'backend_ghost', type: 'external', title: 'Backend Container', description: 'API und PostgreSQL Datenbank zur Verwaltung und Speicherung.', tech: 'C4 Container (Node.js)' }
                 ],
                 connections: [
+                    { from: 'firmware_ghost', to: 'use_ble', text: 'BLE Data Stream' },
                     { from: 'sensor_card', to: 'use_ble', text: 'Steuert BLE-Verbindung' },
                     { from: 'live_chart', to: 'use_ble', text: 'Liest IMU-Daten' },
                     { from: 'profile_card', to: 'use_ws', text: 'Nutzt API' },
-                    { from: 'session_card', to: 'use_ws', text: 'Lädt historische Daten' }
+                    { from: 'session_card', to: 'use_ws', text: 'Lädt historische Daten' },
+                    { from: 'use_ws', to: 'backend_ghost', text: 'HTTPS / WebSockets' }
                 ]
             },
             firmware: {
@@ -1193,12 +1198,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'inference_engine', type: 'component', title: 'Inferenz-Engine (Edge Impulse)', description: 'Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.', tech: 'Inferenzbibliothek', file: 'embedded/components/inferenz_engine/architecture.md' },
                     { id: 'led_display_controller', type: 'component', title: 'LED- & Display-Controller', description: 'Gibt dem Trainierenden direktes visuelles Feedback zur Qualität der Übungsausführung.', tech: 'C++ Module', file: 'embedded/components/led_display_controller/architecture.md' },
                     { id: 'ble_streamer', type: 'component', title: 'BLE-Streamer', description: 'Überträgt die erfassten 6-Achsen-Messwerte über Bluetooth Low Energy (BLE) an die Mobile App.', tech: 'C++ Module', file: 'embedded/components/ble_streamer/architecture.md' },
-                    { id: 'gehause', type: 'component', title: 'Gehäuse', description: 'Physisches, schützendes 3D-Druck-Gehäuse des Sensors.', tech: '3D CAD Model (Blender Python)', file: 'embedded/components/gehause/architecture.md' }
+                    { id: 'gehause', type: 'component', title: 'Gehäuse', description: 'Physisches, schützendes 3D-Druck-Gehäuse des Sensors.', tech: '3D CAD Model (Blender Python)', file: 'embedded/components/gehause/architecture.md' },
+                    { id: 'app_ghost', type: 'external', title: 'Mobile App Container', description: 'Visualisiert Echtzeitdaten, steuert Geräte-Pairing und verwaltet Trainings.', tech: 'C4 Container (React Native)' }
                 ],
                 connections: [
                     { from: 'imu_reader', to: 'inference_engine', text: 'Liefert Sensor-Rohdaten' },
                     { from: 'inference_engine', to: 'led_display_controller', text: 'Steuert Status-LED/Display' },
-                    { from: 'imu_reader', to: 'ble_streamer', text: 'Überträgt Rohdaten' }
+                    { from: 'imu_reader', to: 'ble_streamer', text: 'Überträgt Rohdaten' },
+                    { from: 'ble_streamer', to: 'app_ghost', text: 'BLE Data Stream' }
                 ]
             }
         },
@@ -1290,9 +1297,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const breadcrumbs = document.getElementById('c4Breadcrumbs');
         const zoomOutBtn = document.getElementById('c4ZoomOutBtn');
         const detailContent = document.getElementById('c4DetailContent');
-        
+
         if (!board) return;
-        
+
         board.innerHTML = '';
         const svg = document.getElementById('c4Svg');
         if (svg) {
@@ -1300,13 +1307,13 @@ document.addEventListener('DOMContentLoaded', () => {
             svg.innerHTML = '';
             if (defs) svg.appendChild(defs);
         }
-        
+
         // Reset CSS classes
         board.className = 'c4-board';
-        
+
         // 1. Breadcrumbs update
         let breadcrumbHtml = `<span class="breadcrumb-item clickable" id="c4BcSystem" style="color: var(--primary); cursor: pointer;"><i class="fa-solid fa-network-wired"></i> System-Kontext</span>`;
-        
+
         if (state.c4Level === 'containers' || state.c4Level === 'components' || state.c4Level === 'code') {
             breadcrumbHtml += ` <span class="separator">&gt;</span> <span class="breadcrumb-item clickable" id="c4BcContainers" style="color: var(--primary); cursor: pointer;">MoveLink System</span>`;
         }
@@ -1319,7 +1326,7 @@ document.addEventListener('DOMContentLoaded', () => {
             breadcrumbHtml += ` <span class="separator">&gt;</span> <span class="breadcrumb-item active">${componentName}</span>`;
         }
         breadcrumbs.innerHTML = breadcrumbHtml;
-        
+
         // Wire breadcrumb clicks
         document.getElementById('c4BcSystem').addEventListener('click', () => {
             zoomToLevel('context');
@@ -1336,14 +1343,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 zoomToLevel('components', state.c4ActiveContainer);
             });
         }
-        
+
         // 2. Zoom Out Button update
         if (state.c4Level === 'context') {
             zoomOutBtn.style.display = 'none';
         } else {
             zoomOutBtn.style.display = 'block';
         }
-        
+
         zoomOutBtn.onclick = () => {
             if (state.c4Level === 'code') {
                 zoomToLevel('components', state.c4ActiveContainer);
@@ -1358,10 +1365,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.c4Level === 'context') {
             board.classList.add('c4-grid-context');
             const elementsList = C4_DATA.context.elements;
-            
+
             elementsList.forEach(el => {
                 const card = createC4Card(el);
-                
+
                 // Clicking system context card drills down to container view
                 if (el.id === 'system') {
                     card.style.borderStyle = 'dashed';
@@ -1371,17 +1378,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         zoomToLevel('containers');
                     });
                 }
-                
+
                 board.appendChild(card);
             });
-        } 
+        }
         else if (state.c4Level === 'containers') {
             board.classList.add('c4-grid-containers');
             const elementsList = C4_DATA.containers.elements;
-            
+
             elementsList.forEach(el => {
                 const card = createC4Card(el);
-                
+
                 // Double check if clickable container
                 if (el.id === 'app' || el.id === 'firmware') {
                     card.title = "Klicke zum Betrachten der Komponenten-Ebene";
@@ -1390,31 +1397,37 @@ document.addEventListener('DOMContentLoaded', () => {
                         zoomToLevel('components', el.id);
                     });
                 }
-                
+
                 board.appendChild(card);
             });
-        } 
+        }
         else if (state.c4Level === 'components') {
-            board.classList.add('c4-grid-components');
+            if (state.c4ActiveContainer === 'app') {
+                board.classList.add('c4-grid-app');
+            } else if (state.c4ActiveContainer === 'firmware') {
+                board.classList.add('c4-grid-firmware');
+            } else {
+                board.classList.add('c4-grid-components');
+            }
             const elementsList = C4_DATA.components[state.c4ActiveContainer].elements;
-            
+
             elementsList.forEach(el => {
                 const card = createC4Card(el);
-                
+
                 // Clicking component drills down to code/class level
                 card.title = "Klicke zum Betrachten der Code-Ebene (Klassen & Funktionen)";
                 card.addEventListener('click', (e) => {
                     e.stopPropagation();
                     zoomToLevel('code', state.c4ActiveContainer, el.id);
                 });
-                
+
                 board.appendChild(card);
             });
         }
         else if (state.c4Level === 'code') {
             board.classList.add('c4-grid-components');
             const componentData = C4_DATA.classes[state.c4ActiveComponent];
-            
+
             if (componentData && componentData.elements) {
                 componentData.elements.forEach(el => {
                     const card = createC4Card(el);
@@ -1433,12 +1446,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Update Use Cases section visibility and content
         const ucSection = document.getElementById('c4UseCasesSection');
         const ucGrid = document.getElementById('c4UseCasesGrid');
-        
+
         if (state.c4Level === 'context') {
             if (ucSection && ucGrid) {
                 ucSection.style.display = 'block';
                 ucGrid.innerHTML = '';
-                
+
                 const useCasesFile = DOCS_DATA.files.find(f => f.path === 'doc/UseCases.md');
                 if (useCasesFile) {
                     const sections = useCasesFile.content.split('---');
@@ -1447,18 +1460,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (ucMatch) {
                             const ucId = ucMatch[1];
                             const ucTitle = ucMatch[2].trim();
-                            
+
                             const actorMatch = sec.match(/\*\*(?:Akteur|Actor)\*\*:\s*(.*)/i);
                             const preCondMatch = sec.match(/\*\*(?:Vorbedingung|Precondition)\*\*:\s*(.*)/i);
                             const descMatch = sec.match(/\*\*(?:Beschreibung|Description)\*\*:\s*(.*)/i);
-                            
+
                             const actor = actorMatch ? actorMatch[1].trim() : 'Trainierender';
                             const precondition = preCondMatch ? preCondMatch[1].trim() : '';
                             const description = descMatch ? descMatch[1].trim() : '';
-                            
+
                             const card = document.createElement('div');
                             card.className = 'uc-card';
-                            
+
                             card.innerHTML = `
                                 <div class="uc-card-header">
                                     <span class="node-badge usecase" style="font-size: 10px; font-weight: 700; padding: 3px 8px;">${ucId}</span>
@@ -1470,13 +1483,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <p class="uc-card-desc">${description}</p>
                                 ${precondition ? `<div class="uc-card-precond"><strong>Vorbedingung:</strong> ${precondition}</div>` : ''}
                             `;
-                            
+
                             card.addEventListener('click', () => {
                                 selectFile('doc/UseCases.md');
                                 const docsTabBtn = document.querySelector('[data-target="docs-tab"]');
                                 if (docsTabBtn) {
                                     docsTabBtn.click();
-                                    
+
                                     // Scroll to the specific Use Case header in the document
                                     setTimeout(() => {
                                         const headings = document.querySelectorAll('#markdownRender h1, #markdownRender h2, #markdownRender h3, #markdownRender h4, #markdownRender p, #markdownRender strong');
@@ -1498,7 +1511,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }, 100);
                                 }
                             });
-                            
+
                             ucGrid.appendChild(card);
                         }
                     });
@@ -1526,10 +1539,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = document.createElement('div');
         card.className = `c4-card ${el.type}`;
         card.setAttribute('data-id', el.id);
-        
+
         const isDeployable = el.deployable;
         const deployableBadge = isDeployable ? `<span class="node-badge requirement" style="font-size: 8px;"><i class="fa-solid fa-cloud-arrow-up"></i> Deployable</span>` : '';
-        
+
         card.innerHTML = `
             <div class="c4-header-row">
                 <span class="c4-tech">${el.tech}</span>
@@ -1538,17 +1551,17 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="c4-title">${el.title}</div>
             <div class="c4-desc">${el.description}</div>
         `;
-        
+
         card.addEventListener('click', (e) => {
             // Check if it was double click or drill-down target. We still highlight it first.
             const cards = document.querySelectorAll('.c4-card');
             cards.forEach(c => c.style.borderColor = '');
             card.style.borderColor = 'var(--primary)';
-            
+
             // Show details in sidebar
             showC4Detail(el);
         });
-        
+
         return card;
     }
 
@@ -1557,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.c4ActiveContainer = containerId;
         state.c4ActiveComponent = componentId;
         renderC4Explorer();
-        
+
         // Clear details
         showC4Detail(null);
     }
@@ -1565,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showC4Detail(el) {
         const detailContent = document.getElementById('c4DetailContent');
         if (!detailContent) return;
-        
+
         if (!el) {
             detailContent.innerHTML = `
                 <div class="detail-placeholder">
@@ -1575,10 +1588,10 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             return;
         }
-        
+
         const isContainer = el.type === 'container';
         const isComponent = el.type === 'component';
-        
+
         let c4LevelLabel = '';
         if (el.type === 'actor') c4LevelLabel = 'Person / Stakeholder';
         if (el.type === 'system-context') c4LevelLabel = 'System Kontext';
@@ -1586,9 +1599,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el.type === 'component') c4LevelLabel = 'Component';
         if (el.type === 'class') c4LevelLabel = 'Klasse / Funktion';
         if (el.type === 'external') c4LevelLabel = 'Externes System';
-        
+
         let badgeClass = el.type === 'container' ? 'usecase' : (el.type === 'component' ? 'code' : 'requirement');
-        
+
         let fileLinkHtml = '';
         if (el.file) {
             const isSource = el.file.endsWith('.ts') || el.file.endsWith('.tsx') || el.file.endsWith('.ino') || el.file.endsWith('.cpp') || el.file.endsWith('.py');
@@ -1613,7 +1626,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }
         }
-        
+
         detailContent.innerHTML = `
             <div class="detail-header">
                 <span class="node-badge ${badgeClass} detail-badge">${c4LevelLabel}</span>
@@ -1637,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let tMin = 1;
         const dx = x2 - cx;
         const dy = y2 - cy;
-        
+
         if (Math.abs(dx) > 1e-5) {
             let t = (rx - cx) / dx;
             if (t > 0 && t < tMin) {
@@ -1650,7 +1663,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (y >= ry && y <= ry + rh) tMin = t;
             }
         }
-        
+
         if (Math.abs(dy) > 1e-5) {
             let t = (ry - cy) / dy;
             if (t > 0 && t < tMin) {
@@ -1663,7 +1676,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (x >= rx && x <= rx + rw) tMin = t;
             }
         }
-        
+
         return {
             x: cx + tMin * dx,
             y: cy + tMin * dy
@@ -1742,6 +1755,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const start = getBoxIntersection(cxA, cyA, cxB, cyB, boxA.x, boxA.y, boxA.w, boxA.h);
             const end = getBoxIntersection(cxB, cyB, cxA, cyA, boxB.x, boxB.y, boxB.w, boxB.h);
 
+            // Shorten start and end to leave a gap from the card borders (improves arrowhead visibility)
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 30) {
+                const startGap = 8;
+                const endGap = 12;
+                start.x += (dx / dist) * startGap;
+                start.y += (dy / dist) * startGap;
+                end.x -= (dx / dist) * endGap;
+                end.y -= (dy / dist) * endGap;
+            }
+
             // Determine stroke color and marker arrowhead
             let strokeColor = isDark ? '#00d4aa' : '#00a685';
             let markerId = isDark ? 'arrow-teal' : 'arrow-teal-light';
@@ -1756,49 +1782,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Draw line
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            
+
             let pathData = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
             let isSegmented = false;
-            
-            if (state.c4Level === 'components' && state.c4ActiveContainer === 'firmware' && conn.from === 'imu_reader' && conn.to === 'ble_service') {
+
+            if (state.c4Level === 'components' && state.c4ActiveContainer === 'firmware' && conn.from === 'imu_reader' && conn.to === 'ble_streamer') {
                 const startX = boxA.x + boxA.w / 2;
-                const startY = boxA.y + boxA.h;
+                const startY = boxA.y + boxA.h + 8; // 8px gap from start card bottom
                 const endX = boxB.x + boxB.w / 2;
-                const endY = boxB.y + boxB.h;
-                
-                pathData = `M ${startX} ${startY} L ${startX} ${startY + 30} L ${endX} ${startY + 30} L ${endX} ${endY}`;
+                const endY = boxB.y + boxB.h + 12; // 12px gap from end card bottom
+
+                pathData = `M ${startX} ${startY} L ${startX} ${startY + 25} L ${endX} ${startY + 25} L ${endX} ${endY}`;
                 isSegmented = true;
             }
-            
+
             path.setAttribute('d', pathData);
             path.setAttribute('stroke', strokeColor);
             path.setAttribute('stroke-width', '2');
             path.setAttribute('fill', 'none');
             path.setAttribute('marker-end', `url(#${markerId})`);
-            
+
             // Context lines to external or database can be dashed
             if (conn.to === 'external_db' || elTo.classList.contains('external')) {
                 path.setAttribute('stroke-dasharray', '5,5');
             }
-            
+
             svg.appendChild(path);
 
             // Add text label centered on the line
             if (conn.text) {
                 let midX = (start.x + end.x) / 2;
                 let midY = (start.y + end.y) / 2;
-                
+
                 if (isSegmented) {
                     const startX = boxA.x + boxA.w / 2;
                     const startY = boxA.y + boxA.h;
                     const endX = boxB.x + boxB.w / 2;
-                    
+
                     midX = (startX + endX) / 2;
                     midY = startY + 30;
                 }
 
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                
+
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.textContent = conn.text;
                 text.setAttribute('font-size', '11px');
