@@ -39,6 +39,8 @@ export function useBLE() {
   const manager = useRef<BleManager | null>(null);
   const reconnectAttempts = useRef(0);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const simInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const simStartTime = useRef<number>(0);
 
   const { setStatus, setDevice, setReading, disconnect, status } = useBLEStore();
   const { addReading, isRecording } = useTrainingStore();
@@ -69,6 +71,7 @@ export function useBLE() {
           manager.current.destroy();
         } catch (e) {}
       }
+      if (simInterval.current) clearInterval(simInterval.current);
     };
   }, []);
 
@@ -116,8 +119,54 @@ export function useBLE() {
   }, [handleDisconnect]);
 
   const startScan = useCallback(() => {
-    if (!manager.current || Platform.OS === 'web') {
-      console.warn("Scanning requires a development client build with native BLE support.");
+    const { isDemoMode } = useBLEStore.getState();
+
+    // Trigger simulation if:
+    // - Demo mode is explicitly turned on
+    // - Running in web browser
+    // - running in Expo Go (where manager is null)
+    if (isDemoMode || Platform.OS === 'web' || !manager.current) {
+      setStatus('connecting');
+      setTimeout(() => {
+        setDevice('mock-device-id', isDemoMode ? 'Simulierter Sensor (Demo)' : (!manager.current ? 'Simulierter Sensor (Expo Go)' : 'Simulierter Web-Sensor'));
+        setStatus('connected');
+        reconnectAttempts.current = 0;
+
+        if (simInterval.current) clearInterval(simInterval.current);
+        simStartTime.current = Date.now();
+
+        simInterval.current = setInterval(() => {
+          const { isRecording: activeRecording } = useTrainingStore.getState();
+          const t = (Date.now() - simStartTime.current) / 1000;
+          
+          // Repetition duration = 4s
+          const T = 4;
+          const phase = (2 * Math.PI * t) / T;
+          
+          // Smooth sine curve representing angles (5° up to 85° back and forth)
+          const targetAngle = 5 + 80 * (0.5 - 0.5 * Math.cos(phase));
+          const rad = targetAngle * (Math.PI / 180);
+
+          // Gyroscope rate of change in rad/s: d/dt(rad)
+          const omega = (2 * Math.PI) / T;
+          const gyroRateRad = (80 * (Math.PI / 180) * 0.5 * omega * Math.sin(phase));
+
+          const reading: IMUReading = {
+            timestamp: Date.now(),
+            accelX: 0,
+            accelY: Math.sin(rad),
+            accelZ: Math.cos(rad),
+            gyroX: gyroRateRad,
+            gyroY: 0,
+            gyroZ: 0,
+          };
+
+          setReading(reading);
+          if (activeRecording) {
+            useTrainingStore.getState().addReading(reading);
+          }
+        }, 40); // 25Hz feed
+      }, 600);
       return;
     }
 
@@ -142,6 +191,10 @@ export function useBLE() {
   }, [status]);
 
   const disconnectDevice = useCallback(async () => {
+    if (simInterval.current) {
+      clearInterval(simInterval.current);
+      simInterval.current = null;
+    }
     if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
     const { deviceId } = useBLEStore.getState();
     if (deviceId && Platform.OS !== 'web' && manager.current) {

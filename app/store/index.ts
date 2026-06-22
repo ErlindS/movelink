@@ -45,9 +45,11 @@ interface BLEStore {
   deviceId: string | null;
   deviceName: string | null;
   latestReading: IMUReading | null;
+  isDemoMode: boolean;
   setStatus: (status: ConnectionStatus) => void;
   setDevice: (id: string, name: string) => void;
   setReading: (reading: IMUReading) => void;
+  setDemoMode: (isDemoMode: boolean) => void;
   disconnect: () => void;
 }
 
@@ -81,9 +83,11 @@ export const useBLEStore = create<BLEStore>((set) => ({
   deviceId: null,
   deviceName: null,
   latestReading: null,
+  isDemoMode: false,
   setStatus: (status) => set({ status }),
   setDevice: (deviceId, deviceName) => set({ deviceId, deviceName }),
   setReading: (reading) => set({ latestReading: reading }),
+  setDemoMode: (isDemoMode) => set({ isDemoMode }),
   disconnect: () => set({ status: 'disconnected', deviceId: null, deviceName: null, latestReading: null }),
 }));
 
