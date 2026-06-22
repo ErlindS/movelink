@@ -1192,11 +1192,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'imu_reader', type: 'component', title: 'Sensordatenerfassung (Loop)', description: 'Periodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz.', tech: 'C++ Module', file: 'embedded/components/sensordatenerfassung/architecture.md' },
                     { id: 'inference_engine', type: 'component', title: 'Inferenz-Engine (Edge Impulse)', description: 'Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.', tech: 'Inferenzbibliothek', file: 'embedded/components/inferenz_engine/architecture.md' },
                     { id: 'led_display_controller', type: 'component', title: 'LED- & Display-Controller', description: 'Gibt dem Trainierenden direktes visuelles Feedback zur Qualität der Übungsausführung.', tech: 'C++ Module', file: 'embedded/components/led_display_controller/architecture.md' },
+                    { id: 'ble_streamer', type: 'component', title: 'BLE-Streamer', description: 'Überträgt die erfassten 6-Achsen-Messwerte über Bluetooth Low Energy (BLE) an die Mobile App.', tech: 'C++ Module', file: 'embedded/components/ble_streamer/architecture.md' },
                     { id: 'gehause', type: 'component', title: 'Gehäuse', description: 'Physisches, schützendes 3D-Druck-Gehäuse des Sensors.', tech: '3D CAD Model (Blender Python)', file: 'embedded/components/gehause/architecture.md' }
                 ],
                 connections: [
                     { from: 'imu_reader', to: 'inference_engine', text: 'Liefert Sensor-Rohdaten' },
-                    { from: 'inference_engine', to: 'led_display_controller', text: 'Steuert Status-LED/Display' }
+                    { from: 'inference_engine', to: 'led_display_controller', text: 'Steuert Status-LED/Display' },
+                    { from: 'imu_reader', to: 'ble_streamer', text: 'Überträgt Rohdaten' }
                 ]
             }
         },
@@ -1266,6 +1268,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: "useWebSocket Hook Funktionen",
                 elements: [
                     { id: 'use_ws_hook', type: 'class', title: 'useWebSocket()', description: 'Öffnet einen WebSocket-Kanal zum Backend für das Echtzeit-Streaming der Bewegungsdaten.', tech: 'React Custom Hook', file: 'app/hooks/useWebSocket.ts', line: 5 }
+                ],
+                connections: []
+            },
+            ble_streamer: {
+                title: "BLE-Streamer Klassen & Funktionen",
+                elements: [
+                    { id: 'init_ble', type: 'class', title: 'initBLE()', description: 'Initialisiert den BLE-Stack des nRF52840, konfiguriert den GATT-Service und startet Advertising.', tech: 'C++ Function', file: 'embedded/components/ble_streamer/BLEStreamer.cpp', line: 8 },
+                    { id: 'stream_imu_data', type: 'class', title: 'streamIMUData()', description: 'Formatiert 6-Achsen-Daten in einen 24-Byte-Puffer und updatet die BLE GATT Characteristic.', tech: 'C++ Function', file: 'embedded/components/ble_streamer/BLEStreamer.cpp', line: 27 }
                 ],
                 connections: []
             }
@@ -1417,6 +1427,86 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p>Keine detaillierten Klassen oder Funktionen für diese Komponente modelliert.</p>
                     </div>
                 `;
+            }
+        }
+
+        // 4. Update Use Cases section visibility and content
+        const ucSection = document.getElementById('c4UseCasesSection');
+        const ucGrid = document.getElementById('c4UseCasesGrid');
+        
+        if (state.c4Level === 'context') {
+            if (ucSection && ucGrid) {
+                ucSection.style.display = 'block';
+                ucGrid.innerHTML = '';
+                
+                const useCasesFile = DOCS_DATA.files.find(f => f.path === 'doc/UseCases.md');
+                if (useCasesFile) {
+                    const sections = useCasesFile.content.split('---');
+                    sections.forEach(sec => {
+                        const ucMatch = sec.match(/\*\*(UC-\d+)\*\*:\s*(.*)/);
+                        if (ucMatch) {
+                            const ucId = ucMatch[1];
+                            const ucTitle = ucMatch[2].trim();
+                            
+                            const actorMatch = sec.match(/\*\*(?:Akteur|Actor)\*\*:\s*(.*)/i);
+                            const preCondMatch = sec.match(/\*\*(?:Vorbedingung|Precondition)\*\*:\s*(.*)/i);
+                            const descMatch = sec.match(/\*\*(?:Beschreibung|Description)\*\*:\s*(.*)/i);
+                            
+                            const actor = actorMatch ? actorMatch[1].trim() : 'Trainierender';
+                            const precondition = preCondMatch ? preCondMatch[1].trim() : '';
+                            const description = descMatch ? descMatch[1].trim() : '';
+                            
+                            const card = document.createElement('div');
+                            card.className = 'uc-card';
+                            
+                            card.innerHTML = `
+                                <div class="uc-card-header">
+                                    <span class="node-badge usecase" style="font-size: 10px; font-weight: 700; padding: 3px 8px;">${ucId}</span>
+                                    <span class="uc-card-actor">
+                                        <i class="fa-solid fa-user"></i> ${actor}
+                                    </span>
+                                </div>
+                                <h4 class="uc-card-title">${ucTitle}</h4>
+                                <p class="uc-card-desc">${description}</p>
+                                ${precondition ? `<div class="uc-card-precond"><strong>Vorbedingung:</strong> ${precondition}</div>` : ''}
+                            `;
+                            
+                            card.addEventListener('click', () => {
+                                selectFile('doc/UseCases.md');
+                                const docsTabBtn = document.querySelector('[data-target="docs-tab"]');
+                                if (docsTabBtn) {
+                                    docsTabBtn.click();
+                                    
+                                    // Scroll to the specific Use Case header in the document
+                                    setTimeout(() => {
+                                        const headings = document.querySelectorAll('#markdownRender h1, #markdownRender h2, #markdownRender h3, #markdownRender h4, #markdownRender p, #markdownRender strong');
+                                        for (const h of headings) {
+                                            if (h.textContent.includes(ucId)) {
+                                                h.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                // Temporarily highlight the text
+                                                const originalBackground = h.style.backgroundColor;
+                                                h.style.backgroundColor = 'var(--primary-glow)';
+                                                h.style.borderRadius = '4px';
+                                                h.style.padding = '2px 6px';
+                                                h.style.transition = 'background-color 0.8s ease';
+                                                setTimeout(() => {
+                                                    h.style.backgroundColor = originalBackground;
+                                                }, 2000);
+                                                break;
+                                            }
+                                        }
+                                    }, 100);
+                                }
+                            });
+                            
+                            ucGrid.appendChild(card);
+                        }
+                    });
+                }
+            }
+        } else {
+            if (ucSection) {
+                ucSection.style.display = 'none';
             }
         }
 

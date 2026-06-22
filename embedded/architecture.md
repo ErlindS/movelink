@@ -16,7 +16,8 @@ Die Sensor-Firmware besteht aus folgenden logischen Komponenten:
 1. **[Sensordatenerfassung (Loop)](file:///c:/Users/erlin/repo/movelink/embedded/components/sensordatenerfassung/architecture.md)**: Liest kontinuierlich Beschleunigung (X, Y, Z) und Gyroskop (X, Y, Z). (Erfüllt: FA5, NF1)
 2. **[Inferenz-Engine (Edge Impulse)](file:///c:/Users/erlin/repo/movelink/embedded/components/inferenz_engine/architecture.md)**: Klassifiziert Übungsausführungen lokal auf dem Chip. (Erfüllt: FA5, FA9)
 3. **[LED- & Display-Controller](file:///c:/Users/erlin/repo/movelink/embedded/components/led_display_controller/architecture.md)**: Bietet direktes visuelles Feedback an den Nutzer bei Fehlern. (Erfüllt: FA9)
-4. **[Gehäuse](file:///c:/Users/erlin/repo/movelink/embedded/components/gehause/architecture.md)**: Bietet physischen Schutz, sodass das Tragen erleichtert wird. (Erfüllt: R2)
+4. **[BLE-Streamer](file:///c:/Users/erlin/repo/movelink/embedded/components/ble_streamer/architecture.md)**: Überträgt die erfassten Daten an den App-Container. (Erfüllt: FA3, FA5)
+5. **[Gehäuse](file:///c:/Users/erlin/repo/movelink/embedded/components/gehause/architecture.md)**: Bietet physischen Schutz, sodass das Tragen erleichtert wird. (Erfüllt: R2)
 
 ## Abwägungen
 - **Lokale Auswertung vs. Cloud-Streaming**: Das Ausführen der Inferenz-Engine direkt auf dem Xiao-Controller minimiert die Latenz (NF1) und spart Bandbreite bei der Funkübertragung.

@@ -203,7 +203,7 @@
                 <!-- Tab 5: C4 Model Explorer -->
                 <section id="c4-tab" class="tab-content">
                     <div class="graph-layout">
-                        <div class="graph-main glass-card" style="padding: 20px; display: flex; flex-direction: column;">
+                        <div class="graph-main glass-card" style="padding: 20px; display: flex; flex-direction: column; overflow-y: auto;">
                             <div class="c4-explorer-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-shrink: 0;">
                                 <div class="c4-breadcrumbs" id="c4Breadcrumbs" style="display: flex; gap: 8px; align-items: center; font-family: var(--font-heading); font-size: 13px; font-weight: 600;">
                                     <span class="breadcrumb-item clickable" id="breadcrumbSystem" style="color: var(--primary); cursor: pointer;"><i class="fa-solid fa-network-wired"></i> System-Kontext</span>
@@ -234,6 +234,14 @@
                                 </svg>
                                 <div id="c4Board" style="width: 100%; height: 100%; display: grid; gap: 65px; transition: var(--transition-smooth); position: relative; z-index: 10;">
                                     <!-- Dynamic C4 boxes rendered here -->
+                                </div>
+                            </div>
+                            <div id="c4UseCasesSection" class="c4-usecases-section" style="display: none;">
+                                <h3 class="c4-usecases-title">
+                                    <i class="fa-solid fa-list-check"></i> System-Use Cases (Anwendungsfälle)
+                                </h3>
+                                <div id="c4UseCasesGrid" class="c4-usecases-grid">
+                                    <!-- Dynamic Use Case Cards populated by JS -->
                                 </div>
                             </div>
                         </div>

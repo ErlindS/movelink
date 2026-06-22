@@ -5,6 +5,7 @@
 #include "../components/sensordatenerfassung/IMUReader.h"
 #include "../components/inferenz_engine/InferenceEngine.h"
 #include "../components/led_display_controller/VisualFeedback.h"
+#include "../components/ble_streamer/BLEStreamer.h"
 
 static float dsp_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE] = { 0 };
 
@@ -22,6 +23,12 @@ void setup()
         Serial.println("IMU initialized");
     }
 
+    if (!initBLE()) {
+        Serial.println("Failed to initialize BLE!");
+    } else {
+        Serial.println("BLE initialized");
+    }
+
     // SICHERHEITSCHECK: Prüfen ob das Modell wirklich für 6 Achsen trainiert wurde
     if (EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME != 6) {
         Serial.print("ERR: EI_CLASSIFIER_RAW_SAMPLES_PER_FRAME sollte 6 sein (Accel + Gyro)!\n");
@@ -36,6 +43,10 @@ void loop()
         uint64_t next_tick = micros() + (EI_CLASSIFIER_INTERVAL_MS * 1000);
 
         readSensorData(dsp_buffer, ix);
+
+        // Stream the raw sensor data via Bluetooth Low Energy
+        streamIMUData(dsp_buffer[ix], dsp_buffer[ix + 1], dsp_buffer[ix + 2],
+                      dsp_buffer[ix + 3], dsp_buffer[ix + 4], dsp_buffer[ix + 5]);
 
         delayMicroseconds(next_tick - micros());
     }
