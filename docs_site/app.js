@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
         treeFilter: '',
         physicsEnabled: true,
         network: null,
-        theme: 'dark'
+        theme: 'light',
+        expandedFolders: {}
     };
 
     // Fallback if data.js didn't load or is empty
@@ -184,14 +185,18 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.statLinks.textContent = linkCount;
     }
 
-    // 7. Render File Navigation Sidebar
-    function renderFileList() {
-        elements.fileList.innerHTML = '';
+    // Helper to build a nested tree structure from flat files
+    function buildFileTree(files) {
+        const root = {
+            name: 'Wurzelverzeichnis',
+            path: '',
+            type: 'folder',
+            children: {},
+            files: []
+        };
 
-        // Group files by directory
-        const groups = {};
-
-        DOCS_DATA.files.forEach(file => {
+        files.forEach(file => {
+            // Filter by search query if present
             if (state.searchQuery) {
                 const matchesSearch =
                     file.path.toLowerCase().includes(state.searchQuery) ||
@@ -202,37 +207,140 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const parts = file.path.split('/');
-            const dir = parts.length > 1 ? parts.slice(0, -1).join('/') : 'Wurzelverzeichnis';
+            let current = root;
 
-            if (!groups[dir]) groups[dir] = [];
-            groups[dir].push(file);
+            // Traverse directories
+            for (let i = 0; i < parts.length - 1; i++) {
+                const part = parts[i];
+                if (!current.children[part]) {
+                    current.children[part] = {
+                        name: part,
+                        path: parts.slice(0, i + 1).join('/'),
+                        type: 'folder',
+                        children: {},
+                        files: []
+                    };
+                }
+                current = current.children[part];
+            }
+
+            current.files.push(file);
         });
 
-        Object.keys(groups).forEach(dir => {
-            const dirHeader = document.createElement('div');
-            dirHeader.className = 'nav-section-title';
-            dirHeader.style.marginTop = '10px';
-            dirHeader.style.fontSize = '9px';
-            dirHeader.innerHTML = `<i class="fa-regular fa-folder"></i> ${dir}`;
-            elements.fileList.appendChild(dirHeader);
+        return root;
+    }
 
-            groups[dir].forEach(file => {
-                const li = document.createElement('li');
-                const btn = document.createElement('button');
-                btn.className = `nav-btn doc-btn ${file.path === state.activeFile ? 'active' : ''}`;
-                btn.innerHTML = `<i class="fa-regular fa-file-lines"></i> ${file.title}`;
-                btn.addEventListener('click', () => {
-                    selectFile(file.path);
-                });
-                li.appendChild(btn);
-                elements.fileList.appendChild(li);
+    // Helper to recursively render tree nodes
+    function renderTreeNodes(node, container, depth = 0) {
+        // Sort folders alphabetically
+        const sortedFolders = Object.keys(node.children)
+            .sort((a, b) => a.localeCompare(b))
+            .map(key => node.children[key]);
+
+        // Sort files alphabetically by title
+        const sortedFiles = [...node.files].sort((a, b) => a.title.localeCompare(b.title));
+
+        // Render subfolders first
+        sortedFolders.forEach(subfolder => {
+            const folderNode = document.createElement('div');
+            folderNode.className = 'folder-node';
+
+            // Determine if folder should be expanded
+            const isExpanded = !!(
+                state.searchQuery || 
+                state.expandedFolders[subfolder.path] || 
+                (state.activeFile && state.activeFile.startsWith(subfolder.path + '/'))
+            );
+
+            if (isExpanded) {
+                folderNode.classList.add('expanded');
+            }
+
+            // Create folder row button
+            const folderRow = document.createElement('button');
+            folderRow.className = 'folder-row';
+            folderRow.style.paddingLeft = `${14 + depth * 12}px`;
+            
+            const chevronIcon = document.createElement('i');
+            chevronIcon.className = 'fa-solid fa-chevron-right folder-chevron';
+            
+            const folderIcon = document.createElement('i');
+            folderIcon.className = `fa-regular ${isExpanded ? 'fa-folder-open' : 'fa-folder'} folder-icon`;
+            
+            const folderName = document.createElement('span');
+            folderName.className = 'folder-name';
+            folderName.textContent = subfolder.name;
+
+            folderRow.appendChild(chevronIcon);
+            folderRow.appendChild(folderIcon);
+            folderRow.appendChild(folderName);
+            folderNode.appendChild(folderRow);
+
+            // Create children container
+            const folderChildren = document.createElement('ul');
+            folderChildren.className = 'folder-children';
+            
+            // Recursively render children
+            renderTreeNodes(subfolder, folderChildren, depth + 1);
+            folderNode.appendChild(folderChildren);
+
+            // Click listener to toggle folder
+            folderRow.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const nowExpanded = !folderNode.classList.contains('expanded');
+                
+                // Update state
+                state.expandedFolders[subfolder.path] = nowExpanded;
+                
+                // Toggle DOM classes/icons directly for instant response
+                if (nowExpanded) {
+                    folderNode.classList.add('expanded');
+                    folderIcon.className = 'fa-regular fa-folder-open folder-icon';
+                } else {
+                    folderNode.classList.remove('expanded');
+                    folderIcon.className = 'fa-regular fa-folder folder-icon';
+                }
             });
+
+            container.appendChild(folderNode);
         });
+
+        // Render files next
+        sortedFiles.forEach(file => {
+            const li = document.createElement('li');
+            const btn = document.createElement('button');
+            const isActive = file.path === state.activeFile;
+            btn.className = `nav-btn doc-btn ${isActive ? 'active' : ''}`;
+            btn.style.paddingLeft = `${32 + depth * 12}px`;
+            btn.innerHTML = `<i class="fa-regular fa-file-lines"></i> ${file.title}`;
+            
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectFile(file.path);
+            });
+            
+            li.appendChild(btn);
+            container.appendChild(li);
+        });
+    }
+
+    // 7. Render File Navigation Sidebar
+    function renderFileList() {
+        elements.fileList.innerHTML = '';
+        const fileTree = buildFileTree(DOCS_DATA.files);
+        renderTreeNodes(fileTree, elements.fileList, 0);
     }
 
     // 8. Select and Render Active Markdown File
     function selectFile(filePath) {
         state.activeFile = filePath;
+
+        // Auto-expand all parent folders of the active file
+        const parts = filePath.split('/');
+        for (let i = 1; i < parts.length; i++) {
+            const folderPath = parts.slice(0, i).join('/');
+            state.expandedFolders[folderPath] = true;
+        }
 
         // Update active class in sidebar
         const buttons = elements.fileList.querySelectorAll('.doc-btn');
@@ -1250,11 +1358,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Node design parameters based on active theme
         const isDark = document.body.classList.contains('dark-mode');
         const colors = {
-            UC: { background: '#0d2e27', border: '#00d4aa', font: isDark ? '#f0f4f3' : '#1e2e2b' },
-            FA: { background: '#1e1b4b', border: '#818cf8', font: isDark ? '#f0f4f3' : '#1e2e2b' },
-            NF: { background: '#3b0764', border: '#d8b4fe', font: isDark ? '#f0f4f3' : '#1e2e2b' },
-            R: { background: '#451a03', border: '#f97316', font: isDark ? '#f0f4f3' : '#1e2e2b' },
-            File: { background: isDark ? '#141b18' : '#e6eeec', border: isDark ? '#4a5c59' : '#a3b8b5', font: isDark ? '#a3b8b5' : '#4a5c59' }
+            UC: { background: '#332700', border: '#e6af12', font: isDark ? '#f0f5f7' : '#1b2a30' },
+            FA: { background: '#1e1b4b', border: '#818cf8', font: isDark ? '#f0f5f7' : '#1b2a30' },
+            NF: { background: '#3b0764', border: '#d8b4fe', font: isDark ? '#f0f5f7' : '#1b2a30' },
+            R: { background: '#451a03', border: '#f97316', font: isDark ? '#f0f5f7' : '#1b2a30' },
+            File: { background: isDark ? '#05151c' : '#e1e8ed', border: isDark ? '#1a3745' : '#a8b6be', font: isDark ? '#93abb5' : '#495c66' }
         };
 
         // 1. Add Use Case / Requirements Nodes
@@ -2251,7 +2359,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Determine stroke color and marker arrowhead
-            let strokeColor = isDark ? '#00d4aa' : '#00a685';
+            let strokeColor = isDark ? '#3586c4' : '#2d7eb8';
             let markerId = isDark ? 'arrow-teal' : 'arrow-teal-light';
 
             if (state.c4Level === 'components') {

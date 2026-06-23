@@ -1,26 +1,26 @@
 /* Global Variables & Themes */
 :root {
-    /* Color Palette - HSL (Dark Mode Default) */
-    --bg-primary: #070e0d;
-    --bg-secondary: #0c1816;
-    --border-color: rgba(0, 212, 170, 0.15);
-    --border-bright: rgba(0, 212, 170, 0.3);
-    --text-primary: #f0f4f3;
-    --text-secondary: #a3b8b5;
-    --text-muted: #627c78;
+    /* Color Palette - Navy/Teal & Gold (Based on provided image) */
+    --bg-primary: #061d28;
+    --bg-secondary: #05151c;
+    --border-color: rgba(53, 134, 196, 0.15);
+    --border-bright: rgba(53, 134, 196, 0.3);
+    --text-primary: #f0f5f7;
+    --text-secondary: #93abb5;
+    --text-muted: #5d7c8a;
     
-    --primary: #00d4aa;
-    --primary-glow: rgba(0, 212, 170, 0.4);
-    --primary-dim: rgba(0, 212, 170, 0.08);
-    --primary-hover: #05f2c4;
+    --primary: #3586c4;
+    --primary-glow: rgba(53, 134, 196, 0.3);
+    --primary-dim: rgba(53, 134, 196, 0.08);
+    --primary-hover: #4995cf;
     
-    --accent-x: #ff4b4b;
-    --accent-y: #3b82f6;
-    --accent-z: #eab308;
+    --accent-x: #e05252;
+    --accent-y: #3586c4;
+    --accent-z: #e6af12;
     
-    --card-bg: rgba(12, 24, 22, 0.65);
-    --card-shadow: rgba(0, 0, 0, 0.4);
-    --glass-blur: 16px;
+    --card-bg: #0d2530;
+    --card-shadow: rgba(0, 0, 0, 0.3);
+    --glass-blur: 0px; /* Flat clean design */
     
     --font-heading: 'Outfit', 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
@@ -31,21 +31,21 @@
 }
 
 body.light-mode {
-    --bg-primary: #f3f7f6;
-    --bg-secondary: #e6eeec;
-    --border-color: rgba(0, 180, 144, 0.15);
-    --border-bright: rgba(0, 180, 144, 0.3);
-    --text-primary: #1e2e2b;
-    --text-secondary: #4a5c59;
-    --text-muted: #7c8e8b;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f7fa;
+    --border-color: rgba(53, 134, 196, 0.1);
+    --border-bright: rgba(53, 134, 196, 0.25);
+    --text-primary: #1b2a30;
+    --text-secondary: #495c66;
+    --text-muted: #7c8e99;
     
-    --primary: #00a685;
-    --primary-glow: rgba(0, 166, 133, 0.3);
-    --primary-dim: rgba(0, 166, 133, 0.05);
-    --primary-hover: #00876c;
+    --primary: #2d7eb8;
+    --primary-glow: rgba(45, 126, 184, 0.2);
+    --primary-dim: rgba(45, 126, 184, 0.05);
+    --primary-hover: #1e608f;
     
-    --card-bg: rgba(255, 255, 255, 0.8);
-    --card-shadow: rgba(0, 0, 0, 0.06);
+    --card-bg: #ffffff;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 /* Base Styles */
@@ -110,7 +110,6 @@ body {
 .logo-icon {
     font-size: 24px;
     color: var(--primary);
-    text-shadow: 0 0 10px var(--primary-glow);
 }
 
 .logo-text {
@@ -624,7 +623,7 @@ body {
     gap: 10px;
     padding: 10px 14px;
     background-color: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(0, 212, 170, 0.05);
+    border: 1px solid rgba(53, 134, 196, 0.05);
     border-radius: 10px;
     cursor: pointer;
     transition: var(--transition-smooth);
@@ -654,7 +653,7 @@ body {
     font-family: monospace;
 }
 
-.node-badge.usecase { background-color: #0d2e27; color: var(--primary); border: 1px solid var(--border-color); }
+.node-badge.usecase { background-color: #332700; color: var(--accent-z); border: 1px solid rgba(230, 175, 18, 0.3); }
 .node-badge.requirement { background-color: #1e1b4b; color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.2); }
 .node-badge.code { background-color: #3b0764; color: #d8b4fe; border: 1px solid rgba(216, 180, 254, 0.2); }
 
@@ -777,7 +776,7 @@ body {
 
 .matrix-marker.direct {
     color: var(--primary);
-    text-shadow: 0 0 4px rgba(0, 212, 170, 0.3);
+    text-shadow: 0 0 4px rgba(53, 134, 196, 0.3);
 }
 
 .matrix-marker.transitive {
@@ -1447,7 +1446,7 @@ body {
 }
 
 body.light-mode .trace-confluence-table th {
-    background-color: rgba(0, 166, 133, 0.05);
+    background-color: rgba(53, 134, 196, 0.05);
 }
 
 .trace-confluence-table tr {
@@ -1778,7 +1777,7 @@ body.light-mode .trace-confluence-table tr:hover {
 .arch-matrix-table td.svg-cell {
     padding: 0;
     position: relative;
-    background: rgba(0, 212, 170, 0.02);
+    background: rgba(53, 134, 196, 0.02);
 }
 .arch-matrix-table td.uc-cell, 
 .arch-matrix-table td.fa-cell {
@@ -1799,7 +1798,7 @@ body.light-mode .trace-confluence-table tr:hover {
 .arch-matrix-description {
     margin-top: 24px;
     padding: 20px;
-    background: rgba(0, 212, 170, 0.03);
+    background: rgba(53, 134, 196, 0.03);
     border-radius: 12px;
     border-left: 4px solid var(--primary);
     font-size: 13px;
@@ -1820,3 +1819,80 @@ body.light-mode .trace-confluence-table tr:hover {
     margin-bottom: 10px;
     color: var(--text-secondary);
 }
+
+/* Sidebar Folder Tree View Styles */
+.folder-node {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 2px;
+}
+
+.folder-row {
+    width: 100%;
+    padding: 8px 14px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    user-select: none;
+}
+
+.folder-row:hover {
+    background-color: var(--primary-dim);
+    color: var(--primary);
+}
+
+.folder-chevron {
+    font-size: 10px;
+    width: 12px;
+    text-align: center;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+}
+
+.folder-icon {
+    font-size: 14px;
+    color: var(--primary);
+    width: 16px;
+    text-align: center;
+}
+
+.folder-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.folder-children {
+    list-style: none;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+}
+
+.folder-node.expanded > .folder-children {
+    display: flex;
+}
+
+.folder-node.expanded > .folder-row > .folder-chevron {
+    transform: rotate(90deg);
+}
+
+/* Adjust doc-btn margins and alignments inside tree */
+.nav-list li button.doc-btn {
+    margin-bottom: 2px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
