@@ -281,6 +281,16 @@ def make_requirement_card(item_id, title, desc_text, styles):
     ]))
     return card_table
 
+def get_clean_markdown(content):
+    lines = content.split('\n')
+    clean_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('# ') or stripped == '# FA2':
+            continue
+        clean_lines.append(line)
+    return '\n'.join(clean_lines)
+
 def markdown_to_flowables(text, styles):
     flowables = []
     lines = text.split('\n')
@@ -295,12 +305,47 @@ def markdown_to_flowables(text, styles):
             i += 1
             continue
             
-        # 1. Skip code blocks completely (no code in the doc)
+        # 1. Skip code blocks completely (no code in the doc), but map mermaid diagrams
         if line_strip.startswith('```'):
+            is_mermaid = 'mermaid' in line_strip
+            mermaid_lines = []
             i += 1
             while i < len(lines) and not lines[i].strip().startswith('```'):
+                if is_mermaid:
+                    mermaid_lines.append(lines[i])
                 i += 1
             i += 1  # skip the closing ```
+            
+            if is_mermaid:
+                mermaid_code = "".join(mermaid_lines)
+                if "Loop in Executable.ino" in mermaid_code:
+                    flowables.append(Spacer(1, 5))
+                    flowables.append(create_sensordatenerfassung_diagram())
+                    flowables.append(Spacer(1, 5))
+                elif "LSM6DS3 Sensor (Hardware)" in mermaid_code or "Sensordatenerfassung" in mermaid_code:
+                    flowables.append(Spacer(1, 5))
+                    flowables.append(create_firmware_dataflow_diagram())
+                    flowables.append(Spacer(1, 5))
+                elif "CNN Modell" in mermaid_code or "run_classifier" in mermaid_code:
+                    flowables.append(Spacer(1, 5))
+                    flowables.append(create_inferenz_engine_diagram())
+                    flowables.append(Spacer(1, 5))
+                elif "Feedback-Logik" in mermaid_code or "Welche Klasse?" in mermaid_code:
+                    flowables.append(Spacer(1, 5))
+                    flowables.append(create_led_display_controller_diagram())
+                    flowables.append(Spacer(1, 5))
+                elif "GATT Notification" in mermaid_code or "GATT-Service" in mermaid_code:
+                    flowables.append(Spacer(1, 5))
+                    flowables.append(create_ble_streamer_diagram())
+                    flowables.append(Spacer(1, 5))
+                elif "Physische Platzierung" in mermaid_code or "Armbandlaschen" in mermaid_code:
+                    flowables.append(Spacer(1, 5))
+                    flowables.append(create_gehause_diagram())
+                    flowables.append(Spacer(1, 5))
+                elif "React Native App Container" in mermaid_code:
+                    flowables.append(Spacer(1, 5))
+                    flowables.append(create_container_diagram())
+                    flowables.append(Spacer(1, 5))
             continue
             
         # 2. Check for decision blocks
@@ -454,6 +499,9 @@ def markdown_to_flowables(text, styles):
         elif line.startswith('### '):
             flowables.append(Paragraph(clean_md_tags(line[4:]), styles['Heading3']))
             flowables.append(Spacer(1, 6))
+        elif line.startswith('#### '):
+            flowables.append(Paragraph(clean_md_tags(line[5:]), styles['Heading4']))
+            flowables.append(Spacer(1, 4))
         # 8. Lists
         elif line_strip.startswith('•') or line_strip.startswith('-') or line_strip.startswith('*'):
             bullet_text = line_strip[1:].strip()
@@ -698,6 +746,175 @@ def create_data_control_flow_diagram():
     d.add(String(240, 13, "Kontroll- & Feedbackfluss: Datenbank-Ack -> Sync-Bestätigung -> BLE-Steuerung", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
     return d
 
+def create_firmware_dataflow_diagram():
+    d = Drawing(480, 175)
+    d.add(Rect(0, 0, 480, 175, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    
+    teal = colors.HexColor('#00a685')
+    purple = colors.HexColor('#8b5cf6')
+    grey = colors.HexColor('#666666')
+    
+    # Draw boxes
+    draw_c4_box(d, 15, 105, 85, 50, "LSM6DS3 Sensor", "Hardware IMU", "Beschleunigung & Gyro.", "external")
+    draw_c4_box(d, 120, 105, 95, 50, "Sensordatenerfassung", "C++ Component", "Taktet Erfassung mit 50Hz.", "component")
+    draw_c4_box(d, 240, 105, 95, 50, "Inferenz-Engine", "CNN Classifier", "Klassifiziert Curls.", "component")
+    draw_c4_box(d, 360, 105, 105, 50, "BLE-Streamer", "C++ Component", "Streamt Daten via GATT.", "component")
+    
+    draw_c4_box(d, 360, 15, 105, 50, "Mobile App", "React Native", "Empfängt BLE Pakete.", "external")
+    draw_c4_box(d, 240, 15, 95, 50, "LED-Controller", "C++ Component", "Steuert Feedback-LEDs.", "component")
+    draw_c4_box(d, 120, 15, 95, 50, "RGB-LEDs", "Hardware LED", "Zeigt Status rot/grün/blau.", "external")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 100, 130, 120, 130, "Rohwerte", grey)
+    draw_c4_arrow(d, 215, 130, 240, 130, "Buffer", purple)
+    draw_c4_arrow(d, 335, 130, 360, 130, "Ergebnis", purple)
+    draw_c4_arrow(d, 412, 105, 412, 65, "BLE Notify", teal)
+    draw_c4_arrow(d, 287, 105, 287, 65, "Klasse", purple)
+    draw_c4_arrow(d, 240, 40, 215, 40, "Signal", purple)
+    
+    return d
+
+def create_sensordatenerfassung_diagram():
+    d = Drawing(480, 95)
+    d.add(Rect(0, 0, 480, 95, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    
+    teal = colors.HexColor('#00a685')
+    purple = colors.HexColor('#8b5cf6')
+    grey = colors.HexColor('#666666')
+    
+    # Draw boxes
+    draw_c4_box(d, 15, 20, 95, 50, "LSM6DS3 Sensor", "Hardware IMU", "Erfasst Beschleunigung & Drehung.", "external")
+    draw_c4_box(d, 130, 20, 95, 50, "Executable.ino (Loop)", "C++ Component", "Taktet Erfassung mit 50Hz.", "component")
+    draw_c4_box(d, 245, 20, 105, 50, "Skalierung & Filter", "C++ Modul", "Rechnet in m/s^2 um & clampt auf 2G.", "component")
+    draw_c4_box(d, 370, 20, 95, 50, "DSP Puffer", "Memory Buffer", "Speichert Daten für Inferenz-Engine.", "component")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 110, 45, 130, 45, "I2C Rohwert", grey)
+    draw_c4_arrow(d, 225, 45, 245, 45, "Clamping 2G", purple)
+    draw_c4_arrow(d, 350, 45, 370, 45, "Befüllen", purple)
+    
+    return d
+
+def create_inferenz_engine_diagram():
+    d = Drawing(480, 95)
+    d.add(Rect(0, 0, 480, 95, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    
+    purple = colors.HexColor('#8b5cf6')
+    
+    # Draw boxes
+    draw_c4_box(d, 15, 20, 95, 50, "DSP Puffer (6 Achsen)", "Data Buffer", "Hält 6-Achsen-Messdaten.", "component")
+    draw_c4_box(d, 130, 20, 95, 50, "CNN Modell", "TensorFlow Lite", "Klassifiziert Bewegungsmuster.", "component")
+    draw_c4_box(d, 245, 20, 105, 50, "Klassenauswertung", "C++ Modul", "Bestimmt beste Klasse & Wahrscheinlichkeit.", "component")
+    draw_c4_box(d, 370, 20, 95, 50, "Feedback / PC-Stream", "Output Interface", "Gibt Ergebnisse lokal & seriell aus.", "component")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 110, 45, 130, 45, "run_classifier", purple)
+    draw_c4_arrow(d, 225, 45, 245, 45, "Scores", purple)
+    draw_c4_arrow(d, 350, 45, 370, 45, "Treffer", purple)
+    
+    return d
+
+def create_led_display_controller_diagram():
+    d = Drawing(480, 140)
+    d.add(Rect(0, 0, 480, 140, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    
+    teal = colors.HexColor('#00a685')
+    purple = colors.HexColor('#8b5cf6')
+    
+    # Draw boxes
+    draw_c4_box(d, 15, 45, 90, 50, "Inferenz-Ergebnis", "Data Input", "Klassifikation & Konfidenz.", "component")
+    draw_c4_box(d, 135, 45, 90, 50, "Feedback-Logik", "C++ Component", "Entscheidet über Anzeige/LED Farbe.", "component")
+    
+    draw_c4_box(d, 265, 90, 100, 40, "IDLE (Blau leuchten)", "OLED / LED Action", "OLED: Status IDLE", "external")
+    draw_c4_box(d, 265, 45, 100, 40, "PERFEKT (Grün leuchten)", "OLED / LED Action", "OLED: Curl PERFEKT", "external")
+    draw_c4_box(d, 265, 0, 100, 40, "FEHLER (Rot leuchten)", "OLED / LED Action", "OLED: Achtung FEHLER", "external")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 105, 70, 135, 70, "Treffer", purple)
+    
+    # Branching arrows
+    draw_c4_arrow(d, 225, 80, 265, 110, "idle / <60%", teal)
+    draw_c4_arrow(d, 225, 70, 265, 65, "curl_sauber", teal)
+    draw_c4_arrow(d, 225, 60, 265, 20, "fehler", teal)
+    
+    return d
+
+def create_ble_streamer_diagram():
+    d = Drawing(480, 95)
+    d.add(Rect(0, 0, 480, 95, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    
+    teal = colors.HexColor('#00a685')
+    purple = colors.HexColor('#8b5cf6')
+    
+    # Draw boxes
+    draw_c4_box(d, 20, 20, 100, 50, "Sensor-Rohwerte", "Data Source", "Liefert ax, ay, az, gx, gy, gz.", "external")
+    draw_c4_box(d, 190, 20, 100, 50, "BLE-Streamer Component", "nRF52840 BLE Service", "Paketiert Daten in 24-Byte-GATT-Puffer.", "component")
+    draw_c4_box(d, 360, 20, 100, 50, "Mobile App", "useBLE Hook", "Empfängt und parst Datenpakete.", "external")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 120, 45, 190, 45, "IMU Werte", purple)
+    draw_c4_arrow(d, 290, 45, 360, 45, "GATT Notify", teal)
+    
+    return d
+
+def create_gehause_diagram():
+    d = Drawing(480, 140)
+    d.add(Rect(0, 0, 480, 140, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    
+    teal = colors.HexColor('#00a685')
+    purple = colors.HexColor('#8b5cf6')
+    
+    # Draw boxes
+    draw_c4_box(d, 20, 75, 110, 45, "XIAO Controller", "Hardware Core", "XIAO nRF52840 Sense + OLED.", "component")
+    draw_c4_box(d, 20, 15, 110, 45, "LiPo-Akku", "Hardware Power", "Bietet Energie für autonomen Betrieb.", "component")
+    draw_c4_box(d, 185, 42, 110, 50, "3D-Druck Gehäuse", "Physical Enclosure", "Umschließt und schützt die Hardware.", "component")
+    draw_c4_box(d, 350, 42, 110, 50, "Sportarmband (20mm)", "Wearable Strap", "Fixiert den Sensor stabil am Arm des Nutzers.", "external")
+    
+    # Draw arrows
+    draw_c4_arrow(d, 130, 97, 185, 77, "Umschlossen", purple)
+    draw_c4_arrow(d, 130, 37, 185, 57, "Umschlossen", purple)
+    draw_c4_arrow(d, 295, 67, 350, 67, "Befestigt", teal)
+    
+    return d
+
+def get_component_clean_markdown(content, section_num):
+    content_clean = re.sub(r'<!--.*?-->', '', content, flags=re.DOTALL)
+    lines = content_clean.split('\n')
+    clean_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if line.startswith('# '):
+            title = line[2:].strip()
+            clean_lines.append(f"### {section_num} {title}")
+        elif line.startswith('## '):
+            title = line[3:].strip()
+            clean_lines.append(f"#### {title}")
+        elif line.startswith('### '):
+            title = line[4:].strip()
+            clean_lines.append(f"**{title}**")
+        else:
+            clean_lines.append(line)
+    return '\n'.join(clean_lines)
+
+def get_container_clean_markdown(content):
+    content_clean = re.sub(r'<!--.*?-->', '', content, flags=re.DOTALL)
+    lines = content_clean.split('\n')
+    clean_lines = []
+    clean_lines.append("### 4.1.1 Container-Architektur & Beschreibung")
+    for line in lines:
+        stripped = line.strip()
+        if line.startswith('# ') or stripped == '# FA2':
+            continue
+        if line.startswith('## '):
+            title = line[3:].strip()
+            clean_lines.append(f"#### {title}")
+        elif line.startswith('### '):
+            title = line[4:].strip()
+            clean_lines.append(f"**{title}**")
+        else:
+            clean_lines.append(line)
+    return '\n'.join(clean_lines)
+
 # --- Subclass SimpleDocTemplate for Table of Contents ---
 class MyDocTemplate(SimpleDocTemplate):
     def afterFlowable(self, flowable):
@@ -870,6 +1087,15 @@ def main():
         textColor=text_color
     ))
 
+    styles['Heading4'].parent = styles['Normal']
+    styles['Heading4'].fontName = 'Helvetica-Bold'
+    styles['Heading4'].fontSize = 10
+    styles['Heading4'].leading = 13
+    styles['Heading4'].textColor = colors.HexColor('#627c78')
+    styles['Heading4'].spaceBefore = 8
+    styles['Heading4'].spaceAfter = 4
+    styles['Heading4'].keepWithNext = True
+
     story = []
     
     # ------------------ COVER PAGE ------------------
@@ -1005,7 +1231,7 @@ def main():
     
     # ------------------ SECTION 4: C4 MODEL WITH SUB-SECTIONS ------------------
     story.append(Paragraph("4. System-Architektur (C4 Modell)", styles['Heading1']))
-    story.append(Paragraph("Die Software-Architektur von MoveLink ist nach dem C4-Modell strukturiert. Im Folgenden werden die einzelnen Container des Systems (Embedded Firmware, Mobile App und Datenbank & Backend) im Detail beschrieben. Für jeden dieser Unterpunkte folgen jeweils die spezifischen Anforderungen, das zugehörige ADR (Architekturentscheidung) und die Architektur-Abbildung.", styles['NormalText']))
+    story.append(Paragraph("Die Software-Architektur von MoveLink ist nach dem C4-Modell strukturiert. Im Folgenden werden die einzelnen Container des Systems (Embedded Firmware, Mobile App und Datenbank & Backend) im Detail beschrieben. Für jeden dieser Unterpunkte werden die C4-Komponenten und Datenflüsse visuell und textuell dargestellt, gefolgt von den Anforderungen und der Architekturentscheidung (ADR).", styles['NormalText']))
     story.append(Spacer(1, 10))
     
     # --- 4.1 embedded ---
@@ -1013,32 +1239,43 @@ def main():
     story.append(Paragraph("Die Sensor-Firmware läuft auf dem <b>XIAO nRF52840 Sense Controller</b>. Sie erfasst Beschleunigungs- und Rotationsdaten über den LSM6DS3-Sensor, wendet Filter an und überträgt Daten per BLE oder wertet sie per Edge-Inferenz direkt auf dem Chip aus.", styles['NormalText']))
     story.append(Spacer(1, 8))
     
-    # Anforderungen
-    story.append(Paragraph("Anforderungen (Embedded)", styles['Heading3']))
-    if 'embedded/architecture.md' in files_by_path:
-        content = files_by_path['embedded/architecture.md']['content']
-        req_part = ""
-        if '## Requirements' in content:
-            req_part = content.split('## Requirements')[1].split('##')[0].strip()
-        story.extend(markdown_to_flowables(req_part, styles))
-    story.append(Spacer(1, 8))
+    # Show Component diagram first
+    story.append(Paragraph("Architektur-Abbildung (Komponenten)", styles['Heading3']))
+    story.append(Paragraph("Das folgende Komponenten-Diagramm zeigt die inneren Module der Sensor-Firmware sowie die Kopplung von Sensor-Loop, Edge Impulse Inferenz und dem BLE Service:", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_firmware_components_diagram())
+    story.append(Spacer(1, 10))
     
-    # ADR
-    story.append(Paragraph("Architekturentscheidung (ADR / Abwägungen)", styles['Heading3']))
-    story.append(Paragraph("<b>Entscheidung:</b> Durchführung der Inferenz auf dem Mikrocontroller (Edge-Inferenz) zur Latenzminimierung (NF1) und Reduzierung des kontinuierlichen BLE-Datenstroms.", styles['NormalText']))
+    # Parse the clean markdown containing requirements, dataflow diagram (automatically mapped by the parser), and ADR
     if 'embedded/architecture.md' in files_by_path:
-        content = files_by_path['embedded/architecture.md']['content']
-        adr_part = ""
-        if '## Abwägungen' in content:
-            adr_part = content.split('## Abwägungen')[1].split('##')[0].strip()
-        if adr_part:
-            story.extend(markdown_to_flowables(adr_part, styles))
-    story.append(Spacer(1, 8))
-    
-    # Abbildung
-    story.append(Paragraph("Architektur-Abbildung", styles['Heading3']))
-    story.append(Paragraph("Das Komponenten-Diagramm für diesen Container befindet sich im Anhang des Dokuments (siehe <a href='#sec_diag_embedded'><b>Kapitel 6.3</b></a>). Es zeigt die inneren Module der Sensor-Firmware sowie die Kopplung von Sensor-Loop, Edge Impulse Inferenz und dem BLE Service.", styles['NormalText']))
-    story.append(Spacer(1, 8))
+        raw_content = files_by_path['embedded/architecture.md']['content']
+        parts = raw_content.split('## Abwägungen')
+        
+        # 4.1.1 Container-Architektur & Beschreibung
+        part1 = parts[0]
+        clean_part1 = get_container_clean_markdown(part1)
+        story.extend(markdown_to_flowables(clean_part1, styles))
+        
+        # 4.1.2 to 4.1.6 Component Sub-chapters
+        embedded_components = [
+            ('embedded/components/sensordatenerfassung/architecture.md', '4.1.2'),
+            ('embedded/components/inferenz_engine/architecture.md', '4.1.3'),
+            ('embedded/components/led_display_controller/architecture.md', '4.1.4'),
+            ('embedded/components/ble_streamer/architecture.md', '4.1.5'),
+            ('embedded/components/gehause/architecture.md', '4.1.6')
+        ]
+        for comp_path, section_num in embedded_components:
+            if comp_path in files_by_path:
+                story.append(Spacer(1, 10))
+                comp_content = get_component_clean_markdown(files_by_path[comp_path]['content'], section_num)
+                story.extend(markdown_to_flowables(comp_content, styles))
+                
+        # 4.1.7 Abwägungen & Architekturentscheidungen (ADR)
+        if len(parts) > 1:
+            story.append(Spacer(1, 10))
+            adr_content = "### 4.1.7 Abwägungen & Architekturentscheidungen\n" + parts[1]
+            story.extend(markdown_to_flowables(adr_content, styles))
+                
     story.append(PageBreak())
     
     # --- 4.2 App ---
@@ -1046,24 +1283,21 @@ def main():
     story.append(Paragraph("Die Mobile App bildet das Benutzer-Interface (UI) des Systems. Sie verbindet sich per BLE mit der Xiao MCU, visualisiert Live-Bewegungsdaten und synchronisiert sie mit dem Backend.", styles['NormalText']))
     story.append(Spacer(1, 8))
     
-    # Anforderungen
-    story.append(Paragraph("Anforderungen (Mobile App)", styles['Heading3']))
-    if 'app/architecture.md' in files_by_path:
-        content = files_by_path['app/architecture.md']['content']
-        req_part = ""
-        if '## Requirements' in content:
-            req_part = content.split('## Requirements')[1].split('##')[0].strip()
-        story.extend(markdown_to_flowables(req_part, styles))
-    story.append(Spacer(1, 8))
+    # Show Component diagram first
+    story.append(Paragraph("Architektur-Abbildung (Komponenten)", styles['Heading3']))
+    story.append(Paragraph("Das folgende Komponenten-Diagramm veranschaulicht die Benutzeroberflächen-Module und Custom React Hooks des App-Containers:", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_app_components_diagram())
+    story.append(Spacer(1, 10))
     
+    # Parse app/architecture.md
+    if 'app/architecture.md' in files_by_path:
+        clean_content = get_clean_markdown(files_by_path['app/architecture.md']['content'])
+        story.extend(markdown_to_flowables(clean_content, styles))
+        
     # ADR
     story.append(Paragraph("Architekturentscheidung (ADR / Abwägungen)", styles['Heading3']))
     story.append(Paragraph("<b>Entscheidung:</b> Verwendung von <b>React Native (Hybrid-App)</b> zur plattformübergreifenden Entwicklung mit hoher Code-Wiederverwendbarkeit und schnellen UI-Iterationen, bei gleichzeitiger Optimierung des SVG-Diagramm-Renderings für den 50Hz Datenstrom.", styles['NormalText']))
-    story.append(Spacer(1, 8))
-    
-    # Abbildung
-    story.append(Paragraph("Architektur-Abbildung", styles['Heading3']))
-    story.append(Paragraph("Das Komponenten-Diagramm für diesen Container befindet sich im Anhang des Dokuments (siehe <a href='#sec_diag_app'><b>Kapitel 6.4</b></a>). Es veranschaulicht die Benutzeroberflächen-Module und Custom React Hooks des App-Containers.", styles['NormalText']))
     story.append(Spacer(1, 8))
     story.append(PageBreak())
     
@@ -1072,24 +1306,28 @@ def main():
     story.append(Paragraph("Der Datenbank- und Backend-Container dient als zentraler Speicher und API-Gateway des Gesamtsystems. Er nimmt Profile und Trainingshistorien auf und stellt diese persistent bereit.", styles['NormalText']))
     story.append(Spacer(1, 8))
     
-    # Anforderungen
-    story.append(Paragraph("Anforderungen (Datenbank & Backend)", styles['Heading3']))
+    # Show System Context diagram first
+    story.append(Paragraph("System-Kontext-Diagramm (C4 Level 1)", styles['Heading3']))
+    story.append(Paragraph("Das folgende System-Kontext-Diagramm zeigt die Position des MoveLink-Systems in seiner Betriebsumgebung, die Interaktion mit dem Trainierenden sowie die Verbindung zur persistenten Datenbank:", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_system_context_diagram())
+    story.append(Spacer(1, 10))
+    
+    # Parse database/architecture.md
     if 'database/architecture.md' in files_by_path:
-        content = files_by_path['database/architecture.md']['content']
-        req_part = ""
-        if '## Requirements' in content:
-            req_part = content.split('## Requirements')[1].split('##')[0].strip()
-        story.extend(markdown_to_flowables(req_part, styles))
-    story.append(Spacer(1, 8))
+        clean_content = get_clean_markdown(files_by_path['database/architecture.md']['content'])
+        story.extend(markdown_to_flowables(clean_content, styles))
+        
+    # End-to-End flow diagram
+    story.append(Paragraph("System-Daten- &amp; Kontrollfluss-Diagramm", styles['Heading3']))
+    story.append(Paragraph("Das folgende Diagramm visualisiert den End-to-End Daten- und Kontrollfluss im Gesamtsystem:", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_data_control_flow_diagram())
+    story.append(Spacer(1, 10))
     
     # ADR
     story.append(Paragraph("Architekturentscheidung (ADR / Abwägungen)", styles['Heading3']))
     story.append(Paragraph("<b>Entscheidung:</b> Verwendung einer <b>PostgreSQL-Datenbank</b> zur persistenten und relationalen Ablage von Trainingsdaten und Nutzerprofilen. Das Backend wird mit <b>Node.js & Express</b> realisiert, um hohe Parallelität zu gewährleisten und asynchrone WebSocket-Verbindungen für Live-Streaming-Daten ressourcenschonend zu verarbeiten.", styles['NormalText']))
-    story.append(Spacer(1, 8))
-    
-    # Abbildung
-    story.append(Paragraph("Architektur-Abbildungen (Container-Modell & Datenfluss)", styles['Heading3']))
-    story.append(Paragraph("Die Diagramme für diesen Container befinden sich im Anhang des Dokuments. Das System-Kontext-Diagramm finden Sie in <a href='#sec_diag_context'><b>Kapitel 6.1</b></a>, das Container-Diagramm in <a href='#sec_diag_container'><b>Kapitel 6.2</b></a>, und den End-to-End Daten- und Kontrollfluss in <a href='#sec_diag_flow'><b>Kapitel 6.5</b></a>.", styles['NormalText']))
     story.append(Spacer(1, 8))
     story.append(PageBreak())
     
@@ -1274,7 +1512,7 @@ def main():
         
         # Column 2: Mappings (embedded Drawing spanning all rows)
         if r_idx == 0:
-            row_height = 36
+            row_height = 28
             draw = create_mappings_drawing(total_rows, row_height, use_cases, tree, data)
             row_cells[1] = draw
             if total_rows > 1:
@@ -1341,7 +1579,7 @@ def main():
 
     # Column widths total 487
     col_widths = [70, 30, 85, 45, 65, 102, 90]
-    row_heights = [20] + [36] * total_rows
+    row_heights = [20] + [28] * total_rows
     
     matrix_table = Table(table_data, colWidths=col_widths, rowHeights=row_heights)
     t_style = [
@@ -1357,52 +1595,8 @@ def main():
     ]
     t_style.extend(table_spans)
     matrix_table.setStyle(TableStyle(t_style))
-
     story.append(matrix_table)
     story.append(Spacer(1, 15))
-    story.append(PageBreak())
-
-    # ------------------ SECTION 6: APPENDIX (DIAGRAMS) ------------------
-    story.append(Paragraph("6. Anhang: C4-Architekturdiagramme", styles['Heading1']))
-    story.append(Paragraph("In diesem Anhang sind alle C4-Architekturdiagramme und Datenflusspläne des MoveLink-Systems übersichtlich dargestellt und beschrieben.", styles['NormalText']))
-    story.append(Spacer(1, 15))
-
-    # 6.1 System Context
-    story.append(Paragraph("<a name='sec_diag_context'></a>6.1 System-Kontext-Diagramm (C4 Level 1)", styles['Heading2']))
-    story.append(Paragraph("Das System-Kontext-Diagramm zeigt die Position des MoveLink-Systems in seiner Betriebsumgebung, die Interaktion mit dem Trainierenden sowie die Verbindung zur persistenten Datenbank.", styles['NormalText']))
-    story.append(Spacer(1, 5))
-    story.append(create_system_context_diagram())
-    story.append(Spacer(1, 20))
-
-    # 6.2 Container Diagram
-    story.append(Paragraph("<a name='sec_diag_container'></a>6.2 Container-Diagramm (C4 Level 2)", styles['Heading2']))
-    story.append(Paragraph("Das Container-Diagramm schlüsselt das MoveLink-System in seine drei eigenständigen, deploybaren Einheiten auf: Die Sensor-Firmware, die Mobile App und das Datenbank/Backend-System.", styles['NormalText']))
-    story.append(Spacer(1, 5))
-    story.append(create_container_diagram())
-    story.append(Spacer(1, 20))
-    story.append(PageBreak())
-
-    # 6.3 Component Diagram (Firmware)
-    story.append(Paragraph("<a name='sec_diag_embedded'></a>6.3 Komponenten-Diagramm: Embedded Sensor-Firmware (C4 Level 3)", styles['Heading2']))
-    story.append(Paragraph("Dieses Diagramm zeigt die inneren Module der Sensor-Firmware, bestehend aus Sensor-Erfassung, Edge Impulse Inferenz-Engine, LED-Controller und dem BLE-Kommunikationsmodul.", styles['NormalText']))
-    story.append(Spacer(1, 5))
-    story.append(create_firmware_components_diagram())
-    story.append(Spacer(1, 20))
-
-    # 6.4 Component Diagram (Mobile App)
-    story.append(Paragraph("<a name='sec_diag_app'></a>6.4 Komponenten-Diagramm: Mobile App (React Native - C4 Level 3)", styles['Heading2']))
-    story.append(Paragraph("Dieses Komponenten-Diagramm veranschaulicht die UI-Karten (SensorCard, LiveChart, SessionCard, ProfileCard) und deren Koppelung an die Custom Hooks useBLE und useWebSocket.", styles['NormalText']))
-    story.append(Spacer(1, 5))
-    story.append(create_app_components_diagram())
-    story.append(Spacer(1, 20))
-    story.append(PageBreak())
-
-    # 6.5 Data Flow Diagram
-    story.append(Paragraph("<a name='sec_diag_flow'></a>6.5 System-Daten- &amp; Kontrollfluss-Diagramm", styles['Heading2']))
-    story.append(Paragraph("Visualisiert den detaillierten Hinweg des Sensor-Datenstroms (IMU -> nRF52840 -> BLE -> App -> WebSockets -> PostgreSQL) sowie den Rückweg der Steuerung und Bestätigungs-Acks im Gesamtsystem.", styles['NormalText']))
-    story.append(Spacer(1, 5))
-    story.append(create_data_control_flow_diagram())
-    story.append(Spacer(1, 20))
 
     # Build Document
     print(f"Building PDF report in {pdf_out_path}...")

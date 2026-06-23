@@ -1,6 +1,7 @@
 <!--
 C4-Ebene: Component
 Deployable: Nein
+fullfills: FA2.4
 -->
 
 # LED- & Display-Controller
@@ -25,10 +26,11 @@ Der Controller steuert das SSD1306 OLED-Display sowie die integrierten RGB-LEDs 
   - RGB-LED: **Rot** (Pin 11 auf LOW)
   - Display: Zeigt `Achtung: FEHLER` an.
 
-## Implementierung & Traceability
-- **Implementiert in:** [Executable.ino](file:///c:/Users/erlin/repo/movelink/embedded/src/Executable.ino) (unter Verwendung der U8x8-Bibliothek)
-- **Erfüllt Anforderungen:**
-  - **FA9: Biofeedback und Auswertung**: Ermöglicht sofortiges visuelles Biofeedback direkt an der Sensor-Hardware.
+## Requirements
+
+**FA2.4**: Das Gerät gibt durch die LED den Verbindungsstatus aus.
+**FA2.4.1**: Ansteuerung der RGB-LED zur Signalisierung von Fehlern (Rot) und perfekten Curls (Grün).
+**FA2.4.2**: Aktualisierung des OLED-Displays zur textuellen Anzeige von Übungsstatus und Zähler.
 
 ## Kontrollfluss
 

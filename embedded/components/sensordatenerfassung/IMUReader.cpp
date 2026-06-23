@@ -19,12 +19,15 @@ bool initIMU() {
 
 // @implements FA2.1, NF1
 void readSensorData(float* buffer, size_t startIndex) {
+
     // 1. Beschleunigung einlesen
+    // @implements FA2.1
     buffer[startIndex + 0] = myIMU.readFloatAccelX();
     buffer[startIndex + 1] = myIMU.readFloatAccelY();
     buffer[startIndex + 2] = myIMU.readFloatAccelZ();
 
     // 2. Gyroskop einlesen
+    // @implements FA2.1
     buffer[startIndex + 3] = myIMU.readFloatGyroX();
     buffer[startIndex + 4] = myIMU.readFloatGyroY();
     buffer[startIndex + 5] = myIMU.readFloatGyroZ();

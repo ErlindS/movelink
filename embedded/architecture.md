@@ -36,6 +36,7 @@ Die Sensor-Firmware besteht aus folgenden logischen Komponenten:
 
 
 ## Datenfluss
+```mermaid
 flowchart LR
     %% Stil-Definitionen für Übersichtlichkeit
     classDef hardware fill:#f5f5f5,stroke:#666,stroke-width:2px;
@@ -63,9 +64,11 @@ flowchart LR
     Engine -->|"Klassifizierung & Bewertung"| LED_Ctrl
     Engine -->|"Klassifizierung & Bewertung"| BLE_Stream
     
+    
     %% Ausgaben
     LED_Ctrl -->|"Steuersignal (Anzeige)"| LED
     BLE_Stream -->|"Binäres Array / JSON via BLE"| App
+```
 
 
 
