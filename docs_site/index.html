@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoveLink - Documentation & Requirements Traceability</title>
-    
+
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- CSS Dependencies -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css">
-    
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css">
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
-    
+
     <!-- JS Dependencies from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
@@ -28,6 +32,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
+
 <body class="light-mode">
     <div class="app-container">
         <!-- Sidebar Navigation -->
@@ -39,18 +44,18 @@
                     <span class="logo-sub">Doc Center</span>
                 </div>
             </div>
-            
+
             <div class="search-box">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                 <input type="text" id="docSearch" placeholder="Dokumente durchsuchen...">
             </div>
-            
+
             <nav class="nav-menu">
                 <div class="nav-section-title">Dokumente</div>
                 <ul id="fileList" class="nav-list">
                     <!-- Loaded dynamically -->
                 </ul>
-                
+
                 <div class="nav-section-title">Traceability & Graphs</div>
                 <ul class="nav-list">
                     <li>
@@ -65,7 +70,7 @@
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="theme-toggle" id="themeToggle">
                     <i class="fa-solid fa-moon"></i>
@@ -74,7 +79,7 @@
                 <div class="footer-version">v1.1.0 · Scraped Live</div>
             </div>
         </aside>
-        
+
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Top Navbar -->
@@ -82,16 +87,19 @@
                 <h1 id="activeTabTitle" class="tab-title">Dokumenten-Ansicht</h1>
                 <div style="display: flex; gap: 16px; align-items: center;">
                     <div class="stats-pills">
-                        <span class="pill"><i class="fa-regular fa-file"></i> <span id="statFiles">0</span> Dateien</span>
-                        <span class="pill"><i class="fa-solid fa-circle-check"></i> <span id="statReqs">0</span> Anforderungen</span>
+                        <span class="pill"><i class="fa-regular fa-file"></i> <span id="statFiles">0</span>
+                            Dateien</span>
+                        <span class="pill"><i class="fa-solid fa-circle-check"></i> <span id="statReqs">0</span>
+                            Anforderungen</span>
                         <span class="pill"><i class="fa-solid fa-code"></i> <span id="statLinks">0</span> Links</span>
                     </div>
-                    <a href="documentation_report.pdf" class="btn btn-secondary" download style="text-decoration: none;">
+                    <a href="documentation_report.pdf" class="btn btn-secondary" download
+                        style="text-decoration: none;">
                         <i class="fa-solid fa-file-pdf" style="color: #ef4444; font-size: 13px;"></i> PDF Export
                     </a>
                 </div>
             </header>
-            
+
             <!-- Views Container -->
             <div class="view-container">
                 <!-- Tab 1: Documents Render View -->
@@ -99,7 +107,8 @@
                     <div class="docs-layout">
                         <div class="doc-body glass-card">
                             <div class="doc-meta" id="docMeta">
-                                <span id="docPathLabel"><i class="fa-regular fa-folder-open"></i> doc/Requirements.md</span>
+                                <span id="docPathLabel"><i class="fa-regular fa-folder-open"></i>
+                                    doc/Requirements.md</span>
                             </div>
                             <article id="markdownRender" class="markdown-body">
                                 <!-- Rendered HTML from markdown -->
@@ -113,29 +122,33 @@
                         </aside>
                     </div>
                 </section>
-                
+
 
                 <!-- Tab 3: Traceability Matrix View -->
                 <section id="matrix-tab" class="tab-content">
                     <div class="glass-card">
                         <div class="card-header">
                             <h2 class="card-title">Anforderungen vs. Use Cases Matrix</h2>
-                            <p class="card-subtitle">Verbindung zwischen den Use Cases und funktionalen Anforderungen.</p>
+                            <p class="card-subtitle">Verbindung zwischen den Use Cases und funktionalen Anforderungen.
+                            </p>
                         </div>
-                        
+
                         <!-- Toggle Buttons -->
                         <div class="matrix-toggle-container" style="margin-bottom: 24px;">
-                            <button class="btn btn-secondary active" id="toggleArchMatrixBtn" style="padding: 10px 16px; font-weight: 600; cursor: pointer;">
+                            <button class="btn btn-secondary active" id="toggleArchMatrixBtn"
+                                style="padding: 10px 16px; font-weight: 600; cursor: pointer;">
                                 <i class="fa-solid fa-diagram-project"></i> Architektur-Matrix
                             </button>
-                            <button class="btn btn-secondary" id="toggleClassicMatrixBtn" style="padding: 10px 16px; font-weight: 600; cursor: pointer;">
+                            <button class="btn btn-secondary" id="toggleClassicMatrixBtn"
+                                style="padding: 10px 16px; font-weight: 600; cursor: pointer;">
                                 <i class="fa-solid fa-table-cells"></i> Klassische Grid-Matrix
                             </button>
                         </div>
 
                         <!-- View 1: Architecture Matrix (Drawing-Based) -->
                         <div id="archMatrixView">
-                            <div class="matrix-responsive-container" style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px;">
+                            <div class="matrix-responsive-container"
+                                style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px;">
                                 <table class="arch-matrix-table">
                                     <thead>
                                         <tr>
@@ -151,171 +164,164 @@
                                     <tbody>
                                         <!-- Row 1 -->
                                         <tr>
-                                            <td rowspan="3" class="uc-cell"><strong>UC1</strong><br><span style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Trainingsgerät verbinden</span></td>
+                                            <td rowspan="3" class="uc-cell"><strong>UC1</strong><br><span
+                                                    style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Trainingsgerät
+                                                    verbinden</span></td>
                                             <td rowspan="10" class="svg-cell">
-                                                <svg id="archMatrixSvg" width="100%" height="100%" viewBox="0 0 120 400" preserveAspectRatio="none" style="display: block;">
+                                                <svg id="archMatrixSvg" width="100%" height="100%" viewBox="0 0 120 400"
+                                                    preserveAspectRatio="none" style="display: block;">
                                                     <defs>
-                                                        <marker id="arrow-white-matrix" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                                        <marker id="arrow-white-matrix" viewBox="0 0 10 10" refX="8"
+                                                            refY="5" markerWidth="6" markerHeight="6" orient="auto">
                                                             <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f0f4f3" />
                                                         </marker>
-                                                        <marker id="arrow-orange-matrix" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                                        <marker id="arrow-orange-matrix" viewBox="0 0 10 10" refX="8"
+                                                            refY="5" markerWidth="6" markerHeight="6" orient="auto">
                                                             <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f97316" />
                                                         </marker>
-                                                        <marker id="arrow-green-matrix" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                                        <marker id="arrow-green-matrix" viewBox="0 0 10 10" refX="8"
+                                                            refY="5" markerWidth="6" markerHeight="6" orient="auto">
                                                             <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#22c55e" />
                                                         </marker>
                                                     </defs>
-                                                    
+
                                                     <!-- Arrows from UC1 (Y ~ 60) -->
-                                                    <path d="M 5 60 C 40 60, 80 80, 110 80" stroke="#f0f4f3" stroke-width="2.5" fill="none" marker-end="url(#arrow-white-matrix)" />
-                                                    <path d="M 5 60 C 45 60, 60 260, 110 260" stroke="#f97316" stroke-width="2.5" fill="none" marker-end="url(#arrow-orange-matrix)" />
-                                                    <path d="M 5 60 C 40 60, 50 380, 110 380" stroke="#22c55e" stroke-width="2.5" fill="none" marker-end="url(#arrow-green-matrix)" />
-                                                    
+                                                    <path d="M 5 60 C 40 60, 80 80, 110 80" stroke="#f0f4f3"
+                                                        stroke-width="2.5" fill="none"
+                                                        marker-end="url(#arrow-white-matrix)" />
+                                                    <path d="M 5 60 C 45 60, 60 260, 110 260" stroke="#f97316"
+                                                        stroke-width="2.5" fill="none"
+                                                        marker-end="url(#arrow-orange-matrix)" />
+                                                    <path d="M 5 60 C 40 60, 50 380, 110 380" stroke="#22c55e"
+                                                        stroke-width="2.5" fill="none"
+                                                        marker-end="url(#arrow-green-matrix)" />
+
                                                     <!-- Arrows from UC2 (Y ~ 200) -->
-                                                    <path d="M 5 200 C 40 200, 70 80, 110 80" stroke="#f0f4f3" stroke-width="2.5" fill="none" marker-end="url(#arrow-white-matrix)" />
-                                                    <path d="M 5 200 C 50 200, 70 260, 110 260" stroke="#f97316" stroke-width="2.5" fill="none" marker-end="url(#arrow-orange-matrix)" />
-                                                    
+                                                    <path d="M 5 200 C 40 200, 70 80, 110 80" stroke="#f0f4f3"
+                                                        stroke-width="2.5" fill="none"
+                                                        marker-end="url(#arrow-white-matrix)" />
+                                                    <path d="M 5 200 C 50 200, 70 260, 110 260" stroke="#f97316"
+                                                        stroke-width="2.5" fill="none"
+                                                        marker-end="url(#arrow-orange-matrix)" />
+
                                                     <!-- Arrows from UC3 (Y ~ 340) -->
-                                                    <path d="M 5 340 C 45 340, 60 80, 110 80" stroke="#f0f4f3" stroke-width="2.5" fill="none" marker-end="url(#arrow-white-matrix)" />
-                                                    <path d="M 5 340 C 40 340, 80 380, 110 380" stroke="#22c55e" stroke-width="2.5" fill="none" marker-end="url(#arrow-green-matrix)" />
+                                                    <path d="M 5 340 C 45 340, 60 80, 110 80" stroke="#f0f4f3"
+                                                        stroke-width="2.5" fill="none"
+                                                        marker-end="url(#arrow-white-matrix)" />
+                                                    <path d="M 5 340 C 40 340, 80 380, 110 380" stroke="#22c55e"
+                                                        stroke-width="2.5" fill="none"
+                                                        marker-end="url(#arrow-green-matrix)" />
                                                 </svg>
                                             </td>
-                                            <td rowspan="4" class="fa-cell"><strong>FA1</strong><br><span style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Applikation</span></td>
+                                            <td rowspan="4" class="fa-cell"><strong>FA1</strong><br><span
+                                                    style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Applikation</span>
+                                            </td>
                                             <td rowspan="2" class="sub-fa-cell">FA1.1</td>
                                             <td rowspan="2" class="component-cell">component</td>
                                             <td class="detail-fa-cell">FA1.1.1</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 2 -->
                                         <tr>
                                             <td class="detail-fa-cell">FA1.1.2</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 3 -->
                                         <tr>
                                             <td class="sub-fa-cell">FA1.2</td>
                                             <td class="component-cell" style="color: var(--text-muted);">-</td>
                                             <td class="detail-fa-cell" style="color: var(--text-muted);">-</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 4 -->
                                         <tr>
-                                            <td rowspan="4" class="uc-cell"><strong>UC2</strong><br><span style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Echtzeit-Training</span></td>
+                                            <td rowspan="4" class="uc-cell"><strong>UC2</strong><br><span
+                                                    style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Echtzeit-Training</span>
+                                            </td>
                                             <td class="sub-fa-cell">FA1.3</td>
                                             <td class="component-cell">C2</td>
                                             <td class="detail-fa-cell" style="color: var(--text-muted);">-</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 5 -->
                                         <tr>
-                                            <td rowspan="5" class="fa-cell"><strong>FA2</strong><br><span style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Trainingsgerät</span></td>
-                                            <td class="sub-fa-cell" style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
+                                            <td rowspan="5" class="fa-cell"><strong>FA2</strong><br><span
+                                                    style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Trainingsgerät</span>
+                                            </td>
+                                            <td class="sub-fa-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
                                             <td class="component-cell" style="color: var(--text-muted);">-</td>
                                             <td class="detail-fa-cell" style="color: var(--text-muted);">-</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 6 -->
                                         <tr>
-                                            <td class="sub-fa-cell" style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
+                                            <td class="sub-fa-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
                                             <td class="component-cell" style="color: var(--text-muted);">-</td>
                                             <td class="detail-fa-cell" style="color: var(--text-muted);">-</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 7 -->
                                         <tr>
-                                            <td class="sub-fa-cell" style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
+                                            <td class="sub-fa-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
                                             <td class="component-cell" style="color: var(--text-muted);">-</td>
                                             <td class="detail-fa-cell" style="color: var(--text-muted);">-</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 8 -->
                                         <tr>
-                                            <td rowspan="3" class="uc-cell"><strong>UC3</strong><br><span style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Trainingsdaten einsehen</span></td>
-                                            <td class="sub-fa-cell" style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
+                                            <td rowspan="3" class="uc-cell"><strong>UC3</strong><br><span
+                                                    style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Trainingsdaten
+                                                    einsehen</span></td>
+                                            <td class="sub-fa-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
                                             <td class="component-cell" style="color: var(--text-muted);">-</td>
                                             <td class="detail-fa-cell" style="color: var(--text-muted);">-</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 9 -->
                                         <tr>
-                                            <td class="sub-fa-cell" style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
+                                            <td class="sub-fa-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
                                             <td class="component-cell" style="color: var(--text-muted);">-</td>
                                             <td class="detail-fa-cell" style="color: var(--text-muted);">-</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                         <!-- Row 10 -->
                                         <tr>
-                                            <td class="fa-cell"><strong>FA3</strong><br><span style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Datenbank</span></td>
-                                            <td class="sub-fa-cell" style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
+                                            <td class="fa-cell"><strong>FA3</strong><br><span
+                                                    style="font-size: 10px; font-weight: normal; color: var(--text-secondary);">Datenbank</span>
+                                            </td>
+                                            <td class="sub-fa-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(unbenannt)</td>
                                             <td class="component-cell" style="color: var(--text-muted);">-</td>
                                             <td class="detail-fa-cell" style="color: var(--text-muted);">-</td>
-                                            <td class="class-cell" style="color: var(--text-muted); font-style: italic;">(Zielstruktur)</td>
+                                            <td class="class-cell"
+                                                style="color: var(--text-muted); font-style: italic;">(Zielstruktur)
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
-                            </div>
-
-                            <!-- Text Description -->
-                            <div class="arch-matrix-description">
-                                <h3>Systemarchitektur- und Traceability-Beschreibung</h3>
-                                <p>Dieses Dokument beschreibt die hierarchische Struktur und die Verknüpfungen (Traceability) des Softwaresystems, basierend auf einer tabellarischen Architekturmatrix. Die Matrix gliedert sich von links (Anforderung) nach rechts (Implementierung) in sieben logische Spalten.</p>
-                                
-                                <h4>1. Spalten-Schema (Von links nach rechts)</h4>
-                                <ul style="margin-left: 20px; margin-bottom: 12px; color: var(--text-secondary);">
-                                    <li><strong>Use Cases (UC):</strong> Die Interaktionsszenarien der Benutzer.</li>
-                                    <li><strong>Mappings (Pfeile):</strong> Farbcodierte Zuordnungen von Use Cases zu funktionalen Architekturbausteinen.</li>
-                                    <li><strong>Funktionale Architektur Ebene 1 (FA):</strong> Die Hauptfunktionsblöcke des Systems.</li>
-                                    <li><strong>Funktionale Architektur Ebene 2 (Sub-FA):</strong> Verfeinerung der Hauptfunktionen.</li>
-                                    <li><strong>Komponenten-Ebene:</strong> Zuordnung der Sub-Funktionen zu logischen Software-Komponenten.</li>
-                                    <li><strong>Funktionale Architektur Ebene 3 (Detail-FA):</strong> Tiefste funktionale Untergliederung.</li>
-                                    <li><strong>Klassenebene (Klasse):</strong> Die finalen Code-Klassen, die die Logik umsetzen (aktuell als Zielstruktur vorbereitet).</li>
-                                </ul>
-
-                                <h4>2. Dekonstruktion der Daten &amp; Hierarchie</h4>
-                                <p>Das System ist funktional in drei Hauptbereiche (FA1, FA2, FA3) unterteilt, wobei FA1 im Diagramm am tiefsten ausdetailliert ist.</p>
-                                <ul style="margin-left: 20px; margin-bottom: 12px; color: var(--text-secondary);">
-                                    <li><strong>FA1 (Hauptfunktion 1)</strong>
-                                        <ul style="margin-left: 20px;">
-                                            <li>FA1.1 (zugeordnet zu Spalte <em>component</em>)
-                                                <ul style="margin-left: 20px;">
-                                                    <li>FA1.1.1</li>
-                                                    <li>FA1.1.2</li>
-                                                </ul>
-                                            </li>
-                                            <li>FA1.2</li>
-                                            <li>FA1.3 (zugeordnet zu Komponente <em>C2</em>)</li>
-                                        </ul>
-                                    </li>
-                                    <li><strong>FA2 (Hauptfunktion 2):</strong> Besitzt 5 definierte, aber noch unbenannte Sub-Funktionen (leere Zeilen).</li>
-                                    <li><strong>FA3 (Hauptfunktion 3):</strong> Aktuell noch nicht weiter untergliedert.</li>
-                                </ul>
-
-                                <h4>3. Mapping-Logik (Use Cases zu Funktionaler Architektur)</h4>
-                                <p>Die Verknüpfung zwischen den Use Cases und den funktionalen Blöcken wird durch die farbigen Pfeile in Spalte 2 definiert:</p>
-                                <ul style="margin-left: 20px; margin-bottom: 12px; color: var(--text-secondary);">
-                                    <li><strong>UC1 (Use Case 1)</strong> ist ein übergreifender Use Case und mappt auf alle drei Hauptfunktionsblöcke:
-                                        <ul style="margin-left: 20px;">
-                                            <li>Hat eine Verknüpfung zu <strong>FA1</strong> (weißer/schwarzer Pfeil)</li>
-                                            <li>Hat eine Verknüpfung zu <strong>FA2</strong> (orangefarbener Pfeil)</li>
-                                            <li>Hat eine Verknüpfung zu <strong>FA3</strong> (grüner Pfeil)</li>
-                                        </ul>
-                                    </li>
-                                    <li><strong>UC2 (Use Case 2)</strong> mappt auf zwei Funktionsblöcke:
-                                        <ul style="margin-left: 20px;">
-                                            <li>Hat eine Verknüpfung zu <strong>FA1</strong> (weißer/schwarzer Pfeil)</li>
-                                            <li>Hat eine Verknüpfung zu <strong>FA2</strong> (orangefarbener Pfeil)</li>
-                                        </ul>
-                                    </li>
-                                    <li><strong>UC3 (Use Case 3)</strong> mappt ebenfalls auf zwei Funktionsblöcke:
-                                        <ul style="margin-left: 20px;">
-                                            <li>Hat eine Verknüpfung zu <strong>FA1</strong> (weißer/schwarzer Pfeil)</li>
-                                            <li>Hat eine Verknüpfung zu <strong>FA3</strong> (grüner Pfeil)</li>
-                                        </ul>
-                                    </li>
-                                </ul>
-
-                                <h4>4. Ziel der Matrix</h4>
-                                <p>Das primäre Ziel dieser Struktur ist es, in der letzten Spalte (Klasse) die konkreten Programmklassen einzutragen. Dadurch wird für jede Klasse ersichtlich, für welche Sub-Funktion, für welche Komponente und letztendlich für welchen Use Case sie benötigt wird (Vorwärts- und Rückwärts-Traceability).</p>
                             </div>
                         </div>
 
@@ -327,48 +333,65 @@
                                 </table>
                             </div>
                             <div class="matrix-legend" style="margin-top: 15px;">
-                                <div class="legend-item"><span class="marker direct"><i class="fa-solid fa-circle-check"></i></span> Direkt verknüpft (im Pflichtenheft definiert)</div>
-                                <div class="legend-item"><span class="marker transitive"><i class="fa-solid fa-link"></i></span> Transitive Verknüpfung</div>
+                                <div class="legend-item"><span class="marker direct"><i
+                                            class="fa-solid fa-circle-check"></i></span> Direkt verknüpft (im
+                                    Pflichtenheft definiert)</div>
+                                <div class="legend-item"><span class="marker transitive"><i
+                                            class="fa-solid fa-link"></i></span> Transitive Verknüpfung</div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                
+
 
                 <!-- Tab 5: C4 Model Explorer -->
                 <section id="c4-tab" class="tab-content">
                     <div class="graph-layout">
-                        <div class="graph-main glass-card" style="padding: 20px; display: flex; flex-direction: column; overflow-y: auto;">
-                            <div class="c4-explorer-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-shrink: 0;">
-                                <div class="c4-breadcrumbs" id="c4Breadcrumbs" style="display: flex; gap: 8px; align-items: center; font-family: var(--font-heading); font-size: 13px; font-weight: 600;">
-                                    <span class="breadcrumb-item clickable" id="breadcrumbSystem" style="color: var(--primary); cursor: pointer;"><i class="fa-solid fa-network-wired"></i> System-Kontext</span>
+                        <div class="graph-main glass-card"
+                            style="padding: 20px; display: flex; flex-direction: column; overflow-y: auto;">
+                            <div class="c4-explorer-header"
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-shrink: 0;">
+                                <div class="c4-breadcrumbs" id="c4Breadcrumbs"
+                                    style="display: flex; gap: 8px; align-items: center; font-family: var(--font-heading); font-size: 13px; font-weight: 600;">
+                                    <span class="breadcrumb-item clickable" id="breadcrumbSystem"
+                                        style="color: var(--primary); cursor: pointer;"><i
+                                            class="fa-solid fa-network-wired"></i> System-Kontext</span>
                                 </div>
-                                <button class="btn btn-secondary" id="c4ZoomOutBtn" style="padding: 6px 12px; font-size: 11px; display: none;">
+                                <button class="btn btn-secondary" id="c4ZoomOutBtn"
+                                    style="padding: 6px 12px; font-size: 11px; display: none;">
                                     <i class="fa-solid fa-arrow-left"></i> Zoom Out
                                 </button>
                             </div>
-                            <div class="c4-board-container" id="c4BoardContainer" style="flex: 1; overflow: auto; position: relative; background: rgba(0,0,0,0.1); border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; min-height: 400px; padding: 20px;">
-                                <svg id="c4Svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15;">
+                            <div class="c4-board-container" id="c4BoardContainer"
+                                style="flex: 1; overflow: auto; position: relative; background: rgba(0,0,0,0.1); border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; min-height: 400px; padding: 20px;">
+                                <svg id="c4Svg"
+                                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15;">
                                     <defs>
-                                        <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6"
+                                            markerHeight="6" orient="auto">
                                             <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3586c4" />
                                         </marker>
-                                        <marker id="arrow-teal-light" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <marker id="arrow-teal-light" viewBox="0 0 10 10" refX="8" refY="5"
+                                            markerWidth="6" markerHeight="6" orient="auto">
                                             <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2d7eb8" />
                                         </marker>
-                                        <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6"
+                                            markerHeight="6" orient="auto">
                                             <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#8b5cf6" />
                                         </marker>
-                                        <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6"
+                                            markerHeight="6" orient="auto">
                                             <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f97316" />
                                         </marker>
-                                        <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                        <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6"
+                                            markerHeight="6" orient="auto">
                                             <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#627c78" />
                                         </marker>
                                     </defs>
                                 </svg>
-                                <div id="c4Board" style="width: 100%; height: 100%; display: grid; gap: 65px; transition: var(--transition-smooth); position: relative; z-index: 10;">
+                                <div id="c4Board"
+                                    style="width: 100%; height: 100%; display: grid; gap: 65px; transition: var(--transition-smooth); position: relative; z-index: 10;">
                                     <!-- Dynamic C4 boxes rendered here -->
                                 </div>
                             </div>
@@ -386,17 +409,18 @@
                             <div class="panel-content" id="c4DetailContent">
                                 <div class="detail-placeholder">
                                     <i class="fa-solid fa-cube"></i>
-                                    <p>Klicke auf ein Element (eine Box) im C4-Modell, um Details, Technologiestack und Implementierungsdateien anzuzeigen.</p>
+                                    <p>Klicke auf ein Element (eine Box) im C4-Modell, um Details, Technologiestack und
+                                        Implementierungsdateien anzuzeigen.</p>
                                 </div>
                             </div>
                         </aside>
                     </div>
                 </section>
-                
+
             </div>
         </main>
     </div>
-    
+
     <!-- Code Viewer Modal -->
     <div class="modal" id="codeModal">
         <div class="modal-content glass-card">
@@ -411,10 +435,11 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Loaded compiled scraper data -->
     <script src="data.js"></script>
     <!-- Custom Application Logic -->
     <script src="app.js"></script>
 </body>
+
 </html>

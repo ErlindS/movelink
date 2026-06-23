@@ -87,34 +87,334 @@ def clean_md_tags(text):
     text = re.sub(r'\b(UC-\d+|FA\d+|NF\d+|R\d+)\b', r'<b><font color="#00a685">\1</font></b>', text)
     return text
 
+# --- Matrix Traceability Helpers ---
+def parse_container_components(container_content):
+    mappings = []
+    if not container_content:
+        return mappings
+    lines = container_content.split('\n')
+    for line in lines:
+        # Pattern 1: **FA2.1** -> **[Sensordatenerfassung (Loop)](file:///...)**: ...
+        arrow_match = re.search(r'\*\*(FA\d+(?:\.\d+)*(?:\s*,\s*FA\d+(?:\.\d+)*)*)\*\*\s*->\s*(?:\*\*)?\[([^\]]+)\]\(([^)]+)\)', line)
+        if arrow_match:
+            reqs = [r.strip() for r in arrow_match.group(1).split(',')]
+            comp_name = arrow_match.group(2).strip()
+            comp_link = arrow_match.group(3).strip().replace('file:///c:/Users/erlin/repo/movelink/', '')
+            for req_id in reqs:
+                mappings.append({'reqId': req_id, 'name': comp_name, 'path': comp_link})
+            continue
+
+        # Pattern 2: 1. **[SideNav](file:///...)**: ... (Erfüllt: FA1.1)
+        fulfills_match = re.search(r'(?:\*\*)?\[([^\]]+)\]\(([^)]+)\)(?:\*\*)?.*\(Erfüllt:\s*(FA\d+(?:\.\d+)*(?:\s*,\s*FA\d+(?:\.\d+)*)*).*\)', line, re.IGNORECASE)
+        if fulfills_match:
+            comp_name = fulfills_match.group(1).strip()
+            comp_link = fulfills_match.group(2).strip().replace('file:///c:/Users/erlin/repo/movelink/', '')
+            reqs = [r.strip() for r in fulfills_match.group(3).split(',')]
+            for req_id in reqs:
+                mappings.append({'reqId': req_id, 'name': comp_name, 'path': comp_link})
+            continue
+
+        # Pattern 3: 1. **ProfileController / Auth Service**: ... (Erfüllt: FA3.1)
+        text_fulfills_match = re.search(r'\*\*(.*?)\*\*\s*:.*\(Erfüllt:\s*(FA\d+(?:\.\d+)*(?:\s*,\s*FA\d+(?:\.\d+)*)*).*\)', line, re.IGNORECASE)
+        if text_fulfills_match:
+            comp_name = text_fulfills_match.group(1).strip()
+            reqs = [r.strip() for r in text_fulfills_match.group(2).split(',')]
+            for req_id in reqs:
+                mappings.append({'reqId': req_id, 'name': comp_name, 'path': ''})
+            continue
+            
+    return mappings
+
+def get_component_classes(component_path, code_contents):
+    if not component_path:
+        return []
+    
+    classes = []
+    normalized_link = component_path.replace('file:///c:/Users/erlin/repo/movelink/', '').replace('../', '')
+    
+    is_code_file = normalized_link.endswith(('.ts', '.tsx', '.cpp', '.ino', '.h', '.py'))
+    
+    target_files = []
+    if is_code_file:
+        target_files.append(normalized_link)
+    elif normalized_link.endswith('.md'):
+        dir_path = normalized_link.rsplit('/', 1)[0] if '/' in normalized_link else ''
+        for file in code_contents.keys():
+            if file.startswith(dir_path + '/') and file != normalized_link:
+                target_files.append(file)
+                
+    for file in target_files:
+        content = code_contents.get(file)
+        if not content:
+            continue
+            
+        lines = content.split('\n')
+        for index, line in enumerate(lines):
+            line_num = index + 1
+            name = ''
+            
+            class_match = re.search(r'(?:class|interface|struct)\s+(\w+)', line)
+            func_match = re.search(r'(?:function|void|int|float|double|bool)\s+(\w+)\s*\(', line)
+            const_func_match = re.search(r'const\s+(\w+)\s*=\s*(?:\(\)|function|\w+)', line)
+            
+            if class_match:
+                name = class_match.group(1)
+            elif func_match:
+                name = func_match.group(1) + '()'
+            elif const_func_match:
+                name = const_func_match.group(1)
+                
+            if name and name.replace('()', '') not in ['if', 'for', 'while', 'switch', 'catch', 'setup', 'loop']:
+                if not any(c['name'] == name and c['file'] == file for c in classes):
+                    classes.append({'name': name, 'file': file, 'line': line_num})
+                    
+        if not any(c['file'] == file for c in classes):
+            filename = file.split('/')[-1]
+            classes.append({'name': filename, 'file': file, 'line': 1})
+            
+    return classes
+
+def get_class_for_req(req_id, references):
+    refs = references.get(req_id, [])
+    classes = []
+    for ref in refs:
+        file = ref['file']
+        if file.endswith(('.ts', '.tsx', '.cpp', '.ino', '.h', '.py')):
+            context = ref.get('context', '')
+            if '@implements' in context:
+                continue
+            
+            name = ''
+            class_match = re.search(r'(?:class|interface|struct)\s+(\w+)', context)
+            func_match = re.search(r'(?:function|void|int|float|double|bool)\s+(\w+)\s*\(', context)
+            const_func_match = re.search(r'const\s+(\w+)\s*=\s*(?:\(\)|function|\w+)', context)
+            
+            if class_match:
+                name = class_match.group(1)
+            elif func_match:
+                name = func_match.group(1) + '()'
+            elif const_func_match:
+                name = const_func_match.group(1)
+            else:
+                filename = file.split('/')[-1]
+                name = f"{filename}:{ref['line']}"
+                
+            classes.append({'name': name, 'file': file, 'line': ref['line']})
+    return classes
+
+def create_mappings_drawing(total_rows, row_height, use_cases, tree, data):
+    d = Drawing(30, total_rows * row_height)
+    
+    # Calculate row spans
+    uc_spans = []
+    remaining = total_rows
+    for i in range(len(use_cases)):
+        span = remaining if i == len(use_cases) - 1 else total_rows // len(use_cases)
+        uc_spans.append(span)
+        remaining -= span
+        
+    uc_centers = []
+    curr_row = 0
+    for span in uc_spans:
+        center_row = curr_row + (span - 1) / 2.0
+        y = (total_rows - 1 - center_row + 0.5) * row_height
+        uc_centers.append(y)
+        curr_row += span
+        
+    fa_centers = {}
+    curr_row = 0
+    for container in tree:
+        container_total_rows = 0
+        for sub in container['subFAs']:
+            sub_rows = len(sub['detailFAs']) if sub['detailFAs'] else 1
+            container_total_rows += sub_rows
+        center_row = curr_row + (container_total_rows - 1) / 2.0
+        y = (total_rows - 1 - center_row + 0.5) * row_height
+        fa_centers[container['id']] = y
+        curr_row += container_total_rows
+        
+    connections = []
+    for container in tree:
+        container_id = container['id']
+        def_info = data['definitions'].get(container_id)
+        if def_info and def_info.get('links'):
+            for uc_id in def_info['links']:
+                uc_idx = -1
+                for idx, uc in enumerate(use_cases):
+                    if uc['id'] == uc_id:
+                        uc_idx = idx
+                        break
+                if uc_idx != -1:
+                    color = colors.HexColor('#627c78')
+                    if container_id == 'FA2':
+                        color = colors.HexColor('#f97316')
+                    elif container_id == 'FA3':
+                        color = colors.HexColor('#22c55e')
+                    connections.append((uc_idx, container_id, color))
+                    
+    for uc_idx, fa_id, color in connections:
+        y_from = uc_centers[uc_idx]
+        y_to = fa_centers[fa_id]
+        d.add(Line(0, y_from, 30, y_to, strokeColor=color, strokeWidth=1.5))
+        
+    return d
+
+RENDERED_ANCHORS = set()
+
+def make_requirement_card(item_id, title, desc_text, styles):
+    RENDERED_ANCHORS.add(item_id)
+    content = f"<a name='req_{item_id}'></a><b><font color='#00a685'>{item_id}</font></b>"
+    if title:
+        content += f" &ndash; <b>{title}</b>"
+    if desc_text:
+        content += f"<br/>{desc_text}"
+        
+    p = Paragraph(content, styles['NormalText'])
+    card_table = Table([[p]], colWidths=[487])
+    card_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f3f7f6')),
+        ('LINELEFT', (0,0), (0,-1), 3, colors.HexColor('#00a685')),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LEFTPADDING', (0,0), (-1,-1), 12),
+        ('RIGHTPADDING', (0,0), (-1,-1), 12),
+    ]))
+    return card_table
+
 def markdown_to_flowables(text, styles):
     flowables = []
     lines = text.split('\n')
-    in_code_block = False
-    code_text = []
     
-    for line in lines:
-        if line.startswith('```'):
-            if in_code_block:
-                in_code_block = False
-                code_content = '\n'.join(code_text)
-                flowables.append(Preformatted(code_content, styles['CodeStyle']))
-                flowables.append(Spacer(1, 8))
-                code_text = []
-            else:
-                in_code_block = True
-            continue
-            
-        if in_code_block:
-            code_text.append(line)
-            continue
-            
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         line_strip = line.strip()
+        
         if not line_strip:
             flowables.append(Spacer(1, 4))
+            i += 1
             continue
             
-        # Horizontal Rule
+        # 1. Skip code blocks completely (no code in the doc)
+        if line_strip.startswith('```'):
+            i += 1
+            while i < len(lines) and not lines[i].strip().startswith('```'):
+                i += 1
+            i += 1  # skip the closing ```
+            continue
+            
+        # 2. Check for decision blocks
+        if line_strip.startswith('Entscheidung:'):
+            decision_text = line_strip[13:].strip()
+            p_style = ParagraphStyle(
+                'DecisionStyle',
+                parent=styles['Normal'],
+                fontName='Helvetica-Bold',
+                fontSize=9.5,
+                textColor=colors.HexColor('#0c1816'),
+                backColor=colors.HexColor('#eafaf1'), # Light green background
+                borderColor=colors.HexColor('#22c55e'), # Green border
+                borderWidth=1,
+                borderPadding=8,
+                spaceBefore=6,
+                spaceAfter=12
+            )
+            flowables.append(Paragraph(f"<font color='#22c55e'>✔</font> <b>Entscheidung:</b> {decision_text}", p_style))
+            i += 1
+            continue
+            
+        # 3. Check for table blocks
+        if line_strip.startswith('|'):
+            table_lines = []
+            while i < len(lines) and lines[i].strip().startswith('|'):
+                table_lines.append(lines[i].strip())
+                i += 1
+                
+            if len(table_lines) >= 2:
+                # Parse header
+                header_cells = [c.strip() for c in table_lines[0].split('|')[1:-1]]
+                
+                # Check for separator row
+                sep_cells = [c.strip() for c in table_lines[1].split('|')[1:-1]]
+                has_separator = all(re.match(r'^[-:\s]+$', c) for c in sep_cells)
+                
+                data_start_idx = 2 if has_separator else 1
+                
+                table_data = []
+                # Header row
+                header_row = [Paragraph(f"<b>{clean_md_tags(cell)}</b>", ParagraphStyle('TH', parent=styles['Normal'], textColor=colors.white, fontName='Helvetica-Bold', fontSize=8.5, alignment=1)) for cell in header_cells]
+                table_data.append(header_row)
+                
+                # Data rows
+                for r_idx in range(data_start_idx, len(table_lines)):
+                    row_cells = [c.strip() for c in table_lines[r_idx].split('|')[1:-1]]
+                    row_flowables = []
+                    for cell in row_cells:
+                        cleaned = clean_md_tags(cell)
+                        if cleaned.startswith('+'):
+                            cleaned = f"<b><font color='#16a34a'>+</font></b> {cleaned[1:].strip()}"
+                        elif cleaned.startswith('-'):
+                            cleaned = f"<b><font color='#dc2626'>-</font></b> {cleaned[1:].strip()}"
+                        row_flowables.append(Paragraph(cleaned, styles['TableCell']))
+                    while len(row_flowables) < len(header_cells):
+                        row_flowables.append(Paragraph("", styles['TableCell']))
+                    table_data.append(row_flowables[:len(header_cells)])
+                
+                col_width = 487 / len(header_cells)
+                t = Table(table_data, colWidths=[col_width] * len(header_cells))
+                t.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0c1816')),
+                    ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
+                    ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f9fafb')]),
+                    ('TOPPADDING', (0,0), (-1,-1), 6),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                    ('LEFTPADDING', (0,0), (-1,-1), 8),
+                    ('RIGHTPADDING', (0,0), (-1,-1), 8),
+                ]))
+                flowables.append(t)
+                flowables.append(Spacer(1, 8))
+            continue
+
+        # 4. Check for requirement definition header like **UC-1**: or **FA1**: or **NF1**:
+        is_def_header = re.match(r'^\*\*(UC-\d+|FA\d+(?:\.\d+)*|NF\d+(?:\.\d+)*|R\d+(?:\.\d+)*)\*\*:\s*(.*)$', line_strip)
+        if is_def_header:
+            item_id = is_def_header.group(1)
+            title = is_def_header.group(2).strip()
+            
+            # Look ahead for description lines
+            desc_lines = []
+            next_idx = i + 1
+            while next_idx < len(lines):
+                next_line = lines[next_idx].strip()
+                if not next_line:
+                    next_idx += 1
+                    continue
+                if (next_line.startswith('#') or 
+                    next_line.startswith('---') or 
+                    next_line.startswith('*') or 
+                    next_line.startswith('-') or 
+                    next_line.startswith('•') or 
+                    re.match(r'^\d+\.', next_line) or
+                    re.match(r'^\*\*(UC-\d+|FA\d+(?:\.\d+)*|NF\d+(?:\.\d+)*|R\d+(?:\.\d+)*)\*\*:', next_line)):
+                    break
+                desc_lines.append(next_line)
+                next_idx += 1
+                
+            desc_text = " ".join(desc_lines) if desc_lines else ""
+            
+            clean_title = clean_md_tags(title)
+            clean_desc = clean_md_tags(desc_text)
+            
+            card = make_requirement_card(item_id, clean_title, clean_desc, styles)
+            flowables.append(card)
+            flowables.append(Spacer(1, 6))
+            
+            i = next_idx
+            continue
+
+        # 5. Horizontal Rule
         if line_strip == '---' or line_strip == '***':
             line_table = Table([['']], colWidths=[487], rowHeights=[1], style=TableStyle([
                 ('LINEABOVE', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
@@ -126,9 +426,10 @@ def markdown_to_flowables(text, styles):
             flowables.append(Spacer(1, 6))
             flowables.append(line_table)
             flowables.append(Spacer(1, 6))
+            i += 1
             continue
             
-        # Blockquote
+        # 6. Blockquote
         if line_strip.startswith('>'):
             quote_text = line_strip[1:].strip()
             quote_style = ParagraphStyle(
@@ -140,30 +441,10 @@ def markdown_to_flowables(text, styles):
             )
             flowables.append(Paragraph(clean_md_tags(quote_text), quote_style))
             flowables.append(Spacer(1, 4))
+            i += 1
             continue
 
-        # Check for definition header like **UC-1**: or **FA1**:
-        is_def_header = re.match(r'^\*\*(UC-\d+|FA\d+|NF\d+|R\d+)\*\*:\s*(.*)$', line_strip)
-        if is_def_header:
-            item_id = is_def_header.group(1)
-            title = is_def_header.group(2)
-            def_heading_style = ParagraphStyle(
-                'DefHeading',
-                parent=styles['Normal'],
-                fontName='Helvetica-Bold',
-                fontSize=11,
-                leading=14,
-                textColor=colors.HexColor('#0c1816'),
-                spaceBefore=10,
-                spaceAfter=4,
-                keepWithNext=True
-            )
-            clean_title = clean_md_tags(title)
-            formatted_text = f'<b><font color="#00a685">{item_id}</font></b>: {clean_title}'
-            flowables.append(Paragraph(formatted_text, def_heading_style))
-            continue
-
-        # Headers
+        # 7. Headers (notify TOC implicitly if subclassed MyDocTemplate handles Heading1/2)
         if line.startswith('# '):
             flowables.append(Paragraph(clean_md_tags(line[2:]), styles['Heading1']))
             flowables.append(Spacer(1, 8))
@@ -173,7 +454,7 @@ def markdown_to_flowables(text, styles):
         elif line.startswith('### '):
             flowables.append(Paragraph(clean_md_tags(line[4:]), styles['Heading3']))
             flowables.append(Spacer(1, 6))
-        # Lists
+        # 8. Lists
         elif line_strip.startswith('•') or line_strip.startswith('-') or line_strip.startswith('*'):
             bullet_text = line_strip[1:].strip()
             flowables.append(Paragraph(f"&bull; {clean_md_tags(bullet_text)}", styles['BulletStyle']))
@@ -195,11 +476,12 @@ def markdown_to_flowables(text, styles):
                 spaceAfter=3
             )
             flowables.append(Paragraph(f"{num}. {clean_md_tags(content)}", num_style))
-            continue
-        # Regular text
+        # 9. Regular text
         else:
             flowables.append(Paragraph(clean_md_tags(line_strip), styles['NormalText']))
             flowables.append(Spacer(1, 4))
+            
+        i += 1
             
     return flowables
 
@@ -239,10 +521,10 @@ def draw_c4_box(d, x, y, w, h, title, tech, desc, box_type):
     d.add(Rect(x, y, w, h, rx=rx, ry=ry, fillColor=fill, strokeColor=stroke, strokeWidth=1.5))
     
     # Draw Title (bold)
-    d.add(String(x + w/2, y + h - 18, title, fontName='Helvetica-Bold', fontSize=9.5, textAnchor='middle', fillColor=text_color))
+    d.add(String(x + w/2, y + h - 14, title, fontName='Helvetica-Bold', fontSize=9, textAnchor='middle', fillColor=text_color))
     
     # Draw Tech (italic/oblique)
-    d.add(String(x + w/2, y + h - 28, f"[{tech}]", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=tech_color))
+    d.add(String(x + w/2, y + h - 24, f"[{tech}]", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=tech_color))
     
     # Wrap and draw description
     def wrap_text(text, max_chars=28):
@@ -259,11 +541,11 @@ def draw_c4_box(d, x, y, w, h, title, tech, desc, box_type):
             lines.append(curr_line)
         return lines
 
-    desc_lines = wrap_text(desc, max_chars=28)
-    start_y = y + (h/2) - 5 + (len(desc_lines) * 4)
+    desc_lines = wrap_text(desc, max_chars=26)
+    start_y = y + h - 34
     for idx, line in enumerate(desc_lines):
-        line_y = start_y - idx * 9
-        d.add(String(x + w/2, line_y, line, fontName='Helvetica', fontSize=7, textAnchor='middle', fillColor=desc_color))
+        line_y = start_y - idx * 8.5
+        d.add(String(x + w/2, line_y, line, fontName='Helvetica', fontSize=6.2, textAnchor='middle', fillColor=desc_color))
 
 def draw_c4_arrow(d, x1, y1, x2, y2, label, stroke_color, is_dashed=False):
     # Draw main line
@@ -416,6 +698,26 @@ def create_data_control_flow_diagram():
     d.add(String(240, 13, "Kontroll- & Feedbackfluss: Datenbank-Ack -> Sync-Bestätigung -> BLE-Steuerung", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
     return d
 
+# --- Subclass SimpleDocTemplate for Table of Contents ---
+class MyDocTemplate(SimpleDocTemplate):
+    def afterFlowable(self, flowable):
+        if isinstance(flowable, Paragraph):
+            style = flowable.style.name
+            text = flowable.getPlainText()
+            if style in ('Heading1', 'Heading2'):
+                level = 0 if style == 'Heading1' else 1
+                key = f"h_{id(flowable)}"
+                # Register bookmark destination
+                self.canv.bookmarkPage(key)
+                try:
+                    self.canv.addOutlineEntry(text, key, level=level, closed=False)
+                except Exception as e:
+                    # In some passes canv might not support addOutlineEntry
+                    pass
+                # Notify TOC with the bookmark key
+                self.notify('TOCEntry', (level, text, self.page, key))
+                print(f"[TOC] {style} detected: {text} on page {self.page} (key: {key})")
+
 # --- Main PDF Generator ---
 def main():
     root_dir = Path(__file__).parent.resolve()
@@ -436,7 +738,7 @@ def main():
     
     # Setup PDF document
     # Margins: 54 points = 0.75 in (~1.9 cm)
-    doc = SimpleDocTemplate(
+    doc = MyDocTemplate(
         str(pdf_out_path),
         pagesize=A4,
         leftMargin=54,
@@ -559,6 +861,14 @@ def main():
         leading=12,
         alignment=1
     ))
+    
+    styles.add(ParagraphStyle(
+        'MatrixCell',
+        parent=styles['Normal'],
+        fontSize=7.2,
+        leading=9.0,
+        textColor=text_color
+    ))
 
     story = []
     
@@ -593,147 +903,510 @@ def main():
     story.append(Paragraph(meta_text, styles['Normal']))
     story.append(PageBreak())
     
-    # ------------------ SECTION 1: SCRAPED DOCUMENTS ------------------
-    story.append(Paragraph("1. Dokumente aus dem Projekt", styles['Heading1']))
-    story.append(Paragraph("In diesem Abschnitt werden die im Projekt gefundenen Markdown-Dateien im Volltext aufgeführt. Diese Dokumente bilden die Grundlage für die Anforderungen und Use Cases.", styles['NormalText']))
+    # ------------------ TABLE OF CONTENTS ------------------
+    toc_title_style = ParagraphStyle(
+        'TOCTitleStyle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor('#0c1816'),
+        spaceBefore=0,
+        spaceAfter=15,
+        keepWithNext=True
+    )
+    story.append(Paragraph("Gliederung (Inhaltsverzeichnis)", toc_title_style))
+    story.append(Paragraph("Dieses Dokument gliedert sich in die folgenden Abschnitte:", styles['NormalText']))
     story.append(Spacer(1, 10))
     
-    # Order files: Requirements first, then UseCases, then others
-    sorted_files = sorted(data['files'], key=lambda x: (
-        0 if 'Requirements' in x['path'] else 
-        1 if 'UseCases' in x['path'] else 2, 
-        x['path']
-    ))
+    from reportlab.platypus.tableofcontents import TableOfContents
+    toc = TableOfContents()
+    toc.levelStyles = [
+        ParagraphStyle(
+            name='TOCHeading1',
+            fontName='Helvetica-Bold',
+            fontSize=10,
+            leading=14,
+            textColor=colors.HexColor('#0c1816'),
+            spaceBefore=6,
+            spaceAfter=4
+        ),
+        ParagraphStyle(
+            name='TOCHeading2',
+            fontName='Helvetica',
+            fontSize=9,
+            leading=13,
+            leftIndent=20,
+            textColor=colors.HexColor('#627c78')
+        ),
+    ]
+    story.append(toc)
+    story.append(PageBreak())
     
-    for file in sorted_files:
-        if file['path'] in ['README.md', 'Befehle_App_Build.md']:
-            continue # skip build notes / README to keep report focused
-            
-        story.append(Paragraph(f"Datei: {file['path']}", styles['Heading2']))
-        # Parse markdown lines into ReportLab paragraphs
-        flowables = markdown_to_flowables(file['content'], styles)
+    # Create a dictionary for easy access to the markdown files by their relative path
+    files_by_path = {f['path']: f for f in data['files']}
+    
+    # ------------------ SECTION 1: USE CASES ------------------
+    story.append(Paragraph("1. Anwendungsfälle (Use Cases)", styles['Heading1']))
+    story.append(Paragraph("In diesem Abschnitt werden die primären Anwendungsfälle (Use Cases) des MoveLink-Systems beschrieben. Diese Use Cases definieren die Benutzerinteraktionen und Systemantworten für das Verbinden von Geräten, das Echtzeit-Training und das Einsehen historischer Daten.", styles['NormalText']))
+    story.append(Spacer(1, 10))
+    
+    if 'doc/UseCases.md' in files_by_path:
+        content = files_by_path['doc/UseCases.md']['content']
+        content_lines = content.split('\n')
+        # Skip the main title of the markdown file to avoid duplicate headers
+        if content_lines and content_lines[0].startswith('# '):
+            content_lines = content_lines[1:]
+        flowables = markdown_to_flowables('\n'.join(content_lines), styles)
         story.extend(flowables)
-        story.append(Spacer(1, 12))
+    else:
+        story.append(Paragraph("Warnung: doc/UseCases.md wurde nicht im Scrape-Datensatz gefunden.", styles['NormalText']))
         
     story.append(PageBreak())
     
-    # ------------------ SECTION 2: TRACE MATRIX ------------------
-    story.append(Paragraph("2. Requirements vs. Use Cases Matrix", styles['Heading1']))
-    story.append(Paragraph("Die folgende Matrix veranschaulicht die Beziehungen zwischen den definierten funktionalen Anforderungen (FA) / nicht-funktionalen Anforderungen (NF) / Rahmenbedingungen (R) und den Use Cases (UC).", styles['NormalText']))
+    # ------------------ SECTION 2: SYSTEMANFORDERNUGEN (REQUIREMENTS) ------------------
+    story.append(Paragraph("2. Systemanforderungen (Requirements)", styles['Heading1']))
+    story.append(Paragraph("Dieser Abschnitt enthält die funktionalen Anforderungen (FA), nicht-funktionalen Anforderungen (NF) und Randbedingungen (R) des MoveLink-Systems.", styles['NormalText']))
     story.append(Spacer(1, 10))
     
-    use_cases = sorted([d for d in data['definitions'].values() if d['type'] == 'UC'], key=lambda x: x['id'])
-    reqs = sorted([d for d in data['definitions'].values() if d['type'] != 'UC'], key=lambda x: (x['type'], x['id']))
-    
-    # Table data
-    # Header row
-    header_row = [Paragraph("<b>Anforderung / ID</b>", styles['TableHeader'])]
-    for uc in use_cases:
-        header_row.append(Paragraph(f"<b>{uc['id']}</b>", styles['TableHeader']))
-    matrix_data = [header_row]
-    
-    # Rows
-    for req in reqs:
-        row = [Paragraph(f"<b>{req['id']}:</b> {req['title'][:45]}...", styles['TableCell'])]
-        for uc in use_cases:
-            is_linked = uc['id'] in req['links']
-            cell_text = "<b>X</b>" if is_linked else "-"
-            row.append(Paragraph(cell_text, styles['TableCellCenter'] if is_linked else styles['TableCellCenter']))
-        matrix_data.append(row)
+    if 'doc/Requirements.md' in files_by_path:
+        content = files_by_path['doc/Requirements.md']['content']
+        # We split to get everything except the 'Abwägungen' section, which goes into Section 3
+        parts = content.split('## Abwägungen')
+        reqs_content = parts[0]
+        reqs_lines = reqs_content.split('\n')
+        # Skip main title
+        if reqs_lines and reqs_lines[0].startswith('# '):
+            reqs_lines = reqs_lines[1:]
+        flowables = markdown_to_flowables('\n'.join(reqs_lines), styles)
+        story.extend(flowables)
+    else:
+        story.append(Paragraph("Warnung: doc/Requirements.md wurde nicht im Scrape-Datensatz gefunden.", styles['NormalText']))
         
-    # Column widths: 487 total width
-    col_widths = [187] + [100] * len(use_cases)
-    matrix_table = Table(matrix_data, colWidths=col_widths)
-    matrix_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), primary_color),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
-        ('BACKGROUND', (0,1), (0,-1), colors.HexColor('#f9fafb')),
-        ('ROWBACKGROUNDS', (1,1), (-1,-1), [colors.white, colors.HexColor('#f9fafb')]),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-    ]))
+    story.append(PageBreak())
     
+    # ------------------ SECTION 3: ARCHITEKTURENTSCHEIDUNGEN (ADR) ------------------
+    story.append(Paragraph("3. Architekturentscheidungen (ADR / Abwägungen)", styles['Heading1']))
+    story.append(Paragraph("In diesem Abschnitt werden die zentralen Architekturentscheidungen (Architecture Decision Records) und Abwägungen bezüglich Hardware, App-Framework und Auswertungstechnologie dokumentiert.", styles['NormalText']))
+    story.append(Spacer(1, 10))
+    
+    if 'doc/Requirements.md' in files_by_path:
+        content = files_by_path['doc/Requirements.md']['content']
+        parts = content.split('## Abwägungen')
+        if len(parts) > 1:
+            adr_content = "## Abwägungen\n" + parts[1]
+            flowables = markdown_to_flowables(adr_content, styles)
+            story.extend(flowables)
+        else:
+            story.append(Paragraph("Warnung: Keine Abwägungen in doc/Requirements.md gefunden.", styles['NormalText']))
+    else:
+        story.append(Paragraph("Warnung: doc/Requirements.md wurde nicht im Scrape-Datensatz gefunden.", styles['NormalText']))
+        
+    story.append(PageBreak())
+    
+    # ------------------ SECTION 4: C4 MODEL WITH SUB-SECTIONS ------------------
+    story.append(Paragraph("4. System-Architektur (C4 Modell)", styles['Heading1']))
+    story.append(Paragraph("Die Software-Architektur von MoveLink ist nach dem C4-Modell strukturiert. Im Folgenden werden die einzelnen Container des Systems (Embedded Firmware, Mobile App und Datenbank & Backend) im Detail beschrieben. Für jeden dieser Unterpunkte folgen jeweils die spezifischen Anforderungen, das zugehörige ADR (Architekturentscheidung) und die Architektur-Abbildung.", styles['NormalText']))
+    story.append(Spacer(1, 10))
+    
+    # --- 4.1 embedded ---
+    story.append(Paragraph("<a name='sec_embedded'></a>4.1 Embedded Sensor-Firmware (Xiao MCU)", styles['Heading2']))
+    story.append(Paragraph("Die Sensor-Firmware läuft auf dem <b>XIAO nRF52840 Sense Controller</b>. Sie erfasst Beschleunigungs- und Rotationsdaten über den LSM6DS3-Sensor, wendet Filter an und überträgt Daten per BLE oder wertet sie per Edge-Inferenz direkt auf dem Chip aus.", styles['NormalText']))
+    story.append(Spacer(1, 8))
+    
+    # Anforderungen
+    story.append(Paragraph("Anforderungen (Embedded)", styles['Heading3']))
+    if 'embedded/architecture.md' in files_by_path:
+        content = files_by_path['embedded/architecture.md']['content']
+        req_part = ""
+        if '## Requirements' in content:
+            req_part = content.split('## Requirements')[1].split('##')[0].strip()
+        story.extend(markdown_to_flowables(req_part, styles))
+    story.append(Spacer(1, 8))
+    
+    # ADR
+    story.append(Paragraph("Architekturentscheidung (ADR / Abwägungen)", styles['Heading3']))
+    story.append(Paragraph("<b>Entscheidung:</b> Durchführung der Inferenz auf dem Mikrocontroller (Edge-Inferenz) zur Latenzminimierung (NF1) und Reduzierung des kontinuierlichen BLE-Datenstroms.", styles['NormalText']))
+    if 'embedded/architecture.md' in files_by_path:
+        content = files_by_path['embedded/architecture.md']['content']
+        adr_part = ""
+        if '## Abwägungen' in content:
+            adr_part = content.split('## Abwägungen')[1].split('##')[0].strip()
+        if adr_part:
+            story.extend(markdown_to_flowables(adr_part, styles))
+    story.append(Spacer(1, 8))
+    
+    # Abbildung
+    story.append(Paragraph("Architektur-Abbildung", styles['Heading3']))
+    story.append(Paragraph("Das Komponenten-Diagramm für diesen Container befindet sich im Anhang des Dokuments (siehe <a href='#sec_diag_embedded'><b>Kapitel 6.3</b></a>). Es zeigt die inneren Module der Sensor-Firmware sowie die Kopplung von Sensor-Loop, Edge Impulse Inferenz und dem BLE Service.", styles['NormalText']))
+    story.append(Spacer(1, 8))
+    story.append(PageBreak())
+    
+    # --- 4.2 App ---
+    story.append(Paragraph("<a name='sec_app'></a>4.2 Mobile App (React Native)", styles['Heading2']))
+    story.append(Paragraph("Die Mobile App bildet das Benutzer-Interface (UI) des Systems. Sie verbindet sich per BLE mit der Xiao MCU, visualisiert Live-Bewegungsdaten und synchronisiert sie mit dem Backend.", styles['NormalText']))
+    story.append(Spacer(1, 8))
+    
+    # Anforderungen
+    story.append(Paragraph("Anforderungen (Mobile App)", styles['Heading3']))
+    if 'app/architecture.md' in files_by_path:
+        content = files_by_path['app/architecture.md']['content']
+        req_part = ""
+        if '## Requirements' in content:
+            req_part = content.split('## Requirements')[1].split('##')[0].strip()
+        story.extend(markdown_to_flowables(req_part, styles))
+    story.append(Spacer(1, 8))
+    
+    # ADR
+    story.append(Paragraph("Architekturentscheidung (ADR / Abwägungen)", styles['Heading3']))
+    story.append(Paragraph("<b>Entscheidung:</b> Verwendung von <b>React Native (Hybrid-App)</b> zur plattformübergreifenden Entwicklung mit hoher Code-Wiederverwendbarkeit und schnellen UI-Iterationen, bei gleichzeitiger Optimierung des SVG-Diagramm-Renderings für den 50Hz Datenstrom.", styles['NormalText']))
+    story.append(Spacer(1, 8))
+    
+    # Abbildung
+    story.append(Paragraph("Architektur-Abbildung", styles['Heading3']))
+    story.append(Paragraph("Das Komponenten-Diagramm für diesen Container befindet sich im Anhang des Dokuments (siehe <a href='#sec_diag_app'><b>Kapitel 6.4</b></a>). Es veranschaulicht die Benutzeroberflächen-Module und Custom React Hooks des App-Containers.", styles['NormalText']))
+    story.append(Spacer(1, 8))
+    story.append(PageBreak())
+    
+    # --- 4.3 Datenbank ---
+    story.append(Paragraph("<a name='sec_database'></a>4.3 Datenbank & Backend (PostgreSQL & Node.js)", styles['Heading2']))
+    story.append(Paragraph("Der Datenbank- und Backend-Container dient als zentraler Speicher und API-Gateway des Gesamtsystems. Er nimmt Profile und Trainingshistorien auf und stellt diese persistent bereit.", styles['NormalText']))
+    story.append(Spacer(1, 8))
+    
+    # Anforderungen
+    story.append(Paragraph("Anforderungen (Datenbank & Backend)", styles['Heading3']))
+    if 'database/architecture.md' in files_by_path:
+        content = files_by_path['database/architecture.md']['content']
+        req_part = ""
+        if '## Requirements' in content:
+            req_part = content.split('## Requirements')[1].split('##')[0].strip()
+        story.extend(markdown_to_flowables(req_part, styles))
+    story.append(Spacer(1, 8))
+    
+    # ADR
+    story.append(Paragraph("Architekturentscheidung (ADR / Abwägungen)", styles['Heading3']))
+    story.append(Paragraph("<b>Entscheidung:</b> Verwendung einer <b>PostgreSQL-Datenbank</b> zur persistenten und relationalen Ablage von Trainingsdaten und Nutzerprofilen. Das Backend wird mit <b>Node.js & Express</b> realisiert, um hohe Parallelität zu gewährleisten und asynchrone WebSocket-Verbindungen für Live-Streaming-Daten ressourcenschonend zu verarbeiten.", styles['NormalText']))
+    story.append(Spacer(1, 8))
+    
+    # Abbildung
+    story.append(Paragraph("Architektur-Abbildungen (Container-Modell & Datenfluss)", styles['Heading3']))
+    story.append(Paragraph("Die Diagramme für diesen Container befinden sich im Anhang des Dokuments. Das System-Kontext-Diagramm finden Sie in <a href='#sec_diag_context'><b>Kapitel 6.1</b></a>, das Container-Diagramm in <a href='#sec_diag_container'><b>Kapitel 6.2</b></a>, und den End-to-End Daten- und Kontrollfluss in <a href='#sec_diag_flow'><b>Kapitel 6.5</b></a>.", styles['NormalText']))
+    story.append(Spacer(1, 8))
+    story.append(PageBreak())
+    
+    # ------------------ SECTION 5: TRACEABILITY MATRIX (AT THE END) ------------------
+    story.append(Paragraph("5. Rückverfolgbarkeits-Matrix (Traceability)", styles['Heading1']))
+    story.append(Paragraph("Die folgende Matrix veranschaulicht die Beziehungen und Verknüpfungen zwischen den Use Cases, den funktionalen Anforderungen (FA), den Systemkomponenten und den entsprechenden Klassen/Code-Dateien im System. Klicken Sie auf eine Anforderungs-ID, um zu deren Definition zu springen, oder auf eine Komponente, um deren C4-Modell-Kapitel aufzurufen.", styles['NormalText']))
+    story.append(Spacer(1, 10))
+
+    # Build the data tree
+    container_ids = ['FA1', 'FA2', 'FA3']
+    container_names = {
+        'FA1': 'Applikation (Mobile App)',
+        'FA2': 'Trainingsgerät (Sensor-Firmware)',
+        'FA3': 'Datenbank & Backend'
+    }
+    
+    container_files = [f for f in data['files'] if f.get('c4_level') == 'Container']
+    use_cases = sorted([d for d in data['definitions'].values() if d['type'] == 'UC'], key=lambda x: x['id'])
+    
+    # Natural sort helper for requirements
+    def get_sort_key(item_id):
+        if not item_id:
+            return [0]
+        cleaned = re.sub(r'[^0-9.]', '', item_id)
+        parts = cleaned.split('.')
+        return [int(p) for p in parts if p.isdigit()]
+
+    tree = []
+    for container_id in container_ids:
+        # Find container file
+        container_file = None
+        for f in container_files:
+            if container_id == 'FA1' and 'app/' in f['path']:
+                container_file = f
+                break
+            if container_id == 'FA2' and 'embedded/' in f['path']:
+                container_file = f
+                break
+            if container_id == 'FA3' and 'database/' in f['path']:
+                container_file = f
+                break
+        
+        container_title = container_names.get(container_id, container_file['title'] if container_file else container_id)
+        
+        # Parse container components
+        container_content = container_file['content'] if container_file else ""
+        container_components = parse_container_components(container_content)
+        
+        # Find all Sub-FAs for this container (like FA1.1, FA1.2...)
+        sub_fas = []
+        for d in data['definitions'].values():
+            if d['id'].startswith(container_id + '.') and d['id'].count('.') == 1:
+                sub_fas.append(d)
+        sub_fas = sorted(sub_fas, key=lambda x: get_sort_key(x['id']))
+        
+        sub_fa_tree = []
+        for sub_fa in sub_fas:
+            # Find all Detail-FAs (like FA1.1.1, FA1.1.2...)
+            detail_fas = []
+            for d in data['definitions'].values():
+                if d['id'].startswith(sub_fa['id'] + '.') and d['id'].count('.') == 2:
+                    detail_fas.append(d)
+            detail_fas = sorted(detail_fas, key=lambda x: get_sort_key(x['id']))
+            
+            # Find matching component map
+            comp_map = None
+            for c in container_components:
+                if c['reqId'] == sub_fa['id']:
+                    comp_map = c
+                    break
+            
+            component_name = comp_map['name'] if comp_map else '-'
+            component_path = comp_map['path'] if comp_map else ''
+            
+            # Resolve classes
+            if comp_map:
+                classes = get_component_classes(comp_map['path'], data.get('codeContents', {}))
+            else:
+                classes = get_class_for_req(sub_fa['id'], data.get('references', {}))
+                
+            sub_fa_tree.append({
+                'id': sub_fa['id'],
+                'title': sub_fa['title'],
+                'detailFAs': detail_fas,
+                'component': component_name,
+                'componentPath': component_path,
+                'classes': classes
+            })
+            
+        if not sub_fa_tree:
+            sub_fa_tree.append({
+                'id': '',
+                'title': '(unbenannt)',
+                'detailFAs': [],
+                'component': '-',
+                'componentPath': '',
+                'classes': []
+            })
+            
+        tree.append({
+            'id': container_id,
+            'title': container_title,
+            'subFAs': sub_fa_tree
+        })
+
+    # Generate rows & rowspans
+    rendered_rows = []
+    for container in tree:
+        container_total_rows = 0
+        for sub in container['subFAs']:
+            sub_rows = len(sub['detailFAs']) if sub['detailFAs'] else 1
+            container_total_rows += sub_rows
+            
+        for sub_idx, sub in enumerate(container['subFAs']):
+            sub_rows = len(sub['detailFAs']) if sub['detailFAs'] else 1
+            
+            if not sub['detailFAs']:
+                rendered_rows.append({
+                    'container': container,
+                    'container_row_span': container_total_rows if sub_idx == 0 else 0,
+                    'sub_fa': sub,
+                    'sub_fa_row_span': 1,
+                    'detail_fa': None,
+                    'classes': sub['classes'],
+                    'is_first_row': sub_idx == 0
+                })
+            else:
+                for det_idx, det in enumerate(sub['detailFAs']):
+                    rendered_rows.append({
+                        'container': container,
+                        'container_row_span': container_total_rows if (sub_idx == 0 and det_idx == 0) else 0,
+                        'sub_fa': sub,
+                        'sub_fa_row_span': sub_rows if det_idx == 0 else 0,
+                        'detail_fa': det,
+                        'classes': sub['classes'],
+                        'is_first_row': sub_idx == 0 and det_idx == 0
+                    })
+
+    # Compute Use Case spans
+    total_rows = len(rendered_rows)
+    uc_count = len(use_cases)
+    uc_spans = []
+    remaining = total_rows
+    for i in range(uc_count):
+        span = remaining if i == uc_count - 1 else total_rows // uc_count
+        uc_spans.append(span)
+        remaining -= span
+
+    # Table data construction
+    table_data = [[
+        Paragraph("<b>Use Case (UC)</b>", styles['TableHeader']),
+        Paragraph("<b>Mappings</b>", styles['TableHeader']),
+        Paragraph("<b>FA Ebene 1</b>", styles['TableHeader']),
+        Paragraph("<b>Sub-FA Ebene 2</b>", styles['TableHeader']),
+        Paragraph("<b>Component</b>", styles['TableHeader']),
+        Paragraph("<b>Detail-FA Ebene 3</b>", styles['TableHeader']),
+        Paragraph("<b>Klassenebene (Klasse)</b>", styles['TableHeader'])
+    ]]
+
+    uc_current_idx = 0
+    uc_row_count = 0
+    table_spans = []
+
+    for r_idx, row in enumerate(rendered_rows):
+        row_cells = [""] * 7
+        
+        # Column 1: Use Case
+        if r_idx == 0 or uc_row_count >= uc_spans[uc_current_idx]:
+            if r_idx > 0:
+                uc_current_idx += 1
+            uc_row_count = 0
+            uc = use_cases[uc_current_idx] if uc_current_idx < len(use_cases) else {'id': f'UC-{uc_current_idx+1}', 'title': ''}
+            span = uc_spans[uc_current_idx]
+            
+            uc_text = f"<b>{uc['id']}</b><br/><font size='6.5' color='#627c78'>{uc['title']}</font>"
+            row_cells[0] = Paragraph(uc_text, styles['MatrixCell'])
+            
+            if span > 1:
+                table_spans.append(('SPAN', (0, r_idx + 1), (0, r_idx + span)))
+            
+        uc_row_count += 1
+        
+        # Column 2: Mappings (embedded Drawing spanning all rows)
+        if r_idx == 0:
+            row_height = 36
+            draw = create_mappings_drawing(total_rows, row_height, use_cases, tree, data)
+            row_cells[1] = draw
+            if total_rows > 1:
+                table_spans.append(('SPAN', (1, 1), (1, total_rows)))
+            
+        # Column 3: FA Ebene 1
+        if row['container_row_span'] > 0:
+            fa_text = f"<b>{row['container']['id']}</b><br/><font size='6.5' color='#627c78'>{row['container']['title']}</font>"
+            row_cells[2] = Paragraph(fa_text, styles['MatrixCell'])
+            if row['container_row_span'] > 1:
+                table_spans.append(('SPAN', (2, r_idx + 1), (2, r_idx + row['container_row_span'])))
+            
+        # Column 4: Sub-FA Ebene 2
+        # Column 5: Component
+        if row['sub_fa_row_span'] > 0:
+            sub_fa = row['sub_fa']
+            if sub_fa['id']:
+                # Link to req card
+                sub_fa_text = f"<a href='#req_{sub_fa['id']}'><b>{sub_fa['id']}</b></a>"
+            else:
+                sub_fa_text = "<i>(unbenannt)</i>"
+            row_cells[3] = Paragraph(sub_fa_text, styles['MatrixCell'])
+            if row['sub_fa_row_span'] > 1:
+                table_spans.append(('SPAN', (3, r_idx + 1), (3, r_idx + row['sub_fa_row_span'])))
+            
+            comp_name = sub_fa['component']
+            target_link = ""
+            if sub_fa['id'].startswith('FA1'):
+                target_link = "sec_app"
+            elif sub_fa['id'].startswith('FA2'):
+                target_link = "sec_embedded"
+            elif sub_fa['id'].startswith('FA3'):
+                target_link = "sec_database"
+                
+            if comp_name != '-' and target_link:
+                comp_text = f"<a href='#{target_link}'><b>{comp_name}</b></a>"
+            else:
+                comp_text = comp_name
+            row_cells[4] = Paragraph(comp_text, styles['MatrixCell'])
+            if row['sub_fa_row_span'] > 1:
+                table_spans.append(('SPAN', (4, r_idx + 1), (4, r_idx + row['sub_fa_row_span'])))
+            
+        # Column 6: Detail-FA Ebene 3
+        det = row['detail_fa']
+        if det:
+            det_text = f"<b>{det['id']}</b> {det['title']}"
+            row_cells[5] = Paragraph(det_text, styles['MatrixCell'])
+        else:
+            row_cells[5] = Paragraph("-", styles['MatrixCell'])
+            
+        # Column 7: Klassenebene (Klasse)
+        classes = row['classes']
+        if classes:
+            class_links = []
+            for cls in classes:
+                cls_name = cls['name'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                link_href = f"file:///c:/Users/erlin/repo/movelink/{cls['file']}#L{cls['line']}"
+                class_links.append(f"<a href='{link_href}'>{cls_name}</a>")
+            row_cells[6] = Paragraph(" &nbsp;<font color='#00a685'>&lt;/&gt;</font>&nbsp; ".join(class_links), styles['MatrixCell'])
+        else:
+            row_cells[6] = Paragraph("<i>(Zielstruktur)</i>", styles['MatrixCell'])
+            
+        table_data.append(row_cells)
+
+    # Column widths total 487
+    col_widths = [70, 30, 85, 45, 65, 102, 90]
+    row_heights = [20] + [36] * total_rows
+    
+    matrix_table = Table(table_data, colWidths=col_widths, rowHeights=row_heights)
+    t_style = [
+        ('BACKGROUND', (0,0), (-1,0), primary_color),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
+        ('BACKGROUND', (0,1), (-1,-1), colors.white),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LEFTPADDING', (0,0), (-1,-1), 4),
+        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+    ]
+    t_style.extend(table_spans)
+    matrix_table.setStyle(TableStyle(t_style))
+
     story.append(matrix_table)
     story.append(Spacer(1, 15))
-    story.append(Paragraph("<i>Hinweis: Ein 'X' kennzeichnet eine direkte Verknüpfung im Pflichtenheft bzw. den Anforderungsdokumenten.</i>", styles['NormalText']))
     story.append(PageBreak())
-    
-    # ------------------ SECTION 3: E2E TRACE TREE ------------------
-    story.append(Paragraph("3. End-to-End Rückverfolgbarkeits-Baum", styles['Heading1']))
-    story.append(Paragraph("Hier ist der vollständige Trace-Pfad von den Anwendungsfällen über die funktionalen Anforderungen bis hin zu den konkreten Code-Implementierungen (z. B. React Native-Dateien, Arduino-Skripte) dargestellt.", styles['NormalText']))
-    story.append(Spacer(1, 10))
-    
-    for uc in use_cases:
-        story.append(Paragraph(f"Anwendungsfall {uc['id']}: {uc['title']}", styles['Heading2']))
-        
-        # Find requirements linking to this Use Case
-        linked_reqs = sorted([r for r in reqs if uc['id'] in r['links']], key=lambda x: x['id'])
-        
-        if not linked_reqs:
-            story.append(Paragraph("<i>Keine verknüpften Anforderungen gefunden.</i>", styles['BulletStyle']))
-        else:
-            for req in linked_reqs:
-                # Requirement Header
-                story.append(Paragraph(f"<b>&bull; Anforderung {req['id']}:</b> {req['title']}", styles['BulletStyle']))
-                
-                # Code References
-                refs = data['references'].get(req['id'], [])
-                if not refs:
-                    story.append(Paragraph("   <font color='#dc2626'>[!] Warnung: Keine Code-Referenzen gefunden.</font>", styles['BulletStyle']))
-                else:
-                    for ref in refs:
-                        ref_text = f"   - <b>Implementiert in:</b> <font face='Courier' size='9'>{ref['file']}</font> (Zeile {ref['line']})<br/>     <i>Kontext:</i> <font face='Courier' size='8'>{ref['context']}</font>"
-                        story.append(Paragraph(ref_text, styles['NormalText']))
-                story.append(Spacer(1, 3))
-        story.append(Spacer(1, 10))
-        
-    story.append(PageBreak())
-    
-    # ------------------ SECTION 4: C4 MODEL DIAGRAMS ------------------
-    story.append(Paragraph("4. System-Architektur (C4 Modell)", styles['Heading1']))
-    story.append(Paragraph("In diesem Abschnitt wird die Systemarchitektur auf den verschiedenen C4-Ebenen (System-Kontext, Container und Komponenten) visualisiert.", styles['NormalText']))
-    story.append(Spacer(1, 10))
-    
-    story.append(Paragraph("4.1 System-Kontext-Diagramm", styles['Heading2']))
-    story.append(Paragraph("Das System-Kontext-Diagramm zeigt die Position von MoveLink in Bezug auf Benutzer und das externe Datenbanksystem.", styles['NormalText']))
+
+    # ------------------ SECTION 6: APPENDIX (DIAGRAMS) ------------------
+    story.append(Paragraph("6. Anhang: C4-Architekturdiagramme", styles['Heading1']))
+    story.append(Paragraph("In diesem Anhang sind alle C4-Architekturdiagramme und Datenflusspläne des MoveLink-Systems übersichtlich dargestellt und beschrieben.", styles['NormalText']))
+    story.append(Spacer(1, 15))
+
+    # 6.1 System Context
+    story.append(Paragraph("<a name='sec_diag_context'></a>6.1 System-Kontext-Diagramm (C4 Level 1)", styles['Heading2']))
+    story.append(Paragraph("Das System-Kontext-Diagramm zeigt die Position des MoveLink-Systems in seiner Betriebsumgebung, die Interaktion mit dem Trainierenden sowie die Verbindung zur persistenten Datenbank.", styles['NormalText']))
     story.append(Spacer(1, 5))
     story.append(create_system_context_diagram())
-    story.append(Spacer(1, 15))
-    
-    story.append(Paragraph("4.2 Container-Diagramm", styles['Heading2']))
-    story.append(Paragraph("Das Container-Diagramm veranschaulicht die Aufteilung des MoveLink Systems in eigenständige, ausführbare Subsysteme (Mobile App, Firmware und Backend) sowie deren Kommunikationspfade.", styles['NormalText']))
+    story.append(Spacer(1, 20))
+
+    # 6.2 Container Diagram
+    story.append(Paragraph("<a name='sec_diag_container'></a>6.2 Container-Diagramm (C4 Level 2)", styles['Heading2']))
+    story.append(Paragraph("Das Container-Diagramm schlüsselt das MoveLink-System in seine drei eigenständigen, deploybaren Einheiten auf: Die Sensor-Firmware, die Mobile App und das Datenbank/Backend-System.", styles['NormalText']))
     story.append(Spacer(1, 5))
     story.append(create_container_diagram())
-    story.append(Spacer(1, 15))
-    
+    story.append(Spacer(1, 20))
     story.append(PageBreak())
-    
-    story.append(Paragraph("4.3 Komponenten-Diagramm (Sensor-Firmware)", styles['Heading2']))
-    story.append(Paragraph("Das Komponenten-Diagramm zeigt das Innenleben der Sensor-Firmware, die auf dem Xiao-Mikrocontroller läuft, sowie die Kopplung von Sensorik, Inferenz (Edge Impulse) und Bluetooth BLE.", styles['NormalText']))
+
+    # 6.3 Component Diagram (Firmware)
+    story.append(Paragraph("<a name='sec_diag_embedded'></a>6.3 Komponenten-Diagramm: Embedded Sensor-Firmware (C4 Level 3)", styles['Heading2']))
+    story.append(Paragraph("Dieses Diagramm zeigt die inneren Module der Sensor-Firmware, bestehend aus Sensor-Erfassung, Edge Impulse Inferenz-Engine, LED-Controller und dem BLE-Kommunikationsmodul.", styles['NormalText']))
     story.append(Spacer(1, 5))
     story.append(create_firmware_components_diagram())
-    story.append(Spacer(1, 15))
-    
-    story.append(Paragraph("4.4 Komponenten-Diagramm (Mobile App)", styles['Heading2']))
-    story.append(Paragraph("Dieses Diagramm zeigt die internen Komponenten des React Native Containers (Mobile App), aufgeteilt in UI-Elemente und Custom Hooks, die mit BLE und dem WebSocket-Server interagieren.", styles['NormalText']))
+    story.append(Spacer(1, 20))
+
+    # 6.4 Component Diagram (Mobile App)
+    story.append(Paragraph("<a name='sec_diag_app'></a>6.4 Komponenten-Diagramm: Mobile App (React Native - C4 Level 3)", styles['Heading2']))
+    story.append(Paragraph("Dieses Komponenten-Diagramm veranschaulicht die UI-Karten (SensorCard, LiveChart, SessionCard, ProfileCard) und deren Koppelung an die Custom Hooks useBLE und useWebSocket.", styles['NormalText']))
     story.append(Spacer(1, 5))
     story.append(create_app_components_diagram())
-    story.append(Spacer(1, 10))
-    
+    story.append(Spacer(1, 20))
     story.append(PageBreak())
-    
-    # ------------------ SECTION 5: DATA AND CONTROL FLOW ------------------
-    story.append(Paragraph("5. End-to-End Daten- und Kontrollfluss", styles['Heading1']))
-    story.append(Paragraph("Die folgende Abbildung veranschaulicht den E2E-Datenstrom (Sensorsignal-Erfassung, lokale Inferenz, kabellose Übertragung und persistente Aufzeichnung) sowie den Kontrollfluss (Bestätigungsschleifen und Steuerbefehle) über das gesamte MoveLink-System.", styles['NormalText']))
-    story.append(Spacer(1, 10))
+
+    # 6.5 Data Flow Diagram
+    story.append(Paragraph("<a name='sec_diag_flow'></a>6.5 System-Daten- &amp; Kontrollfluss-Diagramm", styles['Heading2']))
+    story.append(Paragraph("Visualisiert den detaillierten Hinweg des Sensor-Datenstroms (IMU -> nRF52840 -> BLE -> App -> WebSockets -> PostgreSQL) sowie den Rückweg der Steuerung und Bestätigungs-Acks im Gesamtsystem.", styles['NormalText']))
+    story.append(Spacer(1, 5))
     story.append(create_data_control_flow_diagram())
-    story.append(Spacer(1, 10))
-    
+    story.append(Spacer(1, 20))
+
     # Build Document
     print(f"Building PDF report in {pdf_out_path}...")
-    doc.build(story, canvasmaker=NumberedCanvas)
+    doc.multiBuild(story, canvasmaker=NumberedCanvas)
     print("PDF generation completed successfully.")
 
 if __name__ == '__main__':
