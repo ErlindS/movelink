@@ -54,33 +54,13 @@
                 <div class="nav-section-title">Traceability & Graphs</div>
                 <ul class="nav-list">
                     <li>
-                        <button class="nav-btn active" data-target="docs-tab">
-                            <i class="fa-regular fa-file-lines"></i> Dokumenten-Ansicht
-                        </button>
-                    </li>
-                    <li>
-                        <button class="nav-btn" data-target="trace-tree-tab">
-                            <i class="fa-solid fa-sitemap"></i> E2E Trace-Baum
-                        </button>
-                    </li>
-                    <li>
                         <button class="nav-btn" data-target="matrix-tab">
                             <i class="fa-solid fa-table-cells"></i> Matrix-Ansicht
                         </button>
                     </li>
                     <li>
-                        <button class="nav-btn" data-target="graph-tab">
-                            <i class="fa-solid fa-circle-nodes"></i> Netzwerk-Graph
-                        </button>
-                    </li>
-                    <li>
                         <button class="nav-btn" data-target="c4-tab">
-                            <i class="fa-solid fa-cubes"></i> C4-Modell
-                        </button>
-                    </li>
-                    <li>
-                        <button class="nav-btn" data-target="flow-tab">
-                            <i class="fa-solid fa-arrows-spin"></i> Daten- &amp; Kontrollfluss
+                            <i class="fa-solid fa-diagram-project"></i> C4-Modell
                         </button>
                     </li>
                 </ul>
@@ -134,29 +114,7 @@
                     </div>
                 </section>
                 
-                <!-- Tab 2: E2E Trace Tree View -->
-                <section id="trace-tree-tab" class="tab-content">
-                    <div class="glass-card">
-                        <div class="card-header">
-                            <h2 class="card-title">End-to-End Traceability Tree</h2>
-                            <p class="card-subtitle">Vollständiger Fluss von Use Cases über funktionale Anforderungen zu den tatsächlichen Implementierungsdateien im Code.</p>
-                        </div>
-                        <div class="trace-tree-search">
-                            <div class="search-box">
-                                <i class="fa-solid fa-filter"></i>
-                                <input type="text" id="treeFilter" placeholder="Nach Anforderungen, Use Cases oder Dateien filtern...">
-                            </div>
-                            <div class="tree-controls">
-                                <button class="btn btn-secondary" id="expandAllTree"><i class="fa-solid fa-angles-down"></i> Alle ausklappen</button>
-                                <button class="btn btn-secondary" id="collapseAllTree"><i class="fa-solid fa-angles-up"></i> Alle einklappen</button>
-                            </div>
-                        </div>
-                        <div class="trace-tree-container" id="traceTree">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                </section>
-                
+
                 <!-- Tab 3: Traceability Matrix View -->
                 <section id="matrix-tab" class="tab-content">
                     <div class="glass-card">
@@ -377,30 +335,7 @@
                 </section>
 
                 
-                <!-- Tab 4: Network Dependency Graph -->
-                <section id="graph-tab" class="tab-content">
-                    <div class="graph-layout">
-                        <div class="graph-main glass-card">
-                            <div class="graph-canvas-container">
-                                <div id="networkGraph"></div>
-                            </div>
-                            <div class="graph-floating-controls">
-                                <button class="btn-floating" id="fitGraphBtn" title="Zoom zurücksetzen"><i class="fa-solid fa-expand"></i></button>
-                                <button class="btn-floating" id="togglePhysicsBtn" title="Physik einfrieren/aktivieren"><i class="fa-solid fa-play"></i></button>
-                            </div>
-                        </div>
-                        <aside class="graph-sidebar glass-card" id="graphDetailPanel">
-                            <h3 class="panel-title">Element Details</h3>
-                            <div class="panel-content" id="graphDetailContent">
-                                <div class="detail-placeholder">
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    <p>Wähle einen Knoten im Netzwerk-Graph aus, um detaillierte Informationen und Verbindungen anzuzeigen.</p>
-                                </div>
-                            </div>
-                        </aside>
-                    </div>
-                </section>
-                
+
                 <!-- Tab 5: C4 Model Explorer -->
                 <section id="c4-tab" class="tab-content">
                     <div class="graph-layout">
@@ -458,48 +393,6 @@
                     </div>
                 </section>
                 
-                <!-- Tab 6: Daten- & Kontrollfluss -->
-                <section id="flow-tab" class="tab-content">
-                    <div class="glass-card" style="padding: 24px;">
-                        <div class="card-header" style="margin-bottom: 20px;">
-                            <h2 class="card-title">Daten- und Kontrollfluss (End-to-End)</h2>
-                            <p class="card-subtitle">E2E-Ablauf von den physischen Sensor-Rohdaten bis zur persistenten Datenbankaufzeichnung.</p>
-                        </div>
-                        <div class="flow-container" style="display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; width: 100%;">
-                            <div class="mermaid" style="background: rgba(255, 255, 255, 0.02); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 800px; display: flex; justify-content: center;">
-sequenceDiagram
-    autonumber
-    participant Sensor as LSM6DS3 (Phys. Sensor)
-    participant MC as XIAO MCU (Firmware)
-    participant App as Mobile App (useBLE Hook)
-    participant UI as LiveChart / UI State
-    participant WebS as WebSocket Client
-    participant Backend as Node.js Backend
-    participant DB as PostgreSQL Datenbank
-
-    Note over Sensor, MC: Sensorik & Inferenz (50 Hz)
-    Sensor->>MC: Analoge/Digitale Rohwerte (Beschleunigung & Gyro)
-    Note over MC: Edge Impulse SDK
-    MC->>MC: CNN-Inferenz zur Übungsklassifizierung (z.B. Curl)
-    
-    Note over MC, App: Bluetooth Low Energy
-    MC->>App: BLE Notification (IMU-Rohdaten & Klassifikation)
-    
-    Note over App, UI: State Management & UI
-    App->>UI: Update State & LiveChart Visualisierung
-    
-    Note over UI, Backend: Echtzeit-Synchronisation
-    UI->>WebS: Sende Trainingsdaten
-    WebS->>Backend: WebSocket-Datenpaket
-    
-    Note over Backend, DB: Persistierung
-    Backend->>DB: SQL INSERT (Trainingsverlauf & Metadaten)
-    DB-->>Backend: Bestätigung (INSERT OK)
-    Backend-->>WebS: Bestätigung (Sync OK)
-                            </div>
-                        </div>
-                    </div>
-                </section>
             </div>
         </main>
     </div>

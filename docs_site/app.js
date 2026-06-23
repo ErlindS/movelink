@@ -6,10 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
         activeFile: 'doc/Requirements.md',
         searchQuery: '',
         treeFilter: '',
-        physicsEnabled: true,
-        network: null,
         theme: 'light',
-        expandedFolders: {}
+        expandedFolders: {},
+        c4Level: 'context',
+        c4ActiveContainer: null,
+        c4ActiveComponent: null
     };
 
     // Fallback if data.js didn't load or is empty
@@ -42,20 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
         statReqs: document.getElementById('statReqs'),
         statLinks: document.getElementById('statLinks'),
 
-        // Tree
-        traceTree: document.getElementById('traceTree'),
-        treeFilter: document.getElementById('treeFilter'),
-        expandAllTree: document.getElementById('expandAllTree'),
-        collapseAllTree: document.getElementById('collapseAllTree'),
 
         // Matrix
         traceMatrix: document.getElementById('traceMatrix'),
-
-        // Graph
-        networkGraph: document.getElementById('networkGraph'),
-        fitGraphBtn: document.getElementById('fitGraphBtn'),
-        togglePhysicsBtn: document.getElementById('togglePhysicsBtn'),
-        graphDetailContent: document.getElementById('graphDetailContent'),
 
         // Modal
         codeModal: document.getElementById('codeModal'),
@@ -93,28 +83,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // Set header title
             const labelMap = {
                 'docs-tab': 'Dokumenten-Ansicht',
-                'trace-tree-tab': 'E2E Trace-Baum',
                 'matrix-tab': 'Matrix-Ansicht',
-                'graph-tab': 'Netzwerk-Graph',
-                'c4-tab': 'C4-Modell Explorer',
-                'flow-tab': 'Daten- & Kontrollfluss'
+                'c4-tab': 'C4-Modell'
             };
-            elements.activeTabTitle.textContent = labelMap[target];
+            elements.activeTabTitle.textContent = labelMap[target] || '';
 
             // Render target tab contents if needed
-            if (target === 'trace-tree-tab') {
-                renderTraceTree();
-            } else if (target === 'matrix-tab') {
+            if (target === 'matrix-tab') {
                 renderTraceMatrix();
                 renderDynamicArchMatrix();
-            } else if (target === 'graph-tab') {
-                initNetworkGraph();
             } else if (target === 'c4-tab') {
                 renderC4Explorer();
-            } else if (target === 'flow-tab') {
-                if (typeof mermaid !== 'undefined') {
-                    mermaid.init(undefined, document.querySelectorAll('#flow-tab .mermaid'));
-                }
             }
         });
     });
@@ -133,12 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i> <span>Dunkler Modus</span>';
             state.theme = 'dark';
         }
-
-        // Re-initialize graph if it exists to adapt to new theme colors
-        if (state.network && state.activeTab === 'graph-tab') {
-            initNetworkGraph();
-        }
-        if (state.activeTab === 'c4-tab') {
+        
+        // Redraw SVG arrows/connections on theme change to match new styles
+        if (state.activeTab === 'matrix-tab' && elements.toggleArchMatrixBtn && elements.toggleArchMatrixBtn.classList.contains('active')) {
+            drawArchMatrixArrows();
+        } else if (state.activeTab === 'c4-tab') {
             drawC4Connections();
         }
     });
@@ -393,7 +371,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // If we are not on the docs tab, switch to it
         if (state.activeTab !== 'docs-tab') {
             const docBtn = document.querySelector('[data-target="docs-tab"]');
-            if (docBtn) docBtn.click();
+            if (docBtn) {
+                docBtn.click();
+            } else {
+                // Toggling classes manually if button is removed from navigation menu
+                state.activeTab = 'docs-tab';
+                elements.navButtons.forEach(b => b.classList.remove('active'));
+                elements.tabContents.forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.id === 'docs-tab') {
+                        tab.classList.add('active');
+                    }
+                });
+                elements.activeTabTitle.textContent = 'Dokumenten-Ansicht';
+            }
         }
 
         // Scroll to top
@@ -467,342 +458,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
-    // 9. Render E2E Traceability Tree
-    // Helper to resolve a physical file to its logical C4 Component or Container
-    function getC4ElementForFile(filePath, reqId) {
-        // 1. Check direct component file matches from C4 data
-        for (const containerId in C4_DATA.components) {
-            const containerComponents = C4_DATA.components[containerId].elements;
-            for (const comp of containerComponents) {
-                if (filePath === comp.file) {
-                    return { name: comp.title, type: 'component', id: comp.id, container: containerId };
-                }
-            }
-        }
-
-        // 2. Fallbacks / mappings for source code files to logical components
-        const lowerPath = filePath.toLowerCase();
-
-        if (lowerPath.includes('sensorcard.tsx')) {
-            return { name: 'SensorCard UI', type: 'component', id: 'sensor_card', container: 'app' };
-        }
-        if (lowerPath.includes('livechart.tsx')) {
-            return { name: 'LiveChart UI', type: 'component', id: 'live_chart', container: 'app' };
-        }
-        if (lowerPath.includes('sessioncard.tsx')) {
-            return { name: 'SessionCard UI', type: 'component', id: 'session_card', container: 'app' };
-        }
-        if (lowerPath.includes('profilecard') || lowerPath.includes('profile')) {
-            return { name: 'ProfileCard UI', type: 'component', id: 'profile_card', container: 'app' };
-        }
-        if (lowerPath.includes('useble.ts')) {
-            return { name: 'useBLE Hook', type: 'component', id: 'use_ble', container: 'app' };
-        }
-        if (lowerPath.includes('usewebsocket.ts') || lowerPath.includes('websocket')) {
-            return { name: 'useWebSocket Hook', type: 'component', id: 'use_ws', container: 'app' };
-        }
-
-        if (lowerPath.includes('imureader')) {
-            return { name: 'Sensordatenerfassung (Loop)', type: 'component', id: 'imu_reader', container: 'firmware' };
-        }
-        if (lowerPath.includes('inferenceengine')) {
-            return { name: 'Inferenz-Engine (Edge Impulse)', type: 'component', id: 'inference_engine', container: 'firmware' };
-        }
-        if (lowerPath.includes('visualfeedback')) {
-            return { name: 'LED- & Display-Controller', type: 'component', id: 'led_display_controller', container: 'firmware' };
-        }
-        if (lowerPath.includes('executable.ino') && (reqId === 'FA5' || reqId === 'FA4')) {
-            return { name: 'Inferenz-Engine (Edge Impulse)', type: 'component', id: 'inference_engine', container: 'firmware' };
-        }
-        if (lowerPath.includes('executable.ino') && reqId === 'FA9') {
-            return { name: 'LED- & Display-Controller', type: 'component', id: 'led_display_controller', container: 'firmware' };
-        }
-        if (lowerPath.includes('executable.ino')) {
-            return { name: 'Sensordatenerfassung (Loop)', type: 'component', id: 'imu_reader', container: 'firmware' };
-        }
-        if (lowerPath.includes('gehause.py') || lowerPath.includes('gehäuse')) {
-            return { name: 'Gehäuse', type: 'component', id: 'gehause', container: 'firmware' };
-        }
-        if (lowerPath.includes('imu') || lowerPath.includes('sensor')) {
-            return { name: 'Sensordatenerfassung (Loop)', type: 'component', id: 'imu_reader', container: 'firmware' };
-        }
-        if (lowerPath.includes('ble')) {
-            return { name: 'BLE Service', type: 'component', id: 'ble_service', container: 'firmware' };
-        }
-
-        // 3. Container-level mappings based on directory
-        if (lowerPath.startsWith('app/') || lowerPath.includes('/app/')) {
-            return { name: 'Mobile App Container', type: 'container', id: 'app' };
-        }
-        if (lowerPath.startsWith('embedded/') || lowerPath.includes('/embedded/')) {
-            return { name: 'Sensor Firmware Container', type: 'container', id: 'firmware' };
-        }
-        if (lowerPath.startsWith('doc/') || lowerPath.startsWith('database/') || lowerPath.includes('backend') || lowerPath.includes('pflichtenheft')) {
-            return { name: 'Backend Container', type: 'container', id: 'backend' };
-        }
-
-
-        // Fallback
-        return { name: 'MoveLink System', type: 'system-context', id: 'system' };
-    }
-
-    // 9. Render E2E Traceability Tree (Horizontal Flow Chart)
-    function renderTraceTree() {
-        elements.traceTree.innerHTML = '';
-
-        // Hide tree-controls since everything is displayed in a clean table grid
-        const controls = document.querySelector('.tree-controls');
-        if (controls) controls.style.display = 'none';
-
-        const filter = state.treeFilter.toLowerCase();
-
-        // Find all Use Cases (UC-X)
-        const useCases = Object.values(DOCS_DATA.definitions)
-            .filter(d => d.type === 'UC')
-            .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
-
-        if (useCases.length === 0) {
-            elements.traceTree.innerHTML = '<div class="detail-placeholder"><i class="fa-solid fa-triangle-exclamation"></i> Kein Trace-Baum Daten vorhanden. Scrape erneut.</div>';
-            return;
-        }
-
-        // Build flat table rows with pre-calculated rowspans
-        const tableRows = [];
-
-        useCases.forEach(uc => {
-            // Find linked requirements
-            const linkedReqs = Object.values(DOCS_DATA.definitions)
-                .filter(d => d.type !== 'UC' && d.links.includes(uc.id))
-                .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
-
-            let matchesFilter = !filter ||
-                uc.id.toLowerCase().includes(filter) ||
-                uc.title.toLowerCase().includes(filter);
-
-            if (!matchesFilter) {
-                // Check if any of its requirements or code files match the filter
-                const reqMatches = linkedReqs.some(req =>
-                    req.id.toLowerCase().includes(filter) ||
-                    req.title.toLowerCase().includes(filter) ||
-                    (DOCS_DATA.references[req.id] && DOCS_DATA.references[req.id].some(ref => ref.file.toLowerCase().includes(filter)))
-                );
-
-                if (reqMatches) matchesFilter = true;
-            }
-
-            if (!matchesFilter) return; // Skip if filter is set and doesn't match
-
-            const ucRows = [];
-            if (linkedReqs.length === 0) {
-                ucRows.push({
-                    uc: uc,
-                    req: null,
-                    ref: null,
-                    ucSpan: 0,
-                    reqSpan: 0
-                });
-            } else {
-                linkedReqs.forEach(req => {
-                    const refs = DOCS_DATA.references[req.id] || [];
-                    if (refs.length === 0) {
-                        ucRows.push({
-                            uc: uc,
-                            req: req,
-                            ref: null,
-                            ucSpan: 0,
-                            reqSpan: 0
-                        });
-                    } else {
-                        refs.forEach(ref => {
-                            ucRows.push({
-                                uc: uc,
-                                req: req,
-                                ref: ref,
-                                ucSpan: 0,
-                                reqSpan: 0
-                            });
-                        });
-                    }
-                });
-            }
-
-            // Set ucSpan on first row
-            if (ucRows.length > 0) {
-                ucRows[0].ucSpan = ucRows.length;
-            }
-
-            // Calculate reqSpan
-            let currentReqId = null;
-            let currentReqStartIndex = 0;
-            ucRows.forEach((row, index) => {
-                if (row.req) {
-                    if (row.req.id !== currentReqId) {
-                        if (currentReqId !== null) {
-                            ucRows[currentReqStartIndex].reqSpan = index - currentReqStartIndex;
-                        }
-                        currentReqId = row.req.id;
-                        currentReqStartIndex = index;
-                    }
-                } else {
-                    if (currentReqId !== null) {
-                        ucRows[currentReqStartIndex].reqSpan = index - currentReqStartIndex;
-                    }
-                    currentReqId = null;
-                }
-            });
-            if (currentReqId !== null) {
-                ucRows[currentReqStartIndex].reqSpan = ucRows.length - currentReqStartIndex;
-            }
-
-            tableRows.push(...ucRows);
-        });
-
-        // Create Confluence style Table
-        const tableContainer = document.createElement('div');
-        tableContainer.className = 'trace-table-container';
-
-        const table = document.createElement('table');
-        table.className = 'trace-confluence-table';
-
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>Anwendungsfall (Use Case)</th>
-                    <th>Systemanforderung</th>
-                    <th class="text-center">@Priorität</th>
-                    <th class="text-center">Status</th>
-                    <th>C4 Komponente</th>
-                    <th>Quellcode-Referenz</th>
-                </tr>
-            </thead>
-            <tbody id="traceTableBody"></tbody>
-        `;
-
-        const tbody = table.querySelector('tbody');
-
-        tableRows.forEach(row => {
-            const tr = document.createElement('tr');
-            let rowHtml = '';
-
-            // 1. UC Column
-            if (row.ucSpan > 0) {
-                rowHtml += `
-                    <td rowspan="${row.ucSpan}" class="matrix-cell uc-cell">
-                        <div class="trace-badge-container">
-                            <span class="node-badge usecase">${row.uc.id}</span>
-                            <span class="trace-title">${row.uc.title}</span>
-                        </div>
-                    </td>
-                `;
-            }
-
-            // 2. Req Column, Priority, Status
-            if (row.req) {
-                if (row.reqSpan > 0) {
-                    const reqBadgeClass = row.req.type === 'FA' ? 'requirement' : (row.req.type === 'NF' ? 'code' : 'usecase');
-
-                    // Priority mappings
-                    let priorityLabel = 'LOW';
-                    let priorityClass = 'priority-low';
-                    if (row.req.type === 'FA') {
-                        priorityLabel = 'CRITICAL';
-                        priorityClass = 'priority-critical';
-                    } else if (row.req.type === 'NF') {
-                        priorityLabel = 'MEDIUM';
-                        priorityClass = 'priority-medium';
-                    }
-
-                    // Status mappings (CLOSED if implements are found, otherwise OPEN)
-                    const refs = DOCS_DATA.references[row.req.id] || [];
-                    const isImplemented = refs.length > 0;
-                    const statusLabel = isImplemented ? 'CLOSED' : 'OPEN';
-                    const statusClass = isImplemented ? 'status-closed' : 'status-open';
-
-                    rowHtml += `
-                        <td rowspan="${row.reqSpan}" class="matrix-cell req-cell">
-                            <div class="trace-badge-container">
-                                <span class="node-badge ${reqBadgeClass}">${row.req.id}</span>
-                                <span class="trace-title">${row.req.title}</span>
-                            </div>
-                        </td>
-                        <td rowspan="${row.reqSpan}" class="text-center">
-                            <span class="priority-badge ${priorityClass}">${priorityLabel}</span>
-                        </td>
-                        <td rowspan="${row.reqSpan}" class="text-center">
-                            <span class="status-badge ${statusClass}">${statusLabel}</span>
-                        </td>
-                    `;
-                }
-            } else {
-                rowHtml += `
-                    <td class="text-muted italic">Keine Anforderungen verknüpft</td>
-                    <td class="text-center">-</td>
-                    <td class="text-center">-</td>
-                `;
-            }
-
-            // 3. C4 Component & Reference Link
-            if (row.ref) {
-                const isCode = row.ref.file.endsWith('.ts') || row.ref.file.endsWith('.tsx') || row.ref.file.endsWith('.ino') || row.ref.file.endsWith('.cpp');
-                const iconClass = isCode ? 'fa-solid fa-code' : 'fa-regular fa-file-lines';
-                const c4El = getC4ElementForFile(row.ref.file, row.req ? row.req.id : '');
-                const borderLeftColor = c4El.type === 'container' ? 'var(--primary)' : (c4El.type === 'component' ? '#8b5cf6' : '#627c78');
-                const filename = row.ref.file.split('/').pop();
-
-                rowHtml += `
-                    <td>
-                        <div class="component-ref-cell">
-                            <span class="c4-color-dot" style="background-color: ${borderLeftColor}"></span>
-                            <strong>${c4El.name}</strong>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="jira-like-link" onclick="window.app.openCodeView('${row.ref.file}', ${row.ref.line})" title="Klicke, um Code anzuzeigen">
-                            <i class="${iconClass}"></i>
-                            <span>${filename} (Z. ${row.ref.line})</span>
-                        </div>
-                    </td>
-                `;
-            } else {
-                rowHtml += `
-                    <td class="text-muted italic">-</td>
-                    <td class="text-muted italic"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-z)"></i> Nicht referenziert</td>
-                `;
-            }
-
-            tr.innerHTML = rowHtml;
-            tbody.appendChild(tr);
-        });
-
-        tableContainer.appendChild(table);
-        elements.traceTree.appendChild(tableContainer);
-    }
-
-    function escapeHtml(text) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-    // Tree filters and control buttons
-    elements.treeFilter.addEventListener('input', (e) => {
-        state.treeFilter = e.target.value;
-        renderTraceTree();
-    });
-
-    elements.expandAllTree.addEventListener('click', () => {
-        const nodes = elements.traceTree.querySelectorAll('.tree-node');
-        nodes.forEach(n => n.classList.add('expanded'));
-    });
-
-    elements.collapseAllTree.addEventListener('click', () => {
-        const nodes = elements.traceTree.querySelectorAll('.tree-node');
-        nodes.forEach(n => n.classList.remove('expanded'));
-    });
 
     // 10. Render Traceability Matrix Grid
     function renderTraceMatrix() {
@@ -1234,7 +889,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (row.subFaRowSpan > 0) {
                 trHtml += `
                     <td rowspan="${row.subFaRowSpan}" class="sub-fa-cell">
-                        <strong>${row.subFa.id}</strong> ${row.subFa.title}
+                        ${row.subFa.id ? `
+                            <div class="jira-like-link" onclick="window.app.showTraceDetails('${row.subFa.id}')" title="Gehe zu ${row.subFa.id}">
+                                <strong>${row.subFa.id}</strong>
+                            </div>
+                        ` : `<span style="color: var(--text-muted); font-style: italic;">(unbenannt)</span>`}
                     </td>
                     <td rowspan="${row.subFaRowSpan}" class="component-cell">
                         ${row.subFa.componentPath ? `
@@ -1344,276 +1003,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 11. Render Network Dependency Graph (Vis.js)
-    function initNetworkGraph() {
-        if (state.network) {
-            state.network.destroy();
-            state.network = null;
-        }
-
-        const nodes = [];
-        const edges = [];
-        const uniqueEdges = new Set();
-
-        // Node design parameters based on active theme
-        const isDark = document.body.classList.contains('dark-mode');
-        const colors = {
-            UC: { background: '#332700', border: '#e6af12', font: isDark ? '#f0f5f7' : '#1b2a30' },
-            FA: { background: '#1e1b4b', border: '#818cf8', font: isDark ? '#f0f5f7' : '#1b2a30' },
-            NF: { background: '#3b0764', border: '#d8b4fe', font: isDark ? '#f0f5f7' : '#1b2a30' },
-            R: { background: '#451a03', border: '#f97316', font: isDark ? '#f0f5f7' : '#1b2a30' },
-            File: { background: isDark ? '#05151c' : '#e1e8ed', border: isDark ? '#1a3745' : '#a8b6be', font: isDark ? '#93abb5' : '#495c66' }
-        };
-
-        // 1. Add Use Case / Requirements Nodes
-        Object.values(DOCS_DATA.definitions).forEach(def => {
-            nodes.push({
-                id: def.id,
-                label: def.id,
-                title: `<b>${def.id}:</b> ${def.title}`,
-                shape: 'dot',
-                size: def.type === 'UC' ? 24 : 16,
-                color: {
-                    background: colors[def.type].background,
-                    border: colors[def.type].border,
-                    highlight: { background: colors[def.type].border, border: colors[def.type].border }
-                },
-                font: { color: colors[def.type].font, face: 'Inter' }
-            });
-
-            // Add edges from Requirements to Use Cases
-            def.links.forEach(link => {
-                const edgeKey = `${def.id}->${link}`;
-                if (!uniqueEdges.has(edgeKey)) {
-                    uniqueEdges.add(edgeKey);
-                    edges.push({
-                        from: def.id,
-                        to: link,
-                        arrows: 'to',
-                        color: { color: isDark ? 'rgba(0, 212, 170, 0.4)' : 'rgba(0, 166, 133, 0.4)' },
-                        width: 1.5
-                    });
-                }
-            });
-        });
-
-        // 2. Add Code File Nodes & Edges to Requirements
-        const fileNodesSet = new Set();
-
-        Object.keys(DOCS_DATA.references).forEach(itemId => {
-            const refs = DOCS_DATA.references[itemId] || [];
-
-            refs.forEach(ref => {
-                const fileId = `file:${ref.file}`;
-
-                // Add file node if not already added
-                if (!fileNodesSet.has(fileId)) {
-                    fileNodesSet.add(fileId);
-                    nodes.push({
-                        id: fileId,
-                        label: ref.file.split('/').pop(), // just filename
-                        title: `<b>Datei:</b> ${ref.file}`,
-                        shape: 'box',
-                        margin: 8,
-                        color: {
-                            background: colors.File.background,
-                            border: colors.File.border,
-                            highlight: { background: colors.File.border, border: colors.File.border }
-                        },
-                        font: { color: colors.File.font, face: 'monospace', size: 10 }
-                    });
-                }
-
-                // Add edge: File -> Requirement / Use Case
-                const edgeKey = `${fileId}->${itemId}`;
-                if (!uniqueEdges.has(edgeKey)) {
-                    uniqueEdges.add(edgeKey);
-                    edges.push({
-                        from: fileId,
-                        to: itemId,
-                        arrows: 'to',
-                        color: { color: isDark ? 'rgba(129, 140, 248, 0.3)' : 'rgba(100, 116, 139, 0.3)' },
-                        width: 1.2,
-                        dashes: true
-                    });
-                }
-            });
-        });
-
-        // 3. Render Graph using Vis.js Network
-        const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
-        const options = {
-            nodes: {
-                borderWidth: 2,
-                shadow: true
-            },
-            edges: {
-                smooth: {
-                    type: 'cubicBezier',
-                    forceDirection: 'none',
-                    roundness: 0.5
-                }
-            },
-            physics: {
-                enabled: state.physicsEnabled,
-                barnesHut: {
-                    gravitationalConstant: -2000,
-                    centralGravity: 0.3,
-                    springLength: 95,
-                    springConstant: 0.04,
-                    damping: 0.09,
-                    avoidOverlap: 0.5
-                }
-            },
-            interaction: {
-                hover: true,
-                tooltipDelay: 200
-            }
-        };
-
-        state.network = new vis.Network(elements.networkGraph, data, options);
-
-        // Select event
-        state.network.on('selectNode', (params) => {
-            const nodeId = params.nodes[0];
-            showGraphDetail(nodeId);
-        });
-
-        // Deselect event
-        state.network.on('deselectNode', () => {
-            showGraphDetail(null);
-        });
-    }
-
-    function showGraphDetail(nodeId) {
-        if (!nodeId) {
-            elements.graphDetailContent.innerHTML = `
-                <div class="detail-placeholder">
-                    <i class="fa-solid fa-circle-info"></i>
-                    <p>Wähle einen Knoten im Netzwerk-Graph aus, um detaillierte Informationen und Verbindungen anzuzeigen.</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Case A: Selected a file
-        if (nodeId.startsWith('file:')) {
-            const relPath = nodeId.substring(5);
-
-            // Find what requirements this file references
-            const implementedReqs = [];
-            Object.keys(DOCS_DATA.references).forEach(itemId => {
-                const list = DOCS_DATA.references[itemId];
-                if (list.some(ref => ref.file === relPath)) {
-                    implementedReqs.push(itemId);
-                }
-            });
-
-            elements.graphDetailContent.innerHTML = `
-                <div class="detail-header">
-                    <span class="node-badge code detail-badge">DATEI</span>
-                    <h4 class="detail-title">${relPath.split('/').pop()}</h4>
-                    <span style="font-size:11px;color:var(--text-muted);font-family:monospace">${relPath}</span>
-                </div>
-                
-                <div class="detail-section-title">Erfüllte / Referenzierte IDs</div>
-                <ul class="detail-links-list">
-                    ${implementedReqs.map(reqId => {
-                const def = DOCS_DATA.definitions[reqId] || { title: '' };
-                return `
-                            <li class="detail-link-item" onclick="window.app.showTraceDetails('${reqId}')">
-                                <span class="node-badge ${reqId.startsWith('UC') ? 'usecase' : 'requirement'}">${reqId}</span>
-                                <span>${def.title.substring(0, 40)}...</span>
-                            </li>
-                        `;
-            }).join('') || '<li style="font-size:12px;color:var(--text-muted)">Keine Verbindungen</li>'}
-                </ul>
-                
-                <button class="btn btn-secondary" onclick="window.app.openCodeView('${relPath}', 1)" style="width:100%">
-                    <i class="fa-solid fa-eye"></i> Datei im Editor anzeigen
-                </button>
-            `;
-        }
-        // Case B: Selected a requirement or Use Case ID
-        else {
-            const def = DOCS_DATA.definitions[nodeId];
-            if (!def) return;
-
-            const badgeClass = def.type === 'UC' ? 'usecase' : (def.type === 'FA' ? 'requirement' : 'code');
-            const refs = DOCS_DATA.references[nodeId] || [];
-
-            // Build linked items HTML
-            let linkedHtml = '';
-            if (def.type === 'UC') {
-                // Find requirements pointing to this use case
-                const linkedReqs = Object.values(DOCS_DATA.definitions).filter(d => d.links.includes(def.id));
-                linkedHtml = `
-                    <div class="detail-section-title">Verknüpfte Anforderungen</div>
-                    <ul class="detail-links-list">
-                        ${linkedReqs.map(r => `
-                            <li class="detail-link-item" onclick="window.app.showTraceDetails('${r.id}')">
-                                <span class="node-badge requirement">${r.id}</span>
-                                <span>${r.title.substring(0, 30)}...</span>
-                            </li>
-                        `).join('') || '<li style="font-size:12px;color:var(--text-muted)">Keine verknüpften Anforderungen</li>'}
-                    </ul>
-                `;
-            } else {
-                // Pointing to use cases
-                linkedHtml = `
-                    <div class="detail-section-title">Erfüllt Use Case</div>
-                    <ul class="detail-links-list">
-                        ${def.links.map(ucId => `
-                            <li class="detail-link-item" onclick="window.app.showTraceDetails('${ucId}')">
-                                <span class="node-badge usecase">${ucId}</span>
-                                <span>${(DOCS_DATA.definitions[ucId] || { title: '' }).title}</span>
-                            </li>
-                        `).join('') || '<li style="font-size:12px;color:var(--text-muted)">Keine Use Case Verbindung</li>'}
-                    </ul>
-                `;
-            }
-
-            elements.graphDetailContent.innerHTML = `
-                <div class="detail-header">
-                    <span class="node-badge ${badgeClass} detail-badge">${def.type}</span>
-                    <h4 class="detail-title">${def.id}</h4>
-                </div>
-                
-                <div class="detail-description">${def.title}</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">
-                    Definiert in: <span class="btn-text-link" onclick="window.app.showTraceDetails('${def.id}')">${def.file} (Z. ${def.line})</span>
-                </div>
-                
-                ${linkedHtml}
-                
-                <div class="detail-section-title">Implementiert in Dateien</div>
-                <ul class="detail-links-list">
-                    ${refs.map(ref => `
-                        <li class="detail-link-item" onclick="window.app.openCodeView('${ref.file}', ${ref.line})">
-                            <i class="fa-solid fa-code" style="color:var(--primary)"></i>
-                            <span><strong>${ref.file.split('/').pop()}</strong> (Z. ${ref.line})</span>
-                        </li>
-                    `).join('') || '<li style="font-size:12px;color:var(--text-muted)">Kein Code-Bezug gefunden</li>'}
-                </ul>
-            `;
-        }
-    }
-
-    // Graph UI Controls
-    elements.fitGraphBtn.addEventListener('click', () => {
-        if (state.network) {
-            state.network.fit({ animation: true });
-        }
-    });
-
-    elements.togglePhysicsBtn.addEventListener('click', () => {
-        state.physicsEnabled = !state.physicsEnabled;
-        if (state.network) {
-            state.network.setOptions({ physics: { enabled: state.physicsEnabled } });
-            elements.togglePhysicsBtn.innerHTML = state.physicsEnabled ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
-            elements.togglePhysicsBtn.style.color = state.physicsEnabled ? 'var(--primary)' : 'var(--text-muted)';
-        }
-    });
 
     // 12. Show Traceability Details (Navigates to source Markdown file and highlights the definition)
     function showTraceDetails(id) {
@@ -1731,6 +1120,28 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.codeModal.classList.remove('active');
         }
     });
+
+    // Recalculate on window resize
+    window.addEventListener('resize', () => {
+        if (state.activeTab === 'matrix-tab') {
+            if (elements.toggleArchMatrixBtn && elements.toggleArchMatrixBtn.classList.contains('active')) {
+                drawArchMatrixArrows();
+            }
+        }
+        if (state.activeTab === 'c4-tab') {
+            drawC4Connections();
+        }
+    });
+
+    // Also draw connections on scroll to prevent alignment lag
+    const c4BoardContainer = document.getElementById('c4BoardContainer');
+    if (c4BoardContainer) {
+        c4BoardContainer.addEventListener('scroll', () => {
+            if (state.activeTab === 'c4-tab') {
+                drawC4Connections();
+            }
+        });
+    }
 
     // 13.5 C4 Model Explorer Logic
     const C4_DATA = {
@@ -1878,9 +1289,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
-
-    state.c4Level = 'context';
-    state.c4ActiveContainer = null;
 
     function renderC4Explorer() {
         const board = document.getElementById('c4Board');
@@ -2359,7 +1767,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Determine stroke color and marker arrowhead
-            let strokeColor = isDark ? '#3586c4' : '#2d7eb8';
+            let strokeColor = isDark ? '#00d4aa' : '#00a685';
             let markerId = isDark ? 'arrow-teal' : 'arrow-teal-light';
 
             if (state.c4Level === 'components') {
@@ -2446,27 +1854,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 g.appendChild(rect);
                 g.appendChild(text);
                 svg.appendChild(g);
-            }
-        });
-    }
-
-    // Recalculate on window resize
-    window.addEventListener('resize', () => {
-        if (state.activeTab === 'c4-tab') {
-            drawC4Connections();
-        }
-        if (state.activeTab === 'matrix-tab' && elements.toggleArchMatrixBtn && elements.toggleArchMatrixBtn.classList.contains('active')) {
-            drawArchMatrixArrows();
-        }
-    });
-
-
-    // Also draw connections on scroll to prevent alignment lag
-    const c4BoardContainer = document.getElementById('c4BoardContainer');
-    if (c4BoardContainer) {
-        c4BoardContainer.addEventListener('scroll', () => {
-            if (state.activeTab === 'c4-tab') {
-                drawC4Connections();
             }
         });
     }
