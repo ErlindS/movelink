@@ -16,7 +16,6 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: false,
           tabBarStyle: { display: 'none' },
-          contentStyle: { backgroundColor: 'transparent' },
         }}
       >
         <Tabs.Screen name="index" />

@@ -1,6 +1,6 @@
 // @implements FA2.4
 #include "VisualFeedback.h"
-#include "../ble_streamer/BLEStreamer.h"
+#include "BLEStreamer.h"
 
 // RGB LED Pins des XIAO nRF52840 (LOW = An, HIGH = Aus)
 static const int RED_ledPin = 11;
@@ -9,7 +9,6 @@ static const int GREEN_ledPin = 13;
 
 // @implements FA2.4
 void initFeedback() {
-    u8x8.begin();
     
     // LEDs initial ausschalten
     pinMode(RED_ledPin, OUTPUT);
@@ -22,16 +21,12 @@ void initFeedback() {
 
 // @implements FA2.4
 void updateFeedback(const String& best_label, float best_val, float anomaly_score) {
-    u8x8.clear();
-    u8x8.setFont(u8x8_font_amstrad_cpc_extended_r);
 
     if (best_label == "idle" || best_val < 0.6) {
         // Ruhemodus -> LED Blau, kein JSON senden um PC-Spam zu vermeiden
         digitalWrite(RED_ledPin, HIGH);
         digitalWrite(BLUE_ledPin, LOW); 
         digitalWrite(GREEN_ledPin, HIGH);
-        u8x8.drawString(0, 2, "Status:");
-        u8x8.drawString(0, 4, "IDLE");
         
         streamInferenceResult("idle", best_val, anomaly_score, "Bereit");
     } 
@@ -40,8 +35,6 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
         digitalWrite(RED_ledPin, HIGH);
         digitalWrite(BLUE_ledPin, HIGH);
         digitalWrite(GREEN_ledPin, LOW);
-        u8x8.drawString(0, 2, "Curl:");
-        u8x8.drawString(0, 4, "PERFEKT");
         
         sendJsonToPC(best_label, best_val, anomaly_score, "Super Ausfuehrung!");
         streamInferenceResult(best_label, best_val, anomaly_score, "Super Ausfuehrung!");
@@ -52,8 +45,6 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
         digitalWrite(RED_ledPin, LOW);
         digitalWrite(BLUE_ledPin, HIGH);
         digitalWrite(GREEN_ledPin, HIGH);
-        u8x8.drawString(0, 2, "Achtung:");
-        u8x8.drawString(0, 4, "FEHLER");
 
         // Dynamischer Tipp je nach Fehlerklasse
         String tipp = "Bewegung korrigieren";
@@ -64,8 +55,6 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
         streamInferenceResult(best_label, best_val, anomaly_score, tipp);
         delay(1500); // Cooldown
     }
-
-    u8x8.refreshDisplay();
 }
 
 // @implements FA2.4

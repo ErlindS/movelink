@@ -2,7 +2,7 @@
  * @implements FA1.3, FA1.5, NF2
  */
 import { useEffect, useRef, useCallback } from 'react';
-import { Platform } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import {
   BleManager,
   Device,
@@ -10,15 +10,60 @@ import {
   Characteristic,
   State,
 } from 'react-native-ble-plx';
-import { BLE_SERVICE_UUID, BLE_IMU_CHARACTERISTIC_UUID, BLE_RECONNECT_DELAY_MS, BLE_MAX_RECONNECT_ATTEMPTS } from '@/constants/BLE';
+import { BLE_SERVICE_UUID, BLE_IMU_CHARACTERISTIC_UUID, BLE_INFERENCE_CHARACTERISTIC_UUID, BLE_RECONNECT_DELAY_MS, BLE_MAX_RECONNECT_ATTEMPTS } from '@/constants/BLE';
 import { useBLEStore, useTrainingStore, IMUReading } from '@/store';
+
+function decodeBase64ToString(base64: string): string {
+  try {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const str = base64.replace(/=+$/, '');
+    const len = str.length;
+    let binary = '';
+    
+    for (let i = 0; i < len; i += 4) {
+      const c1 = chars.indexOf(str[i]);
+      const c2 = chars.indexOf(str[i + 1]);
+      const c3 = i + 2 < len ? chars.indexOf(str[i + 2]) : 0;
+      const c4 = i + 3 < len ? chars.indexOf(str[i + 3]) : 0;
+      
+      const b1 = (c1 << 2) | (c2 >> 4);
+      const b2 = ((c2 & 15) << 4) | (c3 >> 2);
+      const b3 = ((c3 & 3) << 6) | c4;
+      
+      binary += String.fromCharCode(b1);
+      if (i + 2 < len) binary += String.fromCharCode(b2);
+      if (i + 3 < len) binary += String.fromCharCode(b3);
+    }
+    return binary;
+  } catch {
+    return '';
+  }
+}
 
 function parseIMUPacket(base64: string): IMUReading | null {
   try {
-    const binary = atob(base64);
-    const buffer = new ArrayBuffer(binary.length);
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const str = base64.replace(/=+$/, '');
+    const len = str.length;
+    const buffer = new ArrayBuffer(((len * 3) / 4) | 0);
     const view = new Uint8Array(buffer);
-    for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
+    
+    let p = 0;
+    for (let i = 0; i < len; i += 4) {
+      const c1 = chars.indexOf(str[i]);
+      const c2 = chars.indexOf(str[i + 1]);
+      const c3 = i + 2 < len ? chars.indexOf(str[i + 2]) : 0;
+      const c4 = i + 3 < len ? chars.indexOf(str[i + 3]) : 0;
+      
+      view[p++] = (c1 << 2) | (c2 >> 4);
+      if (i + 2 < len) {
+        view[p++] = ((c2 & 15) << 4) | (c3 >> 2);
+      }
+      if (i + 3 < len) {
+        view[p++] = ((c3 & 3) << 6) | c4;
+      }
+    }
+
     const floats = new Float32Array(buffer);
     if (floats.length < 6) return null;
     return {
@@ -113,12 +158,30 @@ export function useBLE() {
           }
         }
       );
+
+      device.monitorCharacteristicForService(
+        BLE_SERVICE_UUID,
+        BLE_INFERENCE_CHARACTERISTIC_UUID,
+        (error: BleError | null, characteristic: Characteristic | null) => {
+          if (error || !characteristic?.value) return;
+          const jsonStr = decodeBase64ToString(characteristic.value);
+          if (!jsonStr) return;
+          try {
+            const data = JSON.parse(jsonStr);
+            if (data && typeof data.label === 'string') {
+              useBLEStore.getState().setInference(data.label, data.conf ?? 0, data.tipp ?? '');
+            }
+          } catch (e) {
+            console.error("Error parsing BLE inference JSON:", e);
+          }
+        }
+      );
     } catch {
       setStatus('error');
     }
   }, [handleDisconnect]);
 
-  const startScan = useCallback(() => {
+  const startScan = useCallback(async () => {
     const { isDemoMode } = useBLEStore.getState();
 
     // Trigger simulation if:
@@ -165,9 +228,53 @@ export function useBLE() {
           if (activeRecording) {
             useTrainingStore.getState().addReading(reading);
           }
+
+          // Simulate Chip Inference in demo mode
+          const repTime = t % 4;
+          if (repTime > 1.8 && repTime < 2.2) {
+            useBLEStore.getState().setInference("curl_sauber", 0.98, "Super Ausfuehrung!");
+          } else if (repTime > 3.8 || repTime < 0.2) {
+            useBLEStore.getState().setInference("idle", 0.99, "Bereit");
+          }
         }, 40); // 25Hz feed
       }, 600);
       return;
+    }
+
+    // Request permissions on Android before scanning
+    if (Platform.OS === 'android') {
+      try {
+        const apiLevel = Platform.Version;
+        if (typeof apiLevel === 'number' && apiLevel >= 31) {
+          const granted = await PermissionsAndroid.requestMultiple([
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+            PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          ]);
+          
+          const scanGranted = granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED;
+          const connectGranted = granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED;
+          
+          if (!scanGranted || !connectGranted) {
+            console.warn("Bluetooth permissions denied by user.");
+            setStatus('error');
+            return;
+          }
+        } else {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            console.warn("Location permission denied by user (required for Bluetooth scanning on older Android versions).");
+            setStatus('error');
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error requesting Bluetooth permissions:", err);
+        setStatus('error');
+        return;
+      }
     }
 
     setStatus('scanning');
@@ -176,7 +283,11 @@ export function useBLE() {
       [BLE_SERVICE_UUID],
       null,
       (error: BleError | null, device: Device | null) => {
-        if (error) { setStatus('error'); return; }
+        if (error) { 
+          console.error("BLE Device scan error:", error);
+          setStatus('error'); 
+          return; 
+        }
         if (!device) return;
 
         manager.current?.stopDeviceScan();

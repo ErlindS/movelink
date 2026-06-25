@@ -27,7 +27,6 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0D0D0D"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "BLUETOOTH",
         "BLUETOOTH_ADMIN",

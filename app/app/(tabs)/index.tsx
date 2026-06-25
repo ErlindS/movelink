@@ -40,8 +40,31 @@ function RecBadge() {
   );
 }
 
+function formatMovementLabel(label: string | null): string {
+  if (!label || label === 'idle') return 'Keine (Bereit)';
+  
+  if (label === 'curl_sauber') return 'Bizeps-Curl';
+  if (label === 'fehler_rotation') return 'Bizeps-Curl (Handgelenk-Rotation)';
+  if (label === 'fehler_ellbogen') return 'Bizeps-Curl (Ellbogen instabil)';
+  
+  if (label.includes('lateral_raise') || label.includes('lateral_rise')) {
+    return label.includes('sauber') ? 'Seitheben' : 'Seitheben (Ausfuehrungsfehler)';
+  }
+  if (label.includes('tricep')) {
+    return label.includes('sauber') ? 'Trizeps-Druecken' : 'Trizeps-Druecken (Ausfuehrungsfehler)';
+  }
+  if (label.includes('shoulder_press') || label.includes('press')) {
+    return label.includes('sauber') ? 'Schulterdruecken' : 'Schulterdruecken (Ausfuehrungsfehler)';
+  }
+  
+  return label
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export default function TrainingScreen() {
-  const { status: bleStatus, deviceName, latestReading } = useBLEStore();
+  const { status: bleStatus, deviceName, latestReading, inferenceLabel, inferenceConfidence, inferenceTipp } = useBLEStore();
   const { 
     status: trainingStatus,
     exercise,
@@ -133,7 +156,7 @@ export default function TrainingScreen() {
             </FadeSlide>
 
             <FadeSlide delay={200}>
-              <GradientButton label="✖  Abbrechen" variant="ghost" onPress={resetTraining} />
+              <GradientButton label="Abbrechen" variant="ghost" onPress={resetTraining} />
             </FadeSlide>
           </View>
         )}
@@ -144,7 +167,7 @@ export default function TrainingScreen() {
             <FadeSlide delay={100}>
               <View style={styles.trackingHeader}>
                 <Text style={styles.trackingTitle}>
-                  {exercise === 'squat' ? '🏋️ Kniebeugen' : '💪 Bizeps-Curls'}
+                  {exercise === 'squat' ? 'Kniebeugen' : 'Bizeps-Curls'}
                 </Text>
                 <Text style={styles.trackingSub}>Ausführung läuft...</Text>
               </View>
@@ -179,7 +202,7 @@ export default function TrainingScreen() {
             )}
 
             <FadeSlide delay={300}>
-              <GradientButton label="⬛  Training beenden" variant="stop" onPress={stopTraining} />
+              <GradientButton label="Training beenden" variant="stop" onPress={stopTraining} />
             </FadeSlide>
           </View>
         )}
@@ -187,15 +210,71 @@ export default function TrainingScreen() {
         {/* 4. IDLE STATE: Exercise Selection & Start Trigger */}
         {isConnected && trainingStatus === 'idle' && (
           <View style={styles.idleActiveContainer}>
+            {/* Live KI-Erkennung vom Sensor-Chip */}
+            <FadeSlide delay={120}>
+              <Text style={styles.sectionLabel}>Live KI-Klassifizierung</Text>
+              <GlassCard style={styles.kiCard}>
+                <View style={styles.kiHeader}>
+                  <View style={styles.kiTitleGroup}>
+                    <Text style={styles.kiTitle}>Erkannte Bewegung</Text>
+                    <Text style={styles.kiLabel}>
+                      {formatMovementLabel(inferenceLabel)}
+                    </Text>
+                  </View>
+                  <View style={[
+                    styles.qualityBadge,
+                    {
+                      backgroundColor: !inferenceLabel || inferenceLabel === 'idle'
+                        ? 'rgba(77,140,124,0.1)'
+                        : inferenceLabel.includes('sauber')
+                          ? 'rgba(0,212,170,0.1)'
+                          : 'rgba(248,113,113,0.1)'
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.qualityText,
+                      {
+                        color: !inferenceLabel || inferenceLabel === 'idle'
+                          ? Colors.textSub
+                          : inferenceLabel.includes('sauber')
+                            ? Colors.connected
+                            : Colors.error
+                      }
+                    ]}>
+                      {!inferenceLabel || inferenceLabel === 'idle'
+                        ? 'Bereit'
+                        : inferenceLabel.includes('sauber')
+                          ? 'Sehr gut'
+                          : 'Korrektur noetig'}
+                    </Text>
+                  </View>
+                </View>
+
+                {inferenceTipp ? (
+                  <View style={styles.kiFeedbackRow}>
+                    <Text style={styles.kiTippLabel}>Tipp:</Text>
+                    <Text style={styles.kiTippText}>{inferenceTipp}</Text>
+                  </View>
+                ) : null}
+
+                {inferenceConfidence !== null && inferenceConfidence > 0 ? (
+                  <View style={styles.kiConfidenceRow}>
+                    <Text style={styles.kiConfidenceText}>
+                      Konfidenz: {(inferenceConfidence * 100).toFixed(0)}%
+                    </Text>
+                  </View>
+                ) : null}
+              </GlassCard>
+            </FadeSlide>
+
             <FadeSlide delay={140}>
-              <Text style={styles.sectionLabel}>Wähle deine Übung</Text>
+              <Text style={styles.sectionLabel}>Wähle deine Übung (Lokale Winkelmessung)</Text>
               <View style={styles.exerciseSelector}>
                 <TouchableOpacity 
                   style={[styles.exerciseCard, selectedEx === 'squat' && styles.exerciseCardActive]} 
                   onPress={() => setSelectedEx('squat')}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.exerciseIcon}>🏋️</Text>
                   <Text style={styles.exerciseLabel}>Kniebeugen</Text>
                   <Text style={styles.exerciseDesc}>Ziel: {EXERCISE_TARGETS.squat}°</Text>
                 </TouchableOpacity>
@@ -205,7 +284,6 @@ export default function TrainingScreen() {
                   onPress={() => setSelectedEx('curl')}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.exerciseIcon}>💪</Text>
                   <Text style={styles.exerciseLabel}>Bizeps-Curls</Text>
                   <Text style={styles.exerciseDesc}>Ziel: {EXERCISE_TARGETS.curl}°</Text>
                 </TouchableOpacity>
@@ -214,7 +292,7 @@ export default function TrainingScreen() {
 
             <FadeSlide delay={180}>
               <GradientButton 
-                label={`▶  ${selectedEx === 'squat' ? 'Kniebeugen' : 'Bizeps-Curls'} starten`} 
+                label={`${selectedEx === 'squat' ? 'Kniebeugen' : 'Bizeps-Curls'} starten`} 
                 variant="primary" 
                 onPress={() => startTraining(selectedEx)} 
               />
@@ -229,7 +307,6 @@ export default function TrainingScreen() {
               colors={['rgba(0,212,170,0.08)', 'transparent']}
               style={styles.idleCard}
             >
-              <Text style={styles.idleIcon}>📡</Text>
               <Text style={styles.idleTitle}>Kein Sensor verbunden</Text>
               <Text style={styles.idleBody}>
                 Schalte deinen XIAO nRF52840 ein und tippe oben auf "Verbinden".
@@ -312,7 +389,74 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOpacity: 0.08,
   },
-  exerciseIcon: { fontSize: 28 },
   exerciseLabel: { color: Colors.text, fontSize: 15, fontWeight: '700' },
   exerciseDesc: { color: Colors.textSub, fontSize: 11, fontWeight: '500' },
+  kiCard: {
+    padding: 20,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    marginBottom: 8,
+  },
+  kiHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  kiTitleGroup: {
+    flex: 1,
+    gap: 4,
+  },
+  kiTitle: {
+    color: Colors.textSub,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  kiLabel: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  qualityBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qualityText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  kiFeedbackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,255,180,0.06)',
+  },
+  kiTippLabel: {
+    color: Colors.textSub,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  kiTippText: {
+    color: Colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  kiConfidenceRow: {
+    alignItems: 'flex-end',
+  },
+  kiConfidenceText: {
+    color: Colors.textSub,
+    fontSize: 11,
+    fontWeight: '500',
+  },
 });

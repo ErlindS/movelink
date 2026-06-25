@@ -46,10 +46,14 @@ interface BLEStore {
   deviceName: string | null;
   latestReading: IMUReading | null;
   isDemoMode: boolean;
+  inferenceLabel: string | null;
+  inferenceConfidence: number | null;
+  inferenceTipp: string | null;
   setStatus: (status: ConnectionStatus) => void;
   setDevice: (id: string, name: string) => void;
   setReading: (reading: IMUReading) => void;
   setDemoMode: (isDemoMode: boolean) => void;
+  setInference: (label: string, confidence: number, tipp: string) => void;
   disconnect: () => void;
 }
 
@@ -84,11 +88,15 @@ export const useBLEStore = create<BLEStore>((set) => ({
   deviceName: null,
   latestReading: null,
   isDemoMode: false,
+  inferenceLabel: null,
+  inferenceConfidence: null,
+  inferenceTipp: null,
   setStatus: (status) => set({ status }),
   setDevice: (deviceId, deviceName) => set({ deviceId, deviceName }),
   setReading: (reading) => set({ latestReading: reading }),
   setDemoMode: (isDemoMode) => set({ isDemoMode }),
-  disconnect: () => set({ status: 'disconnected', deviceId: null, deviceName: null, latestReading: null }),
+  setInference: (inferenceLabel, inferenceConfidence, inferenceTipp) => set({ inferenceLabel, inferenceConfidence, inferenceTipp }),
+  disconnect: () => set({ status: 'disconnected', deviceId: null, deviceName: null, latestReading: null, inferenceLabel: null, inferenceConfidence: null, inferenceTipp: null }),
 }));
 
 export const useTrainingStore = create<TrainingStore>((set) => ({

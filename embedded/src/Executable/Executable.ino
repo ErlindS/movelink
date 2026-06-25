@@ -2,10 +2,11 @@
  * @implements FA2.1, FA2.2, FA2.3, FA2.4, FA2.5, NF1
  * Includes ---------------------------------------------------------------- */
 #include <Erlind-project-1_inferencing.h> // For model parameters/defines
-#include "../components/sensordatenerfassung/IMUReader.h"
-#include "../components/inferenz_engine/InferenceEngine.h"
-#include "../components/led_display_controller/VisualFeedback.h"
-#include "../components/ble_streamer/BLEStreamer.h"
+#include "IMUReader.h"
+#include "VisualFeedback.h"
+#include "BLEStreamer.h"
+
+bool runModelInference(float* buffer, String& outLabel, float& outConfidence, float& outAnomaly);
 
 static float dsp_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE] = { 0 };
 
@@ -60,4 +61,43 @@ void loop()
         // Display-Aktualisierung & LED Logik
         updateFeedback(label, confidence, anomaly);
     }
+}
+
+bool runModelInference(float* buffer, String& outLabel, float& outConfidence, float& outAnomaly) {
+    // Signal aus Puffer erstellen
+    signal_t signal;
+    int err = numpy::signal_from_buffer(buffer, EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE, &signal);
+    if (err != 0) {
+        return false;
+    }
+
+    // Klassifikator ausführen
+    ei_impulse_result_t result = { 0 };
+    bool debug_nn = false;
+    err = run_classifier(&signal, &result, debug_nn);
+    if (err != EI_IMPULSE_OK) {
+        return false;
+    }
+
+    // Variablen für den besten Treffer
+    int best_idx = 0;
+    float best_val = 0.0;
+    for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+        if (result.classification[ix].value > best_val) {
+            best_val = result.classification[ix].value;
+            best_idx = ix;
+        }
+    }
+
+    // Anomalie-Score abgreifen (falls der K-means Block aktiv ist)
+    float anomaly_score = 0.0;
+#if EI_CLASSIFIER_HAS_ANOMALY == 1
+    anomaly_score = result.anomaly;
+#endif
+
+    outLabel = String(result.classification[best_idx].label);
+    outConfidence = best_val;
+    outAnomaly = anomaly_score;
+
+    return true;
 }
