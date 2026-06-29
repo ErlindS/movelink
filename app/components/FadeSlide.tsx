@@ -1,13 +1,5 @@
-import React, { useEffect } from 'react';
-import { ViewStyle } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
-import { useIsFocused } from '@react-navigation/native';
+import React from 'react';
+import { View, ViewStyle } from 'react-native';
 
 interface Props {
   children: React.ReactNode;
@@ -16,40 +8,10 @@ interface Props {
   style?: ViewStyle | ViewStyle[];
 }
 
-export function FadeSlide({ children, delay = 0, from = {}, style }: Props) {
-  const initOpacity = from.opacity ?? 0;
-  const initTranslateY = from.translateY ?? 14;
-  const initScale = from.scale ?? 1;
-
-  const opacity = useSharedValue(initOpacity);
-  const translateY = useSharedValue(initTranslateY);
-  const scale = useSharedValue(initScale);
-
-  const isFocused = useIsFocused();
-
-  useEffect(() => {
-    if (!isFocused) {
-      opacity.value = initOpacity;
-      translateY.value = initTranslateY;
-      scale.value = initScale;
-      return;
-    }
-    const t = setTimeout(() => {
-      opacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.quad) });
-      translateY.value = withSpring(0, { damping: 22, stiffness: 200 });
-      if (from.scale !== undefined) scale.value = withSpring(1, { damping: 18 });
-    }, delay);
-    return () => clearTimeout(t);
-  }, [isFocused]);
-
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
-  }));
-
+export function FadeSlide({ children, style }: Props) {
   return (
-    <Animated.View style={[animStyle, style]}>
+    <View style={style}>
       {children}
-    </Animated.View>
+    </View>
   );
 }

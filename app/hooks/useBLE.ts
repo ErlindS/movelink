@@ -185,6 +185,14 @@ export function useBLE() {
             const data = JSON.parse(jsonStr);
             if (data && typeof data.label === 'string') {
               useBLEStore.getState().setInference(data.label, data.conf ?? 0, data.anomaly ?? 0, data.tipp ?? '');
+              if (useTrainingStore.getState().isRecording) {
+                useTrainingStore.getState().addInference({
+                  label: data.label,
+                  confidence: data.conf ?? 0,
+                  anomaly: data.anomaly ?? 0,
+                  tipp: data.tipp ?? '',
+                });
+              }
             }
           } catch (e) {
             console.error("Error parsing BLE inference JSON:", e, jsonStr);
@@ -246,10 +254,26 @@ export function useBLE() {
 
           // Simulate Chip Inference in demo mode
           const repTime = t % 4;
+          let mockLabel = "idle";
+          let mockConf = 0.99;
+          let mockAnomaly = 0.05;
+          let mockTipp = "Bereit";
+
           if (repTime > 1.8 && repTime < 2.2) {
-            useBLEStore.getState().setInference("curl_sauber", 0.98, "Super Ausfuehrung!");
-          } else if (repTime > 3.8 || repTime < 0.2) {
-            useBLEStore.getState().setInference("idle", 0.99, "Bereit");
+            mockLabel = "curl";
+            mockConf = 0.96;
+            mockAnomaly = -0.235;
+            mockTipp = "Super Ausfuehrung!";
+          }
+
+          useBLEStore.getState().setInference(mockLabel, mockConf, mockAnomaly, mockTipp);
+          if (activeRecording) {
+            useTrainingStore.getState().addInference({
+              label: mockLabel,
+              confidence: mockConf,
+              anomaly: mockAnomaly,
+              tipp: mockTipp,
+            });
           }
         }, 40); // 25Hz feed
       }, 600);

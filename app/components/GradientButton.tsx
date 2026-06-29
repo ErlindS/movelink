@@ -1,11 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/Colors';
 
@@ -18,30 +13,17 @@ interface Props {
 }
 
 export function GradientButton({ label, onPress, variant = 'primary', style, disabled = false }: Props) {
-  const scale = useSharedValue(1);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  function handlePressIn() {
-    scale.value = withSpring(0.96, { damping: 20, stiffness: 400 });
-  }
-
-  function handlePressOut() {
-    scale.value = withSpring(1, { damping: 18, stiffness: 300 });
-  }
-
-  async function handlePress() {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  function handlePress() {
+    console.log("GradientButton: handlePress called for label:", label);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch((e) => {
+      console.log("GradientButton: Haptics error:", e);
+    });
     onPress();
   }
 
   return (
-    <Animated.View style={[animStyle, style]}>
+    <View style={style}>
       <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
         onPress={handlePress}
         disabled={disabled}
         style={({ pressed }) => [{ opacity: pressed && disabled ? 0.5 : 1 }]}
@@ -68,7 +50,7 @@ export function GradientButton({ label, onPress, variant = 'primary', style, dis
           </View>
         )}
       </Pressable>
-    </Animated.View>
+    </View>
   );
 }
 

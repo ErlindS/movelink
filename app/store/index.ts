@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ConnectionStatus = 'idle' | 'scanning' | 'connecting' | 'connected' | 'disconnected' | 'error';
 export type TrainingStatus = 'idle' | 'preparing' | 'recording';
@@ -20,12 +21,21 @@ export interface IMUReading {
   gyroZ: number;
 }
 
+export interface RecordedInference {
+  timestamp: number;
+  label: string;
+  confidence: number;
+  anomaly: number;
+  tipp: string;
+}
+
 export interface TrainingSession {
   id: string;
   startedAt: string;
   endedAt: string | null;
   durationSeconds: number;
   readingCount: number;
+  inferences?: RecordedInference[];
 }
 
 // Max data points kept in-memory for the live chart (rolling buffer)
@@ -63,6 +73,7 @@ interface TrainingStore {
   sessionId: string | null;
   liveBuffer: IMUReading[];
   sessions: TrainingSession[];
+  recordedInferences: RecordedInference[];
   
   // New interactive training states
   status: TrainingStatus;
@@ -81,6 +92,7 @@ interface TrainingStore {
   addReading: (reading: IMUReading) => void;
   setSessions: (sessions: TrainingSession[]) => void;
   resetTraining: () => void;
+  addInference: (inference: Omit<RecordedInference, 'timestamp'>) => void;
 }
 
 export const useBLEStore = create<BLEStore>((set) => ({
@@ -106,6 +118,7 @@ export const useTrainingStore = create<TrainingStore>((set) => ({
   sessionId: null,
   liveBuffer: [],
   sessions: [],
+  recordedInferences: [],
   
   // Default interactive states
   status: 'idle',
@@ -116,6 +129,7 @@ export const useTrainingStore = create<TrainingStore>((set) => ({
   countdown: 3,
 
   startSession: () => {
+    console.log("store: startSession action triggered");
     // Reset filters
     lastTimestamp = 0;
     filteredAngle = 0;
@@ -124,6 +138,7 @@ export const useTrainingStore = create<TrainingStore>((set) => ({
       isRecording: true, 
       sessionId: Date.now().toString(), 
       liveBuffer: [],
+      recordedInferences: [],
       status: 'recording',
       repCount: 0,
       currentAngle: 0,
@@ -132,6 +147,7 @@ export const useTrainingStore = create<TrainingStore>((set) => ({
   },
 
   stopSession: () => {
+    console.log("store: stopSession action triggered");
     set((state) => {
       const newSession: TrainingSession = {
         id: state.sessionId || Date.now().toString(),
@@ -139,18 +155,25 @@ export const useTrainingStore = create<TrainingStore>((set) => ({
         endedAt: new Date().toISOString(),
         durationSeconds: Math.round(state.liveBuffer.length * 0.02), // 50Hz assumed
         readingCount: state.liveBuffer.length,
+        inferences: [...state.recordedInferences],
       };
+
+      const updatedSessions = [newSession, ...state.sessions];
+      console.log("store: saving updated sessions list locally, count:", updatedSessions.length);
+      AsyncStorage.setItem('movelink_sessions', JSON.stringify(updatedSessions))
+        .catch((err) => console.error('Error saving sessions locally:', err));
 
       return {
         isRecording: false,
         sessionId: null,
         status: 'idle',
-        sessions: [newSession, ...state.sessions],
+        sessions: updatedSessions,
       };
     });
   },
 
   startTraining: (exercise: ExerciseType) => {
+    console.log("store: startTraining action triggered with exercise:", exercise);
     set({
       status: 'preparing',
       exercise,
@@ -250,4 +273,13 @@ export const useTrainingStore = create<TrainingStore>((set) => ({
   },
 
   setSessions: (sessions) => set({ sessions }),
+
+  addInference: (inference) => {
+    set((state) => ({
+      recordedInferences: [
+        ...state.recordedInferences,
+        { ...inference, timestamp: Date.now() },
+      ],
+    }));
+  },
 }));

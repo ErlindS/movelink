@@ -1,45 +1,19 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, {
-  useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, interpolateColor,
-} from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient as SvgGradient, Stop, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
 
 export function AnimatedLogo() {
   const router = useRouter();
-  const rotate = useSharedValue(0);
-  const breathe = useSharedValue(0);
-  const shimmer = useSharedValue(0);
-
-  useEffect(() => {
-    rotate.value = withRepeat(withTiming(1, { duration: 3200, easing: Easing.linear }), -1);
-    breathe.value = withRepeat(withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.quad) }), -1, true);
-    shimmer.value = withRepeat(withTiming(1, { duration: 2800, easing: Easing.inOut(Easing.quad) }), -1, true);
-  }, []);
-
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotate.value * 360}deg` }],
-  }));
-
-  const badgeStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + breathe.value * 0.06 }],
-    shadowOpacity: 0.15 + breathe.value * 0.35,
-    shadowRadius: 6 + breathe.value * 12,
-  }));
-
-  const wordStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(shimmer.value, [0, 1], [Colors.text, Colors.primary]),
-  }));
 
   return (
     <Pressable style={styles.root} onPress={() => router.navigate('/')}>
       <View style={styles.badgeWrap}>
-        <Animated.View style={[styles.badge, badgeStyle]}>
+        <View style={styles.badge}>
           <Text style={styles.monogram}>ML</Text>
-        </Animated.View>
-        <Animated.View style={[StyleSheet.absoluteFill, ringStyle]}>
+        </View>
+        <View style={[StyleSheet.absoluteFill]}>
           <Svg width={46} height={46}>
             <Defs>
               <SvgGradient id="rg" x1="0" y1="0" x2="1" y2="1">
@@ -50,11 +24,11 @@ export function AnimatedLogo() {
             </Defs>
             <Circle cx={23} cy={23} r={21} fill="none" stroke="url(#rg)" strokeWidth={1.5} />
           </Svg>
-        </Animated.View>
+        </View>
       </View>
 
       <View>
-        <Animated.Text style={[styles.wordmark, wordStyle]}>MOVELINK</Animated.Text>
+        <Text style={[styles.wordmark, { color: Colors.text }]}>MOVELINK</Text>
         <Text style={styles.tagline}>Motion Analytics</Text>
       </View>
     </Pressable>

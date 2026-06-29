@@ -1,12 +1,8 @@
 /**
  * @implements FA1.2, FA1.3, NF3
  */
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Switch } from 'react-native';
-import Animated, {
-  useSharedValue, useAnimatedStyle,
-  withRepeat, withSequence, withTiming, withSpring,
-} from 'react-native-reanimated';
 import { GlassCard } from '@/components/GlassCard';
 import { PulseRing } from '@/components/PulseRing';
 import { GradientButton } from '@/components/GradientButton';
@@ -39,28 +35,10 @@ const STATUS_LABEL: Record<ConnectionStatus, string> = {
 };
 
 function StatusLabel({ status }: { status: ConnectionStatus }) {
-  const opacity = useSharedValue(0);
-  const x = useSharedValue(-6);
-
-  useEffect(() => {
-    opacity.value = withTiming(0, { duration: 0 });
-    x.value = -6;
-    const t = setTimeout(() => {
-      opacity.value = withTiming(1, { duration: 220 });
-      x.value = withSpring(0, { damping: 20, stiffness: 300 });
-    }, 10);
-    return () => clearTimeout(t);
-  }, [status]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateX: x.value }],
-  }));
-
   return (
-    <Animated.Text style={[styles.statusLabel, { color: STATUS_COLOR[status] }, style]}>
+    <Text style={[styles.statusLabel, { color: STATUS_COLOR[status] }]}>
       {STATUS_LABEL[status]}
-    </Animated.Text>
+    </Text>
   );
 }
 
@@ -68,32 +46,9 @@ function ScanningDots({ color }: { color: string }) {
   return (
     <View style={styles.dots}>
       {[0, 1, 2].map((i) => (
-        <BounceDot key={i} color={color} delay={i * 180} />
+        <View key={i} style={[styles.dot, { backgroundColor: color, opacity: 0.5 + i * 0.2 }]} />
       ))}
     </View>
-  );
-}
-
-function BounceDot({ color, delay }: { color: string; delay: number }) {
-  const opacity = useSharedValue(0.2);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      opacity.value = withRepeat(
-        withSequence(
-          withTiming(1, { duration: 500 }),
-          withTiming(0.2, { duration: 500 })
-        ),
-        -1
-      );
-    }, delay);
-    return () => clearTimeout(t);
-  }, []);
-
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
-  return (
-    <Animated.View style={[styles.dot, { backgroundColor: color }, style]} />
   );
 }
 

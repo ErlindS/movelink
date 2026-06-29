@@ -23,48 +23,36 @@ import { ExerciseDemo } from '@/components/ExerciseDemo';
 import { ProgressRing } from '@/components/ProgressRing';
 
 function RecBadge() {
-  const opacity = useSharedValue(1);
-  React.useEffect(() => {
-    opacity.value = withRepeat(
-      withSequence(withTiming(0.3, { duration: 700 }), withTiming(1, { duration: 700 })),
-      -1
-    );
-  }, []);
-  const dotStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
   return (
     <View style={styles.recBadge}>
-      <Animated.View style={[styles.recDot, dotStyle]} />
+      <View style={styles.recDot} />
       <Text style={styles.recLabel}>REC</Text>
     </View>
   );
 }
 
-function formatMovementLabel(label: string | null): string {
+export function formatMovementLabel(label: string | null): string {
   if (!label) return 'Bereit';
-  const lowerLabel = label.toLowerCase();
+  const lowerLabel = label.toLowerCase().replace(/_/g, '').trim();
   if (lowerLabel === 'idle') return 'Bereit';
-  
-  if (lowerLabel === 'curl_sauber' || lowerLabel === 'curl') return 'Bizeps-Curl';
-  if (lowerLabel === 'lateralraises' || lowerLabel === 'lateralraise') return 'Seitheben';
-  if (lowerLabel === 'shoulderpress' || lowerLabel === 'shoulder_press') return 'Schulterdruecken';
-  if (lowerLabel === 'fehler_rotation') return 'Bizeps-Curl (Handgelenk-Rotation)';
-  if (lowerLabel === 'fehler_ellbogen') return 'Bizeps-Curl (Ellbogen instabil)';
-  
-  if (lowerLabel.includes('lateral_raise') || lowerLabel.includes('lateral_rise')) {
-    return lowerLabel.includes('sauber') ? 'Seitheben' : 'Seitheben (Ausfuehrungsfehler)';
-  }
-  if (lowerLabel.includes('tricep')) {
-    return lowerLabel.includes('sauber') ? 'Trizeps-Druecken' : 'Trizeps-Druecken (Ausfuehrungsfehler)';
-  }
-  if (lowerLabel.includes('shoulder_press') || lowerLabel.includes('press')) {
-    return lowerLabel.includes('sauber') ? 'Schulterdruecken' : 'Schulterdruecken (Ausfuehrungsfehler)';
-  }
-  
-  return label
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  if (lowerLabel === 'curl') return 'Bizeps-Curl';
+  if (lowerLabel === 'lateralraise' || lowerLabel === 'lateralraises') return 'Seitheben';
+  if (lowerLabel === 'shoulderpress') return 'Schulterdrücken';
+  return label;
+}
+
+export function getAnomalyColor(score: number | null): string {
+  if (score === null) return Colors.textSub;
+  if (score < 1.0) return Colors.connected; // Green (Sehr Gut)
+  if (score < 2.2) return Colors.warning;   // Yellow (Mäßig)
+  return Colors.error;                     // Red (Schlecht)
+}
+
+export function getAnomalyLabel(score: number | null): string {
+  if (score === null) return 'Keine Messung';
+  if (score < 1.0) return 'Hervorragende Ausführung';
+  if (score < 2.2) return 'Mäßige Ausführung';
+  return 'Unregelmäßige Ausführung';
 }
 
 export default function TrainingScreen() {
@@ -92,6 +80,11 @@ export default function TrainingScreen() {
 
   const isConnected = bleStatus === 'connected';
 
+  const handleStartTraining = React.useCallback(() => {
+    console.log("Training starten button clicked!");
+    startSession();
+  }, [startSession]);
+
   // Rolling buffer for live chart - updates in real-time when new reading is received
   const IDLE_BUFFER_SIZE = 80;
   const [idleChartData, setIdleChartData] = useState<IMUReading[]>([]);
@@ -114,15 +107,19 @@ export default function TrainingScreen() {
 
   // Countdown controller
   useEffect(() => {
+    console.log("Countdown useEffect triggered, trainingStatus:", trainingStatus);
     if (trainingStatus !== 'preparing') return;
     
+    console.log("Starting countdown preparing...");
     setCountdown(3);
     const timer = setInterval(() => {
       const currentVal = useTrainingStore.getState().countdown;
       const nextVal = currentVal - 1;
+      console.log("Countdown tick:", nextVal);
       
       if (nextVal <= 0) {
         clearInterval(timer);
+        console.log("Countdown finished, calling startSession");
         if (Platform.OS !== 'web') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         }
@@ -135,7 +132,10 @@ export default function TrainingScreen() {
       }
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      console.log("Clearing countdown timer");
+      clearInterval(timer);
+    };
   }, [trainingStatus]);
 
   return (
@@ -159,71 +159,63 @@ export default function TrainingScreen() {
           </FadeSlide>
         )}
 
-        {/* 2. PREPARING STATE: Demonstration and Countdown */}
-        {isConnected && trainingStatus === 'preparing' && (
-          <View style={styles.preparingContainer}>
-            <FadeSlide delay={100}>
-              <ExerciseDemo 
-                exercise={exercise} 
-                label={exercise === 'squat' ? 'Kniebeugen Vorführung' : 'Bizeps-Curls Vorführung'} 
-              />
-            </FadeSlide>
-
-            <FadeSlide delay={150}>
-              <GlassCard style={styles.countdownCard}>
-                <Text style={styles.countdownTitle}>Bereite dich vor...</Text>
-                <View style={styles.countdownCircle}>
-                  <Text style={styles.countdownNumber}>{countdown}</Text>
-                </View>
-                <Text style={styles.countdownSub}>Nimm deine Ausgangsposition ein!</Text>
-              </GlassCard>
-            </FadeSlide>
-
-            <FadeSlide delay={200}>
-              <GradientButton label="Abbrechen" variant="ghost" onPress={resetTraining} />
-            </FadeSlide>
-          </View>
-        )}
-
-        {/* 3. RECORDING STATE: Realtime Tracking, Angle Ring and Reps */}
+        {/* 3. RECORDING STATE: Realtime Tracking and Anomaly Analysis */}
         {isConnected && trainingStatus === 'recording' && (
           <View style={styles.trackingContainer}>
             <FadeSlide delay={100}>
               <View style={styles.trackingHeader}>
-                <Text style={styles.trackingTitle}>
-                  {exercise === 'squat' ? 'Kniebeugen' : 'Bizeps-Curls'}
-                </Text>
-                <Text style={styles.trackingSub}>Ausführung läuft...</Text>
+                <Text style={styles.trackingTitle}>Training läuft</Text>
+                <Text style={styles.trackingSub}>Echtzeit-Qualitätsanalyse aktiv</Text>
               </View>
             </FadeSlide>
 
             <FadeSlide delay={150}>
-              <ProgressRing 
-                angle={currentAngle} 
-                targetAngle={EXERCISE_TARGETS[exercise]} 
-                repCount={repCount} 
-                exerciseState={exerciseState} 
-              />
+              <GlassCard style={styles.liveQualityCard}>
+                <Text style={styles.kiTitle}>Erkannte Bewegung</Text>
+                <Text style={styles.liveExerciseLabel}>
+                  {formatMovementLabel(inferenceLabel)}
+                </Text>
+                
+                <View style={styles.anomalySection}>
+                  <View style={styles.anomalyRow}>
+                    <Text style={styles.anomalyLabelText}>Anomalie-Score:</Text>
+                    <Text style={[styles.anomalyValueText, { color: getAnomalyColor(inferenceAnomaly) }]}>
+                      {inferenceAnomaly !== null ? inferenceAnomaly.toFixed(3) : '—'}
+                    </Text>
+                  </View>
+                  
+                  {inferenceAnomaly !== null && (
+                    <View style={styles.qualityBarBg}>
+                      <View 
+                        style={[
+                          styles.qualityBarFill, 
+                          { 
+                            backgroundColor: getAnomalyColor(inferenceAnomaly),
+                            width: `${Math.min(100, Math.max(0, ((5 - inferenceAnomaly) / 6) * 100))}%`
+                          }
+                        ]} 
+                      />
+                    </View>
+                  )}
+                  
+                  <Text style={[styles.qualityDescription, { color: getAnomalyColor(inferenceAnomaly) }]}>
+                    {getAnomalyLabel(inferenceAnomaly)}
+                  </Text>
+                </View>
+
+                {inferenceTipp ? (
+                  <View style={styles.kiFeedbackRow}>
+                    <Text style={styles.kiTippLabel}>Tipp:</Text>
+                    <Text style={styles.kiTippText}>{inferenceTipp}</Text>
+                  </View>
+                ) : null}
+              </GlassCard>
             </FadeSlide>
 
             {/* Optional Collapsible Diagnostic Raw Data */}
             <FadeSlide delay={200}>
               <LiveChart data={liveBuffer} />
             </FadeSlide>
-
-            {/* Real-time numerical grids */}
-            {latestReading && (
-              <FadeSlide delay={250}>
-                <View style={styles.readingsBlock}>
-                  <Text style={styles.sectionLabel}>Accelerometer · m/s²</Text>
-                  <View style={styles.grid}>
-                    <AnimatedValue label="X" value={latestReading.accelX} unit="m/s²" color={Colors.accentX} />
-                    <AnimatedValue label="Y" value={latestReading.accelY} unit="m/s²" color={Colors.accentY} />
-                    <AnimatedValue label="Z" value={latestReading.accelZ} unit="m/s²" color={Colors.accentZ} />
-                  </View>
-                </View>
-              </FadeSlide>
-            )}
 
             <FadeSlide delay={300}>
               <GradientButton label="Training beenden" variant="stop" onPress={stopTraining} />
@@ -331,6 +323,16 @@ export default function TrainingScreen() {
                   </View>
                 ) : null}
               </GlassCard>
+            </FadeSlide>
+
+            {/* Start Button */}
+            <FadeSlide delay={130}>
+              <GradientButton
+                label="Training starten"
+                variant="primary"
+                onPress={handleStartTraining}
+                style={{ marginTop: 8 }}
+              />
             </FadeSlide>
           </View>
         )}
@@ -511,5 +513,55 @@ const styles = StyleSheet.create({
     color: Colors.textSub,
     fontSize: 11,
     fontWeight: '500',
+  },
+  liveQualityCard: {
+    padding: 22,
+    borderRadius: 20,
+    gap: 16,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  liveExerciseLabel: {
+    color: Colors.text,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  anomalySection: {
+    gap: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,255,180,0.06)',
+  },
+  anomalyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  anomalyLabelText: {
+    color: Colors.textSub,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  anomalyValueText: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  qualityBarBg: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  qualityBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  qualityDescription: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'right',
   },
 });
