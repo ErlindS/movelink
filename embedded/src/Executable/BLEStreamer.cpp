@@ -43,7 +43,7 @@ void streamIMUData(float ax, float ay, float az, float gx, float gy, float gz) {
 void streamInferenceResult(const String& label, float confidence, float anomaly, const String& tipp) {
     BLE.poll();
     if (isBLEConnected()) {
-        String json = "{\"label\":\"" + label + "\",\"conf\":" + String(confidence, 2) + ",\"tipp\":\"" + tipp + "\"}";
+        String json = "{\"label\":\"" + label + "\",\"conf\":" + String(confidence, 2) + ",\"anomaly\":" + String(anomaly, 3) + ",\"tipp\":\"" + tipp + "\"}";
         inferenceCharacteristic.writeValue(json.c_str());
     }
 }

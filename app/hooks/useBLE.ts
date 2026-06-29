@@ -181,6 +181,7 @@ export function useBLE() {
           const jsonStr = rawStr ? rawStr.replace(/\0/g, '').trim() : '';
           if (!jsonStr || !jsonStr.startsWith('{') || !jsonStr.endsWith('}')) return;
           try {
+            console.log("BLE Inference Raw JSON:", jsonStr);
             const data = JSON.parse(jsonStr);
             if (data && typeof data.label === 'string') {
               useBLEStore.getState().setInference(data.label, data.conf ?? 0, data.anomaly ?? 0, data.tipp ?? '');
