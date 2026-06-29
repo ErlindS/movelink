@@ -40,14 +40,20 @@ void setup()
 void loop()
 {
     // Da wir 6 Achsen haben, springen wir in 6er-Schritten durch den DSP Puffer
+    size_t sample_count = EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE / 6;
+    size_t send_interval = (sample_count > 20) ? (sample_count / 5) : 2;
+
     for (size_t ix = 0; ix < EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE; ix += 6) {
         uint64_t next_tick = micros() + (EI_CLASSIFIER_INTERVAL_MS * 1000);
 
         readSensorData(dsp_buffer, ix);
 
-        // Stream the raw sensor data via Bluetooth Low Energy
-        streamIMUData(dsp_buffer[ix], dsp_buffer[ix + 1], dsp_buffer[ix + 2],
-                      dsp_buffer[ix + 3], dsp_buffer[ix + 4], dsp_buffer[ix + 5]);
+        // Jedes N-te Sample per BLE senden (~10 pro Zyklus für glatte Kurven)
+        size_t sample_idx = ix / 6;
+        if (sample_idx % send_interval == 0 || ix + 6 >= EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE) {
+            streamIMUData(dsp_buffer[ix], dsp_buffer[ix + 1], dsp_buffer[ix + 2],
+                          dsp_buffer[ix + 3], dsp_buffer[ix + 4], dsp_buffer[ix + 5]);
+        }
 
         if (next_tick > micros()) {
             delayMicroseconds(next_tick - micros());
@@ -57,16 +63,20 @@ void loop()
     // BLE-Polling vor Inferenz, damit Verbindungsaufbau nicht abbricht
     pollBLE();
 
-    // Klassifikator ausführen
-    String label;
-    float confidence = 0.0;
-    float anomaly = 0.0;
-    
-    if (runModelInference(dsp_buffer, label, confidence, anomaly)) {
-        // BLE-Polling nach Inferenz (die ~200-500ms gedauert hat)
-        pollBLE();
-        // Display-Aktualisierung & LED Logik
-        updateFeedback(label, confidence, anomaly);
+    // Klassifikator nur ausführen, wenn wir nicht im Cooldown sind
+    if (!isFeedbackInCooldown()) {
+        String label;
+        float confidence = 0.0;
+        float anomaly = 0.0;
+        
+        if (runModelInference(dsp_buffer, label, confidence, anomaly)) {
+            // BLE-Polling nach Inferenz (die ~200-500ms gedauert hat)
+            pollBLE();
+            // Display-Aktualisierung & LED Logik
+            updateFeedback(label, confidence, anomaly);
+        } else {
+            pollBLE();
+        }
     } else {
         pollBLE();
     }

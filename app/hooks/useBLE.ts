@@ -15,26 +15,7 @@ import { useBLEStore, useTrainingStore, IMUReading } from '@/store';
 
 function decodeBase64ToString(base64: string): string {
   try {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    const str = base64.replace(/=+$/, '');
-    const len = str.length;
-    let binary = '';
-    
-    for (let i = 0; i < len; i += 4) {
-      const c1 = chars.indexOf(str[i]);
-      const c2 = chars.indexOf(str[i + 1]);
-      const c3 = i + 2 < len ? chars.indexOf(str[i + 2]) : 0;
-      const c4 = i + 3 < len ? chars.indexOf(str[i + 3]) : 0;
-      
-      const b1 = (c1 << 2) | (c2 >> 4);
-      const b2 = ((c2 & 15) << 4) | (c3 >> 2);
-      const b3 = ((c3 & 3) << 6) | c4;
-      
-      binary += String.fromCharCode(b1);
-      if (i + 2 < len) binary += String.fromCharCode(b2);
-      if (i + 3 < len) binary += String.fromCharCode(b3);
-    }
-    return binary;
+    return atob(base64);
   } catch {
     return '';
   }
@@ -42,29 +23,13 @@ function decodeBase64ToString(base64: string): string {
 
 function parseIMUPacket(base64: string): IMUReading | null {
   try {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    const str = base64.replace(/=+$/, '');
-    const len = str.length;
-    const buffer = new ArrayBuffer(((len * 3) / 4) | 0);
-    const view = new Uint8Array(buffer);
-    
-    let p = 0;
-    for (let i = 0; i < len; i += 4) {
-      const c1 = chars.indexOf(str[i]);
-      const c2 = chars.indexOf(str[i + 1]);
-      const c3 = i + 2 < len ? chars.indexOf(str[i + 2]) : 0;
-      const c4 = i + 3 < len ? chars.indexOf(str[i + 3]) : 0;
-      
-      view[p++] = (c1 << 2) | (c2 >> 4);
-      if (i + 2 < len) {
-        view[p++] = ((c2 & 15) << 4) | (c3 >> 2);
-      }
-      if (i + 3 < len) {
-        view[p++] = ((c3 & 3) << 6) | c4;
-      }
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
-
-    const floats = new Float32Array(buffer);
+    const floats = new Float32Array(bytes.buffer);
     if (floats.length < 6) return null;
     return {
       timestamp: Date.now(),
@@ -75,7 +40,8 @@ function parseIMUPacket(base64: string): IMUReading | null {
       gyroY: floats[4],
       gyroZ: floats[5],
     };
-  } catch {
+  } catch (e) {
+    console.error("parseIMUPacket error:", e);
     return null;
   }
 }
@@ -109,12 +75,12 @@ export function useBLE() {
       if (subscription) {
         try {
           subscription.remove();
-        } catch (e) {}
+        } catch (e) { }
       }
       if (manager.current) {
         try {
           manager.current.destroy();
-        } catch (e) {}
+        } catch (e) { }
       }
       if (simInterval.current) clearInterval(simInterval.current);
     };
@@ -149,7 +115,7 @@ export function useBLE() {
           });
           await new Promise(r => setTimeout(r, 600));
           if (Platform.OS === 'android') {
-            try { await device.requestMTU(512); } catch (e) {}
+            try { await device.requestMTU(512); } catch (e) { }
           }
           await device.discoverAllServicesAndCharacteristics();
           break;
@@ -164,6 +130,14 @@ export function useBLE() {
       setDevice(device.id, device.name ?? 'MoveLink Sensor');
       setStatus('connected');
       reconnectAttempts.current = 0;
+
+      // autoConnect nutzt langsame Verbindungsparameter – jetzt auf schnell umschalten
+      if (Platform.OS === 'android') {
+        try {
+          // 1 = CONNECTION_PRIORITY_HIGH (7.5ms Intervall statt 100ms+)
+          await device.requestConnectionPriority(1);
+        } catch (e) { }
+      }
 
       device.onDisconnected(() => handleDisconnect(device.id));
 
@@ -224,11 +198,11 @@ export function useBLE() {
         simInterval.current = setInterval(() => {
           const { isRecording: activeRecording } = useTrainingStore.getState();
           const t = (Date.now() - simStartTime.current) / 1000;
-          
+
           // Repetition duration = 4s
           const T = 4;
           const phase = (2 * Math.PI * t) / T;
-          
+
           // Smooth sine curve representing angles (5° up to 85° back and forth)
           const targetAngle = 5 + 80 * (0.5 - 0.5 * Math.cos(phase));
           const rad = targetAngle * (Math.PI / 180);
@@ -274,10 +248,10 @@ export function useBLE() {
             PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           ]);
-          
+
           const scanGranted = granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED;
           const connectGranted = granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED;
-          
+
           if (!scanGranted || !connectGranted) {
             console.warn("Bluetooth permissions denied by user.");
             setStatus('error');
@@ -306,16 +280,16 @@ export function useBLE() {
       null,
       null,
       (error: BleError | null, device: Device | null) => {
-        if (error) { 
+        if (error) {
           console.error("BLE Device scan error:", error);
-          setStatus('error'); 
-          return; 
+          setStatus('error');
+          return;
         }
         if (!device) return;
 
         const name = device.name ?? device.localName ?? '';
         const hasService = device.serviceUUIDs?.some(uuid => uuid.toLowerCase() === BLE_SERVICE_UUID.toLowerCase());
-        
+
         if (name.includes('MoveLink') || hasService) {
           manager.current?.stopDeviceScan();
           connectToDevice(device.id);
@@ -339,7 +313,7 @@ export function useBLE() {
     if (deviceId && Platform.OS !== 'web' && manager.current) {
       try {
         await manager.current.cancelDeviceConnection(deviceId);
-      } catch (e) {}
+      } catch (e) { }
     }
     disconnect();
   }, [disconnect]);

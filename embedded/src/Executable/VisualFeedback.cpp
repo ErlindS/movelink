@@ -27,6 +27,14 @@ void initFeedback() {
     digitalWrite(GREEN_ledPin, HIGH);
 }
 
+static unsigned long cooldownUntil = 0;
+
+// @implements FA2.4
+bool isFeedbackInCooldown() {
+    if (!isBLEConnected()) return false;
+    return millis() < cooldownUntil;
+}
+
 // @implements FA2.4
 void updateFeedback(const String& best_label, float best_val, float anomaly_score) {
 
@@ -54,7 +62,7 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
         String dispTipp = (best_label == "LateralRaises") ? "Seitheben erkannt" : "Bereit";
         sendJsonToPC(dispLabel, best_val, anomaly_score, dispTipp);
         streamInferenceResult(dispLabel, best_val, anomaly_score, dispTipp);
-        cooldownDelay(1000);
+        cooldownUntil = millis() + 1000;
     } 
     else if (best_label == "CURL" || best_label == "curl_sauber") {
         // Sauberer Curl -> LED Grün
@@ -64,22 +72,22 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
         
         sendJsonToPC(best_label, best_val, anomaly_score, "Super Ausfuehrung!");
         streamInferenceResult(best_label, best_val, anomaly_score, "Super Ausfuehrung!");
-        cooldownDelay(1500); // Cooldown um Doppel-Erkennung des gleichen Curls zu verhindern
+        cooldownUntil = millis() + 1500; // Cooldown um Doppel-Erkennung des gleichen Curls zu verhindern
     }
     else {
         // Irgendein Fehler erkannt (z.B. "fehler_rotation" oder "fehler_ellbogen") -> LED Rot
         digitalWrite(RED_ledPin, LOW);
         digitalWrite(BLUE_ledPin, HIGH);
         digitalWrite(GREEN_ledPin, HIGH);
-
+ 
         // Dynamischer Tipp je nach Fehlerklasse
         String tipp = "Bewegung korrigieren";
         if (best_label.indexOf("rotation") >= 0) tipp = "Handgelenk stabil halten!";
         if (best_label.indexOf("ellbogen") >= 0) tipp = "Ellbogen fixieren!";
-
+ 
         sendJsonToPC(best_label, best_val, anomaly_score, tipp);
         streamInferenceResult(best_label, best_val, anomaly_score, tipp);
-        cooldownDelay(1500); // Cooldown
+        cooldownUntil = millis() + 1500; // Cooldown
     }
 }
 

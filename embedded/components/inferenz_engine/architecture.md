@@ -19,6 +19,12 @@ Die Inferenz-Engine führt ein CNN-Klassifikationsmodell aus, das über Edge Imp
 **FA2.2**: Das Gerät erkennt, was für eine Bewegung ausgeführt worden ist.
 **FA2.3**: Das Gerät bewertet die Ausführung der Bewegung.
 
+**FA2.2.1**: Das Gerät erkennt einen Idle Modus
+**FA2.2.2**: Das Gerät erkennt einen Curl
+**FA2.2.3**: Das Gerät erkennt einen shoulder press
+**FA2.2.4**: Das Gerät erkennt einen Lateral raise
+**FA2.2.5**: Das Gerät erkennt eine tricep extension
+
 ## Datenfluss
 
 ```mermaid

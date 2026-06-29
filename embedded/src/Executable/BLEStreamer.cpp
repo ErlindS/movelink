@@ -15,6 +15,9 @@ bool initBLE() {
     BLE.setLocalName("MoveLink Sensor");
     BLE.setAdvertisedService(imuService);
     
+    // Setze ein schnelles Verbindungsintervall (10ms - 20ms) um Latenz zu verhindern
+    BLE.setConnectionInterval(8, 16); 
+    
     imuService.addCharacteristic(imuCharacteristic);
     imuService.addCharacteristic(inferenceCharacteristic);
     BLE.addService(imuService);

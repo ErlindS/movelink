@@ -1,7 +1,7 @@
 /**
  * @implements FA1.1, FA1.4, FA1.5
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming,
@@ -9,7 +9,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/Colors';
-import { useBLEStore, useTrainingStore, EXERCISE_TARGETS, ExerciseType } from '@/store';
+import { useBLEStore, useTrainingStore, EXERCISE_TARGETS, ExerciseType, IMUReading } from '@/store';
 import { useBLE } from '@/hooks/useBLE';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { SensorCard } from '@/components/SensorCard';
@@ -88,6 +88,26 @@ export default function TrainingScreen() {
   const [selectedEx, setSelectedEx] = useState<ExerciseType>('squat');
 
   const isConnected = bleStatus === 'connected';
+
+  // Rolling buffer for live chart - updates in real-time when new reading is received
+  const IDLE_BUFFER_SIZE = 80;
+  const [idleChartData, setIdleChartData] = useState<IMUReading[]>([]);
+
+  useEffect(() => {
+    if (!isConnected || !latestReading) {
+      if (idleChartData.length > 0) setIdleChartData([]);
+      return;
+    }
+    setIdleChartData((prev) => {
+      // Prevents adding the exact same reading (e.g. if state updates multiple times)
+      if (prev.length > 0 && prev[prev.length - 1].timestamp === latestReading.timestamp) {
+        return prev;
+      }
+      return prev.length >= IDLE_BUFFER_SIZE
+        ? [...prev.slice(1), latestReading]
+        : [...prev, latestReading];
+    });
+  }, [latestReading, isConnected]);
 
   // Countdown controller
   useEffect(() => {
@@ -211,6 +231,40 @@ export default function TrainingScreen() {
         {/* 4. IDLE STATE: Exercise Selection & Start Trigger */}
         {isConnected && trainingStatus === 'idle' && (
           <View style={styles.idleActiveContainer}>
+            {/* Live Sensordaten (immer sichtbar wenn verbunden) */}
+            {latestReading && (
+              <FadeSlide delay={100}>
+                <Text style={styles.sectionLabel}>Live Sensordaten</Text>
+                <GlassCard style={styles.sensorLiveCard}>
+                  <Text style={styles.sensorGroupTitle}>Beschleunigung (m/s²)</Text>
+                  <View style={styles.grid}>
+                    <AnimatedValue label="X" value={latestReading.accelX} unit="m/s²" color={Colors.accentX} />
+                    <AnimatedValue label="Y" value={latestReading.accelY} unit="m/s²" color={Colors.accentY} />
+                    <AnimatedValue label="Z" value={latestReading.accelZ} unit="m/s²" color={Colors.accentZ} />
+                  </View>
+                  <Text style={[styles.sensorGroupTitle, { marginTop: 12 }]}>Gyroskop (rad/s)</Text>
+                  <View style={styles.grid}>
+                    <AnimatedValue label="X" value={latestReading.gyroX} unit="rad/s" color={Colors.accentX} />
+                    <AnimatedValue label="Y" value={latestReading.gyroY} unit="rad/s" color={Colors.accentY} />
+                    <AnimatedValue label="Z" value={latestReading.gyroZ} unit="rad/s" color={Colors.accentZ} />
+                  </View>
+                </GlassCard>
+              </FadeSlide>
+            )}
+
+            {/* Live Chart (rollendes Diagramm im Idle-Zustand) */}
+            <FadeSlide delay={110}>
+              <LiveChart data={idleChartData} />
+            </FadeSlide>
+
+            {!latestReading && (
+              <FadeSlide delay={100}>
+                <GlassCard style={styles.sensorLiveCard}>
+                  <Text style={styles.sensorWaiting}>Warte auf Sensordaten...</Text>
+                </GlassCard>
+              </FadeSlide>
+            )}
+
             {/* Live KI-Erkennung vom Sensor-Chip */}
             <FadeSlide delay={120}>
               <Text style={styles.sectionLabel}>Live KI-Klassifizierung</Text>
@@ -372,7 +426,25 @@ const styles = StyleSheet.create({
 
   // Idle Selection State
   idleActiveContainer: { gap: 16 },
-  exerciseSelector: { flexDirection: 'row', gap: 12 },
+  sensorLiveCard: {
+    padding: 16,
+    gap: 10,
+  },
+  sensorGroupTitle: {
+    color: Colors.textSub,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  sensorWaiting: {
+    color: Colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center' as const,
+    paddingVertical: 16,
+  },
+  exerciseSelector: { flexDirection: 'row' as const, gap: 12 },
   exerciseCard: {
     flex: 1,
     borderRadius: 16,
