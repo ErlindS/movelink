@@ -3,9 +3,17 @@
 #include "BLEStreamer.h"
 
 // RGB LED Pins des XIAO nRF52840 (LOW = An, HIGH = Aus)
-static const int RED_ledPin = 11;
-static const int BLUE_ledPin = 12;
-static const int GREEN_ledPin = 13;
+static const int RED_ledPin = LEDR;
+static const int BLUE_ledPin = LEDB;
+static const int GREEN_ledPin = LEDG;
+
+static void cooldownDelay(unsigned long ms) {
+    unsigned long start = millis();
+    while (millis() - start < ms) {
+        pollBLE();
+        delay(10);
+    }
+}
 
 // @implements FA2.4
 void initFeedback() {
@@ -22,15 +30,33 @@ void initFeedback() {
 // @implements FA2.4
 void updateFeedback(const String& best_label, float best_val, float anomaly_score) {
 
-    if (best_label == "idle" || best_val < 0.6) {
-        // Ruhemodus -> LED Blau, kein JSON senden um PC-Spam zu vermeiden
+    if (!isBLEConnected()) {
+        // Solange kein Bluetooth verbunden ist: Langsames Blinken (Blau an/aus)
+        static bool blinkState = false;
+        blinkState = !blinkState;
+        digitalWrite(RED_ledPin, HIGH);
+        digitalWrite(GREEN_ledPin, HIGH);
+        digitalWrite(BLUE_ledPin, blinkState ? LOW : HIGH);
+        
+        String dispLabel = (best_label == "LateralRaises") ? "LateralRaises" : "idle";
+        sendJsonToPC(dispLabel, best_val, anomaly_score, "Warte auf Bluetooth-Verbindung...");
+        cooldownDelay(500);
+        return;
+    }
+
+    if (best_label == "idle" || best_label == "LateralRaises" || best_val < 0.6) {
+        // Ruhemodus / Seitheben -> LED dauerhaft Blau
         digitalWrite(RED_ledPin, HIGH);
         digitalWrite(BLUE_ledPin, LOW); 
         digitalWrite(GREEN_ledPin, HIGH);
         
-        streamInferenceResult("idle", best_val, anomaly_score, "Bereit");
+        String dispLabel = (best_label == "LateralRaises") ? "LateralRaises" : "idle";
+        String dispTipp = (best_label == "LateralRaises") ? "Seitheben erkannt" : "Bereit";
+        sendJsonToPC(dispLabel, best_val, anomaly_score, dispTipp);
+        streamInferenceResult(dispLabel, best_val, anomaly_score, dispTipp);
+        cooldownDelay(1000);
     } 
-    else if (best_label == "curl_sauber") {
+    else if (best_label == "CURL" || best_label == "curl_sauber") {
         // Sauberer Curl -> LED Grün
         digitalWrite(RED_ledPin, HIGH);
         digitalWrite(BLUE_ledPin, HIGH);
@@ -38,7 +64,7 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
         
         sendJsonToPC(best_label, best_val, anomaly_score, "Super Ausfuehrung!");
         streamInferenceResult(best_label, best_val, anomaly_score, "Super Ausfuehrung!");
-        delay(1500); // Cooldown um Doppel-Erkennung des gleichen Curls zu verhindern
+        cooldownDelay(1500); // Cooldown um Doppel-Erkennung des gleichen Curls zu verhindern
     }
     else {
         // Irgendein Fehler erkannt (z.B. "fehler_rotation" oder "fehler_ellbogen") -> LED Rot
@@ -53,7 +79,7 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
 
         sendJsonToPC(best_label, best_val, anomaly_score, tipp);
         streamInferenceResult(best_label, best_val, anomaly_score, tipp);
-        delay(1500); // Cooldown
+        cooldownDelay(1500); // Cooldown
     }
 }
 

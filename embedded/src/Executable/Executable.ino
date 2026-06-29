@@ -49,8 +49,13 @@ void loop()
         streamIMUData(dsp_buffer[ix], dsp_buffer[ix + 1], dsp_buffer[ix + 2],
                       dsp_buffer[ix + 3], dsp_buffer[ix + 4], dsp_buffer[ix + 5]);
 
-        delayMicroseconds(next_tick - micros());
+        if (next_tick > micros()) {
+            delayMicroseconds(next_tick - micros());
+        }
     }
+
+    // BLE-Polling vor Inferenz, damit Verbindungsaufbau nicht abbricht
+    pollBLE();
 
     // Klassifikator ausführen
     String label;
@@ -58,8 +63,12 @@ void loop()
     float anomaly = 0.0;
     
     if (runModelInference(dsp_buffer, label, confidence, anomaly)) {
+        // BLE-Polling nach Inferenz (die ~200-500ms gedauert hat)
+        pollBLE();
         // Display-Aktualisierung & LED Logik
         updateFeedback(label, confidence, anomaly);
+    } else {
+        pollBLE();
     }
 }
 

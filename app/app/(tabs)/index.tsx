@@ -43,7 +43,8 @@ function RecBadge() {
 function formatMovementLabel(label: string | null): string {
   if (!label || label === 'idle') return 'Keine (Bereit)';
   
-  if (label === 'curl_sauber') return 'Bizeps-Curl';
+  if (label === 'curl_sauber' || label === 'CURL') return 'Bizeps-Curl';
+  if (label === 'LateralRaises') return 'Seitheben / Ruhe';
   if (label === 'fehler_rotation') return 'Bizeps-Curl (Handgelenk-Rotation)';
   if (label === 'fehler_ellbogen') return 'Bizeps-Curl (Ellbogen instabil)';
   
@@ -224,9 +225,9 @@ export default function TrainingScreen() {
                   <View style={[
                     styles.qualityBadge,
                     {
-                      backgroundColor: !inferenceLabel || inferenceLabel === 'idle'
+                      backgroundColor: !inferenceLabel || inferenceLabel === 'idle' || inferenceLabel === 'LateralRaises'
                         ? 'rgba(77,140,124,0.1)'
-                        : inferenceLabel.includes('sauber')
+                        : inferenceLabel.includes('sauber') || inferenceLabel === 'CURL'
                           ? 'rgba(0,212,170,0.1)'
                           : 'rgba(248,113,113,0.1)'
                     }
@@ -234,16 +235,16 @@ export default function TrainingScreen() {
                     <Text style={[
                       styles.qualityText,
                       {
-                        color: !inferenceLabel || inferenceLabel === 'idle'
+                        color: !inferenceLabel || inferenceLabel === 'idle' || inferenceLabel === 'LateralRaises'
                           ? Colors.textSub
-                          : inferenceLabel.includes('sauber')
+                          : inferenceLabel.includes('sauber') || inferenceLabel === 'CURL'
                             ? Colors.connected
                             : Colors.error
                       }
                     ]}>
-                      {!inferenceLabel || inferenceLabel === 'idle'
-                        ? 'Bereit'
-                        : inferenceLabel.includes('sauber')
+                      {!inferenceLabel || inferenceLabel === 'idle' || inferenceLabel === 'LateralRaises'
+                        ? 'Bereit / Ruhe'
+                        : inferenceLabel.includes('sauber') || inferenceLabel === 'CURL'
                           ? 'Sehr gut'
                           : 'Korrektur noetig'}
                     </Text>

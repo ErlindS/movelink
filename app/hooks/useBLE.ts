@@ -136,8 +136,30 @@ export function useBLE() {
     if (!manager.current) return;
     try {
       setStatus('connecting');
-      const device = await manager.current.connectToDevice(deviceId);
-      await device.discoverAllServicesAndCharacteristics();
+      let device = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          // autoConnect: true tells Android to patiently wait for the peripheral
+          // instead of using an aggressive direct-connect timeout.
+          // This is critical because the XIAO's main loop blocks during
+          // model inference (~200-500ms) and can't answer the GATT handshake in time.
+          device = await manager.current.connectToDevice(deviceId, {
+            autoConnect: Platform.OS === 'android',
+            timeout: 15000,
+          });
+          await new Promise(r => setTimeout(r, 600));
+          if (Platform.OS === 'android') {
+            try { await device.requestMTU(512); } catch (e) {}
+          }
+          await device.discoverAllServicesAndCharacteristics();
+          break;
+        } catch (err) {
+          console.warn(`BLE Connect attempt ${attempt} failed:`, err);
+          if (attempt === 3) throw err;
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      }
+      if (!device) throw new Error("Keine Verbindung möglich");
 
       setDevice(device.id, device.name ?? 'MoveLink Sensor');
       setStatus('connected');
@@ -164,15 +186,16 @@ export function useBLE() {
         BLE_INFERENCE_CHARACTERISTIC_UUID,
         (error: BleError | null, characteristic: Characteristic | null) => {
           if (error || !characteristic?.value) return;
-          const jsonStr = decodeBase64ToString(characteristic.value);
-          if (!jsonStr) return;
+          const rawStr = decodeBase64ToString(characteristic.value);
+          const jsonStr = rawStr ? rawStr.replace(/\0/g, '').trim() : '';
+          if (!jsonStr || !jsonStr.startsWith('{') || !jsonStr.endsWith('}')) return;
           try {
             const data = JSON.parse(jsonStr);
             if (data && typeof data.label === 'string') {
               useBLEStore.getState().setInference(data.label, data.conf ?? 0, data.tipp ?? '');
             }
           } catch (e) {
-            console.error("Error parsing BLE inference JSON:", e);
+            console.error("Error parsing BLE inference JSON:", e, jsonStr);
           }
         }
       );
@@ -280,7 +303,7 @@ export function useBLE() {
     setStatus('scanning');
 
     manager.current.startDeviceScan(
-      [BLE_SERVICE_UUID],
+      null,
       null,
       (error: BleError | null, device: Device | null) => {
         if (error) { 
@@ -290,8 +313,13 @@ export function useBLE() {
         }
         if (!device) return;
 
-        manager.current?.stopDeviceScan();
-        connectToDevice(device.id);
+        const name = device.name ?? device.localName ?? '';
+        const hasService = device.serviceUUIDs?.some(uuid => uuid.toLowerCase() === BLE_SERVICE_UUID.toLowerCase());
+        
+        if (name.includes('MoveLink') || hasService) {
+          manager.current?.stopDeviceScan();
+          connectToDevice(device.id);
+        }
       }
     );
   }, [connectToDevice]);
