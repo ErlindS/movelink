@@ -110,9 +110,16 @@ bool runModelInference(float* buffer, String& outLabel, float& outConfidence, fl
 
     // Anomalie-Score abgreifen (falls der K-means Block aktiv ist)
     float anomaly_score = 0.0;
-#if EI_CLASSIFIER_HAS_ANOMALY == 1
+#if defined(EI_CLASSIFIER_HAS_ANOMALY) && (EI_CLASSIFIER_HAS_ANOMALY > 0)
     anomaly_score = result.anomaly;
 #endif
+
+    Serial.print("Label: ");
+    Serial.print(result.classification[best_idx].label);
+    Serial.print(" | Conf: ");
+    Serial.print(best_val, 3);
+    Serial.print(" | Anomaly: ");
+    Serial.println(anomaly_score, 3);
 
     outLabel = String(result.classification[best_idx].label);
     outConfidence = best_val;

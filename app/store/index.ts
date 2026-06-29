@@ -48,12 +48,13 @@ interface BLEStore {
   isDemoMode: boolean;
   inferenceLabel: string | null;
   inferenceConfidence: number | null;
+  inferenceAnomaly: number | null;
   inferenceTipp: string | null;
   setStatus: (status: ConnectionStatus) => void;
   setDevice: (id: string, name: string) => void;
   setReading: (reading: IMUReading) => void;
   setDemoMode: (isDemoMode: boolean) => void;
-  setInference: (label: string, confidence: number, tipp: string) => void;
+  setInference: (label: string, confidence: number, anomaly: number, tipp: string) => void;
   disconnect: () => void;
 }
 
@@ -90,13 +91,14 @@ export const useBLEStore = create<BLEStore>((set) => ({
   isDemoMode: false,
   inferenceLabel: null,
   inferenceConfidence: null,
+  inferenceAnomaly: null,
   inferenceTipp: null,
   setStatus: (status) => set({ status }),
   setDevice: (deviceId, deviceName) => set({ deviceId, deviceName }),
   setReading: (reading) => set({ latestReading: reading }),
   setDemoMode: (isDemoMode) => set({ isDemoMode }),
-  setInference: (inferenceLabel, inferenceConfidence, inferenceTipp) => set({ inferenceLabel, inferenceConfidence, inferenceTipp }),
-  disconnect: () => set({ status: 'disconnected', deviceId: null, deviceName: null, latestReading: null, inferenceLabel: null, inferenceConfidence: null, inferenceTipp: null }),
+  setInference: (inferenceLabel, inferenceConfidence, inferenceAnomaly, inferenceTipp) => set({ inferenceLabel, inferenceConfidence, inferenceAnomaly, inferenceTipp }),
+  disconnect: () => set({ status: 'disconnected', deviceId: null, deviceName: null, latestReading: null, inferenceLabel: null, inferenceConfidence: null, inferenceAnomaly: null, inferenceTipp: null }),
 }));
 
 export const useTrainingStore = create<TrainingStore>((set) => ({

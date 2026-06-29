@@ -41,21 +41,24 @@ function RecBadge() {
 }
 
 function formatMovementLabel(label: string | null): string {
-  if (!label || label === 'idle') return 'Keine (Bereit)';
+  if (!label) return 'Bereit';
+  const lowerLabel = label.toLowerCase();
+  if (lowerLabel === 'idle') return 'Bereit';
   
-  if (label === 'curl_sauber' || label === 'CURL') return 'Bizeps-Curl';
-  if (label === 'LateralRaises') return 'Seitheben / Ruhe';
-  if (label === 'fehler_rotation') return 'Bizeps-Curl (Handgelenk-Rotation)';
-  if (label === 'fehler_ellbogen') return 'Bizeps-Curl (Ellbogen instabil)';
+  if (lowerLabel === 'curl_sauber' || lowerLabel === 'curl') return 'Bizeps-Curl';
+  if (lowerLabel === 'lateralraises' || lowerLabel === 'lateralraise') return 'Seitheben';
+  if (lowerLabel === 'shoulderpress' || lowerLabel === 'shoulder_press') return 'Schulterdruecken';
+  if (lowerLabel === 'fehler_rotation') return 'Bizeps-Curl (Handgelenk-Rotation)';
+  if (lowerLabel === 'fehler_ellbogen') return 'Bizeps-Curl (Ellbogen instabil)';
   
-  if (label.includes('lateral_raise') || label.includes('lateral_rise')) {
-    return label.includes('sauber') ? 'Seitheben' : 'Seitheben (Ausfuehrungsfehler)';
+  if (lowerLabel.includes('lateral_raise') || lowerLabel.includes('lateral_rise')) {
+    return lowerLabel.includes('sauber') ? 'Seitheben' : 'Seitheben (Ausfuehrungsfehler)';
   }
-  if (label.includes('tricep')) {
-    return label.includes('sauber') ? 'Trizeps-Druecken' : 'Trizeps-Druecken (Ausfuehrungsfehler)';
+  if (lowerLabel.includes('tricep')) {
+    return lowerLabel.includes('sauber') ? 'Trizeps-Druecken' : 'Trizeps-Druecken (Ausfuehrungsfehler)';
   }
-  if (label.includes('shoulder_press') || label.includes('press')) {
-    return label.includes('sauber') ? 'Schulterdruecken' : 'Schulterdruecken (Ausfuehrungsfehler)';
+  if (lowerLabel.includes('shoulder_press') || lowerLabel.includes('press')) {
+    return lowerLabel.includes('sauber') ? 'Schulterdruecken' : 'Schulterdruecken (Ausfuehrungsfehler)';
   }
   
   return label
@@ -65,7 +68,7 @@ function formatMovementLabel(label: string | null): string {
 }
 
 export default function TrainingScreen() {
-  const { status: bleStatus, deviceName, latestReading, inferenceLabel, inferenceConfidence, inferenceTipp } = useBLEStore();
+  const { status: bleStatus, deviceName, latestReading, inferenceLabel, inferenceConfidence, inferenceAnomaly, inferenceTipp } = useBLEStore();
   const { 
     status: trainingStatus,
     exercise,
@@ -279,9 +282,9 @@ export default function TrainingScreen() {
                   <View style={[
                     styles.qualityBadge,
                     {
-                      backgroundColor: !inferenceLabel || inferenceLabel === 'idle' || inferenceLabel === 'LateralRaises'
+                      backgroundColor: !inferenceLabel || inferenceLabel.toLowerCase() === 'idle'
                         ? 'rgba(77,140,124,0.1)'
-                        : inferenceLabel.includes('sauber') || inferenceLabel === 'CURL'
+                        : ['curl', 'lateralraise', 'lateralraises', 'shoulderpress'].includes(inferenceLabel.toLowerCase()) || inferenceLabel.toLowerCase().includes('sauber')
                           ? 'rgba(0,212,170,0.1)'
                           : 'rgba(248,113,113,0.1)'
                     }
@@ -289,17 +292,17 @@ export default function TrainingScreen() {
                     <Text style={[
                       styles.qualityText,
                       {
-                        color: !inferenceLabel || inferenceLabel === 'idle' || inferenceLabel === 'LateralRaises'
+                        color: !inferenceLabel || inferenceLabel.toLowerCase() === 'idle'
                           ? Colors.textSub
-                          : inferenceLabel.includes('sauber') || inferenceLabel === 'CURL'
+                          : ['curl', 'lateralraise', 'lateralraises', 'shoulderpress'].includes(inferenceLabel.toLowerCase()) || inferenceLabel.toLowerCase().includes('sauber')
                             ? Colors.connected
                             : Colors.error
                       }
                     ]}>
-                      {!inferenceLabel || inferenceLabel === 'idle' || inferenceLabel === 'LateralRaises'
-                        ? 'Bereit / Ruhe'
-                        : inferenceLabel.includes('sauber') || inferenceLabel === 'CURL'
-                          ? 'Sehr gut'
+                      {!inferenceLabel || inferenceLabel.toLowerCase() === 'idle'
+                        ? 'Bereit'
+                        : ['curl', 'lateralraise', 'lateralraises', 'shoulderpress'].includes(inferenceLabel.toLowerCase()) || inferenceLabel.toLowerCase().includes('sauber')
+                          ? 'Aktiv'
                           : 'Korrektur noetig'}
                     </Text>
                   </View>
@@ -319,38 +322,15 @@ export default function TrainingScreen() {
                     </Text>
                   </View>
                 ) : null}
+
+                {inferenceAnomaly !== null ? (
+                  <View style={styles.kiConfidenceRow}>
+                    <Text style={styles.kiConfidenceText}>
+                      Anomalie-Score: {inferenceAnomaly.toFixed(3)}
+                    </Text>
+                  </View>
+                ) : null}
               </GlassCard>
-            </FadeSlide>
-
-            <FadeSlide delay={140}>
-              <Text style={styles.sectionLabel}>Wähle deine Übung (Lokale Winkelmessung)</Text>
-              <View style={styles.exerciseSelector}>
-                <TouchableOpacity 
-                  style={[styles.exerciseCard, selectedEx === 'squat' && styles.exerciseCardActive]} 
-                  onPress={() => setSelectedEx('squat')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.exerciseLabel}>Kniebeugen</Text>
-                  <Text style={styles.exerciseDesc}>Ziel: {EXERCISE_TARGETS.squat}°</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={[styles.exerciseCard, selectedEx === 'curl' && styles.exerciseCardActive]} 
-                  onPress={() => setSelectedEx('curl')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.exerciseLabel}>Bizeps-Curls</Text>
-                  <Text style={styles.exerciseDesc}>Ziel: {EXERCISE_TARGETS.curl}°</Text>
-                </TouchableOpacity>
-              </View>
-            </FadeSlide>
-
-            <FadeSlide delay={180}>
-              <GradientButton 
-                label={`${selectedEx === 'squat' ? 'Kniebeugen' : 'Bizeps-Curls'} starten`} 
-                variant="primary" 
-                onPress={() => startTraining(selectedEx)} 
-              />
             </FadeSlide>
           </View>
         )}

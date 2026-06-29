@@ -100,19 +100,36 @@ export function useBLE() {
 
   const connectToDevice = useCallback(async (deviceId: string) => {
     if (!manager.current) return;
+    const currentStatus = useBLEStore.getState().status;
+    if (currentStatus === 'connecting' || currentStatus === 'connected') {
+      return;
+    }
     try {
       setStatus('connecting');
       let device = null;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          // autoConnect: true tells Android to patiently wait for the peripheral
-          // instead of using an aggressive direct-connect timeout.
-          // This is critical because the XIAO's main loop blocks during
-          // model inference (~200-500ms) and can't answer the GATT handshake in time.
           device = await manager.current.connectToDevice(deviceId, {
             autoConnect: Platform.OS === 'android',
             timeout: 15000,
           });
+        } catch (err: any) {
+          const errMsg = err?.message || '';
+          if (errMsg.includes('already connected') || errMsg.includes('already') || errMsg.includes('connected')) {
+            try {
+              const connected = await manager.current.connectedDevices([BLE_SERVICE_UUID]);
+              device = connected.find(d => d.id === deviceId) || null;
+            } catch (e) {}
+          }
+          if (!device) {
+            console.warn(`BLE Connect attempt ${attempt} failed:`, err);
+            if (attempt === 3) throw err;
+            await new Promise(r => setTimeout(r, 1500));
+            continue;
+          }
+        }
+
+        try {
           await new Promise(r => setTimeout(r, 600));
           if (Platform.OS === 'android') {
             try { await device.requestMTU(512); } catch (e) { }
@@ -120,7 +137,7 @@ export function useBLE() {
           await device.discoverAllServicesAndCharacteristics();
           break;
         } catch (err) {
-          console.warn(`BLE Connect attempt ${attempt} failed:`, err);
+          console.warn(`BLE Discovery attempt ${attempt} failed:`, err);
           if (attempt === 3) throw err;
           await new Promise(r => setTimeout(r, 1500));
         }
@@ -166,7 +183,7 @@ export function useBLE() {
           try {
             const data = JSON.parse(jsonStr);
             if (data && typeof data.label === 'string') {
-              useBLEStore.getState().setInference(data.label, data.conf ?? 0, data.tipp ?? '');
+              useBLEStore.getState().setInference(data.label, data.conf ?? 0, data.anomaly ?? 0, data.tipp ?? '');
             }
           } catch (e) {
             console.error("Error parsing BLE inference JSON:", e, jsonStr);

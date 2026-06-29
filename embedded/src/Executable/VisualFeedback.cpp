@@ -46,48 +46,61 @@ void updateFeedback(const String& best_label, float best_val, float anomaly_scor
         digitalWrite(GREEN_ledPin, HIGH);
         digitalWrite(BLUE_ledPin, blinkState ? LOW : HIGH);
         
-        String dispLabel = (best_label == "LateralRaises") ? "LateralRaises" : "idle";
+        String dispLabel = (best_label == "LateralRaise" || best_label == "LateralRaises") ? "LateralRaise" : "Idle";
         sendJsonToPC(dispLabel, best_val, anomaly_score, "Warte auf Bluetooth-Verbindung...");
         cooldownDelay(500);
         return;
     }
 
-    if (best_label == "idle" || best_label == "LateralRaises" || best_val < 0.6) {
-        // Ruhemodus / Seitheben -> LED dauerhaft Blau
+    if (best_label == "Idle" || best_label == "idle" || best_val < 0.6) {
+        // Ruhemodus -> LED dauerhaft Blau
         digitalWrite(RED_ledPin, HIGH);
         digitalWrite(BLUE_ledPin, LOW); 
         digitalWrite(GREEN_ledPin, HIGH);
         
-        String dispLabel = (best_label == "LateralRaises") ? "LateralRaises" : "idle";
-        String dispTipp = (best_label == "LateralRaises") ? "Seitheben erkannt" : "Bereit";
-        sendJsonToPC(dispLabel, best_val, anomaly_score, dispTipp);
-        streamInferenceResult(dispLabel, best_val, anomaly_score, dispTipp);
+        sendJsonToPC("idle", best_val, anomaly_score, "Bereit");
+        streamInferenceResult("idle", best_val, anomaly_score, "Bereit");
         cooldownUntil = millis() + 1000;
     } 
-    else if (best_label == "CURL" || best_label == "curl_sauber") {
+    else if (best_label == "ShoulderPress" || best_label == "shoulderpress") {
+        // Schulterdrücken -> LED Magenta/Lila (Rot + Blau)
+        digitalWrite(RED_ledPin, LOW);
+        digitalWrite(BLUE_ledPin, LOW); 
+        digitalWrite(GREEN_ledPin, HIGH);
+        
+        sendJsonToPC("ShoulderPress", best_val, anomaly_score, "Schulterdruecken erkannt");
+        streamInferenceResult("ShoulderPress", best_val, anomaly_score, "Schulterdruecken erkannt");
+        cooldownUntil = millis() + 1500;
+    }
+    else if (best_label == "lateralraise" || best_label == "LateralRaise" || best_label == "LateralRaises") {
+        // Seitheben -> LED Türkis (Blau + Grün)
+        digitalWrite(RED_ledPin, HIGH);
+        digitalWrite(BLUE_ledPin, LOW); 
+        digitalWrite(GREEN_ledPin, LOW);
+        
+        sendJsonToPC("lateralraise", best_val, anomaly_score, "Seitheben erkannt");
+        streamInferenceResult("lateralraise", best_val, anomaly_score, "Seitheben erkannt");
+        cooldownUntil = millis() + 1500;
+    }
+    else if (best_label == "curl" || best_label == "Curl" || best_label == "CURL" || best_label == "curl_sauber") {
         // Sauberer Curl -> LED Grün
         digitalWrite(RED_ledPin, HIGH);
         digitalWrite(BLUE_ledPin, HIGH);
         digitalWrite(GREEN_ledPin, LOW);
         
-        sendJsonToPC(best_label, best_val, anomaly_score, "Super Ausfuehrung!");
-        streamInferenceResult(best_label, best_val, anomaly_score, "Super Ausfuehrung!");
+        sendJsonToPC("curl", best_val, anomaly_score, "Super Ausfuehrung!");
+        streamInferenceResult("curl", best_val, anomaly_score, "Super Ausfuehrung!");
         cooldownUntil = millis() + 1500; // Cooldown um Doppel-Erkennung des gleichen Curls zu verhindern
     }
     else {
-        // Irgendein Fehler erkannt (z.B. "fehler_rotation" oder "fehler_ellbogen") -> LED Rot
+        // Fallback: Irgendein Fehler oder unbekannte Klasse -> LED Rot
         digitalWrite(RED_ledPin, LOW);
         digitalWrite(BLUE_ledPin, HIGH);
         digitalWrite(GREEN_ledPin, HIGH);
  
-        // Dynamischer Tipp je nach Fehlerklasse
-        String tipp = "Bewegung korrigieren";
-        if (best_label.indexOf("rotation") >= 0) tipp = "Handgelenk stabil halten!";
-        if (best_label.indexOf("ellbogen") >= 0) tipp = "Ellbogen fixieren!";
- 
-        sendJsonToPC(best_label, best_val, anomaly_score, tipp);
-        streamInferenceResult(best_label, best_val, anomaly_score, tipp);
-        cooldownUntil = millis() + 1500; // Cooldown
+        sendJsonToPC(best_label, best_val, anomaly_score, "Bewegung korrigieren");
+        streamInferenceResult(best_label, best_val, anomaly_score, "Bewegung korrigieren");
+        cooldownUntil = millis() + 1500;
     }
 }
 
