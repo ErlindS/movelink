@@ -2,8 +2,6 @@
 #include "InferenceEngine.h"
 #include <Erlind-project-1_inferencing.h>
 
-static bool debug_nn = false;
-
 // @implements FA2.2, FA2.3
 bool runModelInference(float* buffer, String& outLabel, float& outConfidence, float& outAnomaly) {
     // Signal aus Puffer erstellen
@@ -15,6 +13,7 @@ bool runModelInference(float* buffer, String& outLabel, float& outConfidence, fl
 
     // Klassifikator ausführen
     ei_impulse_result_t result = { 0 };
+    bool debug_nn = false;
     err = run_classifier(&signal, &result, debug_nn);
     if (err != EI_IMPULSE_OK) {
         return false;
@@ -30,11 +29,15 @@ bool runModelInference(float* buffer, String& outLabel, float& outConfidence, fl
         }
     }
 
-    // Anomalie-Score abgreifen (falls der K-means Block aktiv ist)
-    float anomaly_score = 0.0;
-#if EI_CLASSIFIER_HAS_ANOMALY == 1
-    anomaly_score = result.anomaly;
-#endif
+    // Anomalie-Score abgreifen
+    float anomaly_score = result.anomaly;
+
+    Serial.print("Label: ");
+    Serial.print(result.classification[best_idx].label);
+    Serial.print(" | Conf: ");
+    Serial.print(best_val, 3);
+    Serial.print(" | Anomaly: ");
+    Serial.println(anomaly_score, 3);
 
     outLabel = String(result.classification[best_idx].label);
     outConfidence = best_val;

@@ -572,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (arrowMatch) {
                     const reqs = arrowMatch[1].split(',').map(r => r.trim());
                     const compName = arrowMatch[2].trim();
-                    const compLink = arrowMatch[3].trim().replace('file:///c:/Users/erlin/repo/movelink/', '');
+                    const compLink = arrowMatch[3].trim().replace(/^file:\/\/\/.*\/movelink\//, '');
                     reqs.forEach(reqId => {
                         mappings.push({ reqId, name: compName, path: compLink });
                     });
@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fulfillsMatch = line.match(/(?:\*\*)?\[([^\]]+)\]\(([^)]+)\)(?:\*\*)?.*\(Erfüllt:\s*(FA\d+(?:\.\d+)*(?:\s*,\s*FA\d+(?:\.\d+)*)*).*\)/i);
                 if (fulfillsMatch) {
                     const compName = fulfillsMatch[1].trim();
-                    const compLink = fulfillsMatch[2].trim().replace('file:///c:/Users/erlin/repo/movelink/', '');
+                    const compLink = fulfillsMatch[2].trim().replace(/^file:\/\/\/.*\/movelink\//, '');
                     const reqs = fulfillsMatch[3].split(',').map(r => r.trim());
                     reqs.forEach(reqId => {
                         mappings.push({ reqId, name: compName, path: compLink });
@@ -611,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!componentPath) return [];
             
             const classes = [];
-            const normalizedLink = componentPath.replace('file:///c:/Users/erlin/repo/movelink/', '').replace('../', '');
+            const normalizedLink = componentPath.replace(/^file:\/\/\/.*\/movelink\//, '').replace('../', '');
             
             // Case 1: Component link is a direct code file
             const isCodeFile = normalizedLink.endsWith('.ts') || normalizedLink.endsWith('.tsx') || normalizedLink.endsWith('.cpp') || normalizedLink.endsWith('.ino') || normalizedLink.endsWith('.h') || normalizedLink.endsWith('.py');
@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         codeLinkMatches.forEach(match => {
                             const pathMatch = match.match(/\(([^)]+)\)/);
                             if (pathMatch) {
-                                const path = pathMatch[1].replace('file:///c:/Users/erlin/repo/movelink/', '').replace('../', '');
+                                const path = pathMatch[1].replace(/^file:\/\/\/.*\/movelink\//, '').replace('../', '');
                                 // If it is indeed a code file, add it
                                 if (!targetFiles.includes(path)) {
                                     targetFiles.push(path);

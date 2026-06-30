@@ -37,8 +37,10 @@ flowchart TD
 ## Technische Details
 - **Modelltyp:** Convolutional Neural Network (CNN)
 - **Erkannte Klassen:**
-  - `idle`: Keine Übungsausführung / Ruhezustand.
-  - `curl_sauber`: Korrekt ausgeführter Bizeps-Curl.
-  - `fehler_rotation`: Fehlerhafte Ausführung durch Rotation des Handgelenks.
-  - `fehler_ellbogen`: Fehlerhafte Ausführung durch Bewegung des Ellbogens.
+  - `idle` / `Idle`: Keine Übungsausführung / Ruhezustand.
+  - `curl` / `curl_sauber` / `CURL`: Korrekt ausgeführter Bizeps-Curl.
+  - `ShoulderPress` / `shoulderpress`: Schulterdrücken.
+  - `lateralraise` / `LateralRaise` / `LateralRaises`: Seitheben.
+  - `fehler_rotation`: Fehlerhafte Ausführung des Bizeps-Curls durch Rotation des Handgelenks.
+  - `fehler_ellbogen`: Fehlerhafte Ausführung des Bizeps-Curls durch Bewegung des Ellbogens.
 - **Anomalieerkennung:** Optionaler K-Means-Clustering-Block zur Erkennung unbekannter Bewegungen.

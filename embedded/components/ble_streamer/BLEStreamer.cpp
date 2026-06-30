@@ -15,6 +15,9 @@ bool initBLE() {
     BLE.setLocalName("MoveLink Sensor");
     BLE.setAdvertisedService(imuService);
     
+    // Setze ein schnelles Verbindungsintervall (10ms - 20ms) um Latenz zu verhindern
+    BLE.setConnectionInterval(8, 16); 
+    
     imuService.addCharacteristic(imuCharacteristic);
     imuService.addCharacteristic(inferenceCharacteristic);
     BLE.addService(imuService);
@@ -30,18 +33,26 @@ bool initBLE() {
 }
 
 void streamIMUData(float ax, float ay, float az, float gx, float gy, float gz) {
-    float packet[6] = {ax, ay, az, gx, gy, gz};
-    
-    // Update the characteristic value and notify connected client
-    imuCharacteristic.writeValue((uint8_t*)packet, 24);
-    
-    // Periodically poll BLE state
     BLE.poll();
+    if (isBLEConnected()) {
+        float packet[6] = {ax, ay, az, gx, gy, gz};
+        imuCharacteristic.writeValue((uint8_t*)packet, 24);
+    }
 }
 
 void streamInferenceResult(const String& label, float confidence, float anomaly, const String& tipp) {
-    // Erstelle ein kompaktes JSON
-    String json = "{\"label\":\"" + label + "\",\"conf\":" + String(confidence, 2) + ",\"tipp\":\"" + tipp + "\"}";
-    inferenceCharacteristic.writeValue(json.c_str());
     BLE.poll();
+    if (isBLEConnected()) {
+        String json = "{\"label\":\"" + label + "\",\"conf\":" + String(confidence, 2) + ",\"anomaly\":" + String(anomaly, 3) + ",\"tipp\":\"" + tipp + "\"}";
+        inferenceCharacteristic.writeValue(json.c_str());
+    }
+}
+
+void pollBLE() {
+    BLE.poll();
+}
+
+bool isBLEConnected() {
+    BLEDevice central = BLE.central();
+    return (central && central.connected());
 }

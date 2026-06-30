@@ -10,6 +10,9 @@ void initFeedback();
 void updateFeedback(const String& best_label, float best_val, float anomaly_score);
 
 // @implements FA2.4
+bool isFeedbackInCooldown();
+
+// @implements FA2.4
 void sendJsonToPC(String label, float confidence, float anomaly, String tipp);
 
 #endif // VISUAL_FEEDBACK_H

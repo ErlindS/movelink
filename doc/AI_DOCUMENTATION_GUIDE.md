@@ -8,7 +8,7 @@ Damit zukünftige KIs und Entwickler neue Anforderungen, Use Cases und Architekt
 
 ## 1. Definition von Anforderungen & Use Cases (.md-Dateien)
 
-Alle Systemdefinitionen werden in Markdown-Dateien im Ordner `doc/` gepflegt (z. B. `doc/Requirements.md` und `doc/UseCases.md`). 
+Alle Systemdefinitionen werden in Markdown-Dateien im Ordner `doc/` gepflegt (z. B. `doc/Requirements.md` und `doc/UseCases.md`).
 
 ### ID-Format & Konventionen
 Jeder Eintrag muss eine eindeutige ID besitzen:
@@ -18,15 +18,17 @@ Jeder Eintrag muss eine eindeutige ID besitzen:
 * **`R-X`**: Randbedingungen (z. B. `R1`)
 
 ### Format der Deklaration in Markdown
-Damit der Scraper (`scrape_docs.py`) die Einträge korrekt parsen kann, müssen sie in einer Zeile deklariert werden, gefolgt von einer Beschreibung:
+In den jeweiligen subdirectories befinden sich architecture.md Dateien. Diese Dateien beschreiben die Architektur der jeweiligen Komponente oder des Containers. Damit der Scraper (`scrape_docs.py`) die Einträge korrekt parsen kann, müssen sie in einer Zeile deklariert werden, gefolgt von einer Beschreibung. Der Aufbau sieht folgendermaßen aus:
 
-```markdown
-**UC-1: Live-Ansicht der Übungen**
-Dies ist die Beschreibung des Use Cases. Hier steht detaillierter Text, der auch über mehrere Zeilen gehen kann.
+# <Name>
+## C4-Architektur-Ebene
+## Beschreibung
+## Requirements
+## Datenfluss
+## Abwägungen
+## Technische Details
 
-**FA2: Bluetooth LE Signalstärke**
-Das System muss die BLE-Signalstärke des Sensors in Echtzeit ausgeben.
-```
+die technischen Details sind optinal. Ein Beispiel hierfür ist am Ende des Dokuments.
 
 ### Verknüpfung zwischen Anforderungen und Use Cases (Traceability)
 Um Anforderungen mit Use Cases zu verknüpfen, muss die Use-Case-ID in Klammern oder als Text in der Zeile der Anforderung stehen. Der Scraper sucht nach Querverweisen (z. B. `(UC-1)`):
@@ -112,3 +114,57 @@ Nach jeder Änderung an der Dokumentation oder den `@implements`-Kommentaren im 
 
 ### CI/CD Pipeline (GitHub Actions)
 Bei jedem Push auf den `main`-Branch baut die Pipeline `.github/workflows/docs.yml` die Webseite und das PDF automatisch. Wenn Sie einen Commit pushen, der bereits kompilierte Änderungen enthält, nutzen Sie `[skip ci]` im Commit-Betreff, um endlose Build-Loops zu verhindern.
+
+
+## 5. Beispiel für eine architecture.md Datei
+# Inferenz-Engine (Edge Impulse)
+
+Diese Komponente klassifiziert Übungsausführungen in Echtzeit direkt auf dem Mikrocontroller (Edge Computing).
+
+## C4-Architektur-Ebene
+* **C4-Ebene:** Component
+* **Deployable:** Nein (Läuft als Teil des Sensor Firmware Containers)
+
+## Beschreibung
+Die Inferenz-Engine führt ein CNN-Klassifikationsmodell aus, das über Edge Impulse trainiert und als Arduino-Bibliothek in die Firmware integriert wurde. Es analysiert die 6-Achsen-Bewegungsdaten auf spezifische Übungsqualitäten und Fehlerbilder.
+
+## Requirements
+
+**FA2.2**: Das Gerät erkennt, was für eine Bewegung ausgeführt worden ist.
+**FA2.3**: Das Gerät bewertet die Ausführung der Bewegung.
+
+**FA2.2.1**: Das Gerät erkennt einen Idle Modus
+**FA2.2.2**: Das Gerät erkennt einen Curl
+**FA2.2.3**: Das Gerät erkennt einen shoulder press
+**FA2.2.4**: Das Gerät erkennt einen Lateral raise
+**FA2.2.5**: Das Gerät erkennt eine tricep extension
+
+## Datenfluss
+
+```mermaid
+flowchart TD
+    DSP[DSP Puffer (6 Achsen)] -->|run_classifier| Model[CNN Inferenzmodell]
+    Model -->|Wahrscheinlichkeiten| Eval[Klassenauswertung]
+    Eval -->|Bester Treffer + Score| Output[Feedback & PC-JSON-Stream]
+```
+
+## Abwägungen
+
+Bewegungsauswertung:
+Die Bewertung
+
+| Auf dem Gerät | Komplett in der App | Hybrid |
+|----------|----------|----------|
+| + Per Edge Impulse einfach umzusetzende Inferenz    | + Genug Rechenleistung für komplexe Deep-Learning-Modelle    | + MCU filtert/komprimiert Daten; App übernimmt Inferenz    |
+| - Begrenzte Speicher- und Rechenkapazitäten der MCU    | - Hohe BLE-Datenrate (50Hz Rohdatenstrom) erforderlich    | - Höhere Systemkomplexität durch geteilte Logik    |
+| - Modell-Updates erfordern Firmware-Flashen    | - Erhöhter Akkuverbrauch auf dem Mobilgerät    | - Komplexeres Debugging bei Übertragungsverzögerungen    |
+
+
+## Technische Details
+- **Modelltyp:** Convolutional Neural Network (CNN)
+- **Erkannte Klassen:**
+  - `idle`: Keine Übungsausführung / Ruhezustand.
+  - `curl_sauber`: Korrekt ausgeführter Bizeps-Curl.
+  - `fehler_rotation`: Fehlerhafte Ausführung durch Rotation des Handgelenks.
+  - `fehler_ellbogen`: Fehlerhafte Ausführung durch Bewegung des Ellbogens.
+- **Anomalieerkennung:** Optionaler K-Means-Clustering-Block zur Erkennung unbekannter Bewegungen.
