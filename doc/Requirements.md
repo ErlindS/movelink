@@ -34,33 +34,41 @@ Die mobile Applikation muss nativ oder als hybride App auf Android-Geräten lauf
 
 
 ## Abwägungen
+Hardware / Gerät
 
-Hardware/Gerät:
-| vorgefertigtes Gerät (Fitbit) | Hybrid (XIAO seed NRF52840) | Eigene Lösung (PCB) |
-|----------|----------|----------|
-| + Klein und ausgereift    | + Kostengünstig, integrierte IMU & BLE    | + Maximale Kontrolle über Formfaktor und Sensoren    |
-| - Teuer    | - Gehäuse muss selbst konstruiert/gedruckt werden    | - Sehr hohe Entwicklungskosten und Time-to-Market    |
-| - Schlecht erweiterbar durch andere Sensoren    | - Höherer Integrationsaufwand als fertiges Konsumentenprodukt    | - Komplexes PCB-Design und Fertigungsrisiko    |
+| Kriterium         | Vorgefertigtes Gerät (z. B. Fitbit)                     | Hybrid (Seeed XIAO nRF52840)                                                                                       | Eigene Lösung (Custom PCB)                                                                       |
+|:------------------|:--------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------|
+| **Vorteile (+)**  | • Klein und ausgereift                                  | • Kostengünstig<br>• Integrierte IMU & BLE                                                                         | • Maximale Kontrolle über Formfaktor und Sensoren                                                |
+| **Nachteile (-)** | • Teuer<br>• Schlecht erweiterbar durch andere Sensoren | • Gehäuse muss selbst konstruiert/gedruckt werden<br>• Höherer Integrationsaufwand als fertiges Konsumentenprodukt | • Sehr hohe Entwicklungskosten und Time-to-Market<br>• Komplexes PCB-Design und Fertigungsrisiko |
 
-Entscheidung: XIAO seed NRF52840
+**Entscheidung:** XIAO seed NRF52840
 
+---
 
-App:
-| Ionic (Flutter)  | Hybrid (React Native) | Native IOS Swift/Android Java |
-|----------|----------|----------|
-| + Schnelles Prototyping und einfache Web-Technologien    | + Hohe Code-Wiederverwendbarkeit und schnelle UI-Iterationen    | + Optimale Bluetooth-Leistung und direkter API-Zugriff    |
-| - Performance-Einbußen bei 50Hz Echtzeit-Diagrammen    | - BLE-Bibliotheken von Drittanbietern erfordern Wartung    | - Hohe Entwicklungskosten durch zwei separate Codebases    |
-| - Komplexere native Bluetooth-Anbindung über Plugins    | - Performance-Overhead durch JS-Bridge bei kontinuierlichem Datenstrom    | - Längere Time-to-Market und aufwendige doppelte Pflege    |
+App-Entwicklung
 
-Entscheidung: Hybrid (React Native)
+| Kriterium         | Cross-Platform (Ionic / Flutter)                                                                            | Hybrid (React Native)                                                                                                             | Native (iOS Swift / Android Java)                                                                                  |
+|:------------------|:------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------|
+| **Vorteile (+)**  | • Schnelles Prototyping und einfache Web-Technologien                                                       | • Hohe Code-Wiederverwendbarkeit<br>• Schnelle UI-Iterationen                                                                     | • Optimale Bluetooth-Leistung<br>• Direkter API-Zugriff                                                            |
+| **Nachteile (-)** | • Performance-Einbußen bei 50Hz Echtzeit-Diagrammen<br>• Komplexere native Bluetooth-Anbindung über Plugins | • BLE-Bibliotheken von Drittanbietern erfordern Wartung<br>• Performance-Overhead durch JS-Bridge bei kontinuierlichem Datenstrom | • Hohe Entwicklungskosten durch zwei separate Codebases<br>• Längere Time-to-Market und aufwendige doppelte Pflege |
 
-Bewegungsauswertung:
-Die Bewertung
+**Entscheidung:** Hybrid (React Native)
 
-| Auf dem Gerät | Komplett in der App | Hybrid |
-|----------|----------|----------|
-| + Per Edge Impulse einfach umzusetzende Inferenz    | + Genug Rechenleistung für komplexe Deep-Learning-Modelle    | + MCU filtert/komprimiert Daten; App übernimmt Inferenz    |
-| - Begrenzte Speicher- und Rechenkapazitäten der MCU    | - Hohe BLE-Datenrate (50Hz Rohdatenstrom) erforderlich    | - Höhere Systemkomplexität durch geteilte Logik    |
-| - Modell-Updates erfordern Firmware-Flashen    | - Erhöhter Akkuverbrauch auf dem Mobilgerät    | - Komplexeres Debugging bei Übertragungsverzögerungen    |
+---
 
-Entscheidung: Auf dem Gerät (Edge-Inferenz)
+Bewegungsauswertung
+
+| Kriterium         | Auf dem Gerät (Edge AI)                                                                            | Komplett in der App                                                                                   | Hybrid                                                                                                   |
+|:------------------|:---------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------|
+| **Vorteile (+)**  | • Per Edge Impulse einfach umzusetzende Inferenz                                                   | • Genug Rechenleistung für komplexe Deep-Learning-Modelle                                             | • MCU filtert/komprimiert Daten<br>• App übernimmt Inferenz                                              |
+| **Nachteile (-)** | • Begrenzte Speicher- und Rechenkapazitäten der MCU<br>• Modell-Updates erfordern Firmware-Flashen | • Hohe BLE-Datenrate (50Hz Rohdatenstrom) erforderlich<br>• Erhöhter Akkuverbrauch auf dem Mobilgerät | • Höhere Systemkomplexität durch geteilte Logik<br>• Komplexeres Debugging bei Übertragungsverzögerungen |
+
+**Entscheidung:** Auf dem Gerät (Edge-Inferenz)  
+**Begründung:** Es gibt genügend Ressourcen, um ein kleines ML-Modell auf dem Mikrocontroller zu deployen und dafür zu trainieren.
+
+Datenspeicherung
+
+| Kriterium         | Lokal                                                                | Datenbank                                                                                      | Hybrid                                                  |
+|:------------------|:---------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------|:--------------------------------------------------------|
+| **Vorteile (+)**  | • Einfach und schnell umzusetzen<br>• Keine komplexen Abhängigkeiten | • Skaliert gut                                                                                 | • MCU filtert/komprimiert Daten; App übernimmt Inferenz |
+| **Nachteile (-)** | • Kann schlecht skalieren<br>• Kein Online-Dienst                    | • Höhere Systemkomplexität durch geteilte Logik<br>• Erhöhter Akkuverbrauch auf dem Mobilgerät | • Komplexeres Debugging bei Übertragungsverzögerungen   |

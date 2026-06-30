@@ -69,5 +69,15 @@ flowchart LR
 ```
 
 ## Abwägungen
-- **Lokale Auswertung vs. Cloud-Streaming**: Das Ausführen der Inferenz-Engine direkt auf dem Xiao-Controller minimiert die Latenz (NF1) und spart Bandbreite bei der Funkübertragung.
-- **Energiebedarf**: Die kontinuierliche Sensordatenerfassung und BLE-Funkübertragung verbrauchen Energie, weshalb die Akkulaufzeit durch einen stromsparenden Betrieb im Idle und Deaktivieren nicht benötigter Hardware-Peripherie optimiert wird.
+
+| Kriterium     | Arduino                                                                                                                                                                                            | mbOS (Mbed OS)                                                                                                                                               | Zephyr                                                                                                                                                                    |
+|:--------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Vorteile**  | • Extrem anfängerfreundlich und einfach zu bedienen<br>• Riesige Community und unzählige fertige Bibliotheken<br>• Sehr schnelles Prototyping ("Plug & Play")<br>• Minimaler Konfigurationsaufwand | • Integriertes RTOS (Real-Time Operating System)<br>• Starker Fokus auf IoT und Netzwerkanbindungen<br>• Offizielle Unterstützung und Optimierung durch ARM  | • Sehr mächtiges, echtes und hoch skalierbares RTOS<br>• Breite Hardware-Unterstützung durch Device Trees<br>• Hohe Modularität für professionelle, industrielle Projekte |
+| **Nachteile** | • Kein natives RTOS (standardmäßig kein echtes Multithreading)<br>• Bei sehr komplexen Softwarearchitekturen schwer skalierbar<br>• Eingeschränkte harte Echtzeitfähigkeit                         | • Deutlich steilere Lernkurve als bei Arduino<br>• Größerer Speicherbedarf (Overhead) für simple Aufgaben<br>• Weniger Community-Ressourcen bei Fehlersuchen | • Sehr komplexes Build-System (West / CMake)<br>• Hoher initialer Einarbeitungs- und Einrichtungsaufwand<br>• Absoluter "Overkill" für einfache Steuerungsaufgaben        |
+
+---
+
+## Architektur-Entscheidung
+
+* **Entscheidung:** Arduino
+* **Begründung:** Einfachheit. Der Mehraufwand, der durch die Einarbeitung und Konfiguration komplexerer RTOS-Systeme wie mbOS oder Zephyr entstehen würde, bringt für die Anforderungen dieses Projekts keine nennenswerten Vorteile. Arduino bietet durch seine unkomplizierte Handhabung und die breite Bibliotheksunterstützung den effizientesten Weg zur Umsetzung.
