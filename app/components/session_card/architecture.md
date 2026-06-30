@@ -16,7 +16,7 @@ Die SessionCard stellt historische Trainingsdaten strukturiert dar, darunter das
 
 ## Requirements
 
-**FA1.6**: Die App zeigt historische Trainingseinheiten grafisch und statistisch an.
+**FA1.6.1**: Die App zeigt was für Übungen ausgeführt wurden
 
 ## Datenfluss
 

@@ -644,12 +644,9 @@ def create_system_context_diagram():
     
     # Draw boxes
     draw_c4_box(d, 20, 30, 110, 70, "Trainierender", "Person", "Benutzer, der seine Übungsausführung in Echtzeit analysieren möchte.", "actor")
-    draw_c4_box(d, 185, 30, 110, 70, "MoveLink System", "Software System", "Erfasst, filtert und visualisiert Bewegungsdaten, klassifiziert Übungen lokal.", "system")
-    draw_c4_box(d, 350, 30, 110, 70, "Datenbank", "PostgreSQL", "Speichert Benutzerprofile und historische Trainingsdaten.", "external")
-    
+    draw_c4_box(d, 185, 30, 110, 70, "MoveLink System", "Software System", "Erfasst, filtert und visualisiert Bewegungsdaten, klassifiziert Übungen lokal.", "system")    
     # Draw arrows
     draw_c4_arrow(d, 130, 65, 185, 65, "Nutzt für Training", teal)
-    draw_c4_arrow(d, 295, 65, 350, 65, "Speichert Daten", grey, is_dashed=True)
     return d
 
 def create_container_diagram():

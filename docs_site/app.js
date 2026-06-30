@@ -2,9 +2,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize Mermaid
     if (typeof mermaid !== 'undefined') {
-        mermaid.initialize({ 
-            startOnLoad: false, 
-            theme: 'base', 
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'base',
             securityLevel: 'loose',
             flowchart: { useMaxWidth: false },
             themeVariables: {
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i> <span>Dunkler Modus</span>';
             state.theme = 'dark';
         }
-        
+
         // Redraw SVG arrows/connections on theme change to match new styles
         if (state.activeTab === 'matrix-tab' && elements.toggleArchMatrixBtn && elements.toggleArchMatrixBtn.classList.contains('active')) {
             drawArchMatrixArrows();
@@ -241,8 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Determine if folder should be expanded
             const isExpanded = !!(
-                state.searchQuery || 
-                state.expandedFolders[subfolder.path] || 
+                state.searchQuery ||
+                state.expandedFolders[subfolder.path] ||
                 (state.activeFile && state.activeFile.startsWith(subfolder.path + '/'))
             );
 
@@ -254,13 +254,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const folderRow = document.createElement('button');
             folderRow.className = 'folder-row';
             folderRow.style.paddingLeft = `${14 + depth * 12}px`;
-            
+
             const chevronIcon = document.createElement('i');
             chevronIcon.className = 'fa-solid fa-chevron-right folder-chevron';
-            
+
             const folderIcon = document.createElement('i');
             folderIcon.className = `fa-regular ${isExpanded ? 'fa-folder-open' : 'fa-folder'} folder-icon`;
-            
+
             const folderName = document.createElement('span');
             folderName.className = 'folder-name';
             folderName.textContent = subfolder.name;
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Create children container
             const folderChildren = document.createElement('ul');
             folderChildren.className = 'folder-children';
-            
+
             // Recursively render children
             renderTreeNodes(subfolder, folderChildren, depth + 1);
             folderNode.appendChild(folderChildren);
@@ -282,10 +282,10 @@ document.addEventListener('DOMContentLoaded', () => {
             folderRow.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const nowExpanded = !folderNode.classList.contains('expanded');
-                
+
                 // Update state
                 state.expandedFolders[subfolder.path] = nowExpanded;
-                
+
                 // Toggle DOM classes/icons directly for instant response
                 if (nowExpanded) {
                     folderNode.classList.add('expanded');
@@ -307,12 +307,12 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.className = `nav-btn doc-btn ${isActive ? 'active' : ''}`;
             btn.style.paddingLeft = `${32 + depth * 12}px`;
             btn.innerHTML = `<i class="fa-regular fa-file-lines"></i> ${file.title}`;
-            
+
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 selectFile(file.path);
             });
-            
+
             li.appendChild(btn);
             container.appendChild(li);
         });
@@ -592,12 +592,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. Gather Container files
         const containerFiles = DOCS_DATA.files.filter(f => f.c4_level === 'Container');
-        
+
         // Helper to resolve component name and path dynamically from container markdown content
         function parseContainerComponents(containerFile) {
             const mappings = [];
             if (!containerFile || !containerFile.content) return mappings;
-            
+
             const lines = containerFile.content.split('\n');
             lines.forEach(line => {
                 // Pattern 1: **FA2.1** -> **[Sensordatenerfassung (Loop)](file:///...)**: ...
@@ -642,13 +642,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Helper to resolve classes dynamically
         function getComponentClasses(componentPath) {
             if (!componentPath) return [];
-            
+
             const classes = [];
             const normalizedLink = componentPath.replace(/^file:\/\/\/.*\/movelink\//, '').replace('../', '');
-            
+
             // Case 1: Component link is a direct code file
             const isCodeFile = normalizedLink.endsWith('.ts') || normalizedLink.endsWith('.tsx') || normalizedLink.endsWith('.cpp') || normalizedLink.endsWith('.ino') || normalizedLink.endsWith('.h') || normalizedLink.endsWith('.py');
-            
+
             let targetFiles = [];
             if (isCodeFile) {
                 targetFiles.push(normalizedLink);
@@ -656,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Component is a markdown file.
                 // Let's find all files in the same directory as this markdown file!
                 const dirPath = normalizedLink.substring(0, normalizedLink.lastIndexOf('/'));
-                
+
                 // Find all files in DOCS_DATA.codeContents that start with this dirPath
                 const codeFiles = Object.keys(DOCS_DATA.codeContents || {});
                 codeFiles.forEach(file => {
@@ -664,7 +664,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         targetFiles.push(file);
                     }
                 });
-                
+
                 // Also look inside the component's markdown file content for code links
                 const fileObj = DOCS_DATA.files.find(f => f.path === normalizedLink);
                 if (fileObj && fileObj.content) {
@@ -693,7 +693,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lines.forEach((line, index) => {
                     const lineNum = index + 1;
                     let name = '';
-                    
+
                     const classMatch = line.match(/(?:class|interface|struct)\s+(\w+)/);
                     const funcMatch = line.match(/(?:function|void|int|float|double|bool)\s+(\w+)\s*\(/);
                     const constFuncMatch = line.match(/const\s+(\w+)\s*=\s*(?:\(\)|function|\w+)/);
@@ -876,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ucCurrentIndex++;
                 }
                 ucRowCount = 0;
-                const uc = useCases[ucCurrentIndex] || { id: `UC-${ucCurrentIndex+1}`, title: '' };
+                const uc = useCases[ucCurrentIndex] || { id: `UC-${ucCurrentIndex + 1}`, title: '' };
                 const span = ucSpans[ucCurrentIndex];
 
                 trHtml += `
@@ -1000,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Dynamically build connections from actual requirements database
         const connections = [];
         const containerIds = ['FA1', 'FA2', 'FA3'];
-        
+
         containerIds.forEach(containerId => {
             const def = DOCS_DATA.definitions[containerId];
             if (def && def.links) {
@@ -1213,12 +1213,10 @@ document.addEventListener('DOMContentLoaded', () => {
             description: "System zur Echtzeit-Bewegungsanalyse von Fitnessübungen mittels IMU-Sensorik.",
             elements: [
                 { id: 'user', type: 'actor', title: 'Trainierender', description: 'Benutzer, der seine Übungsausführung in Echtzeit analysieren möchte.', tech: 'Person' },
-                { id: 'system', type: 'system-context', title: 'MoveLink System', description: 'Erfasst, filtert und visualisiert Bewegungsdaten, klassifiziert Übungen lokal und persistiert historische Datensätze.', tech: 'Software System' },
-                { id: 'external_db', type: 'external', title: 'Datenbank', description: 'Speichert Benutzerprofile und historische Trainingsdaten persistent.', tech: 'PostgreSQL' }
+                { id: 'system', type: 'system-context', title: 'MoveLink System', description: 'Erfasst, filtert und visualisiert Bewegungsdaten, klassifiziert Übungen lokal und persistiert historische Datensätze.', tech: 'Software System' }
             ],
             connections: [
-                { from: 'user', to: 'system', text: 'Nutzt für Training' },
-                { from: 'system', to: 'external_db', text: 'Speichert Daten' }
+                { from: 'user', to: 'system', text: 'Nutzt für Training' }
             ]
         },
         containers: {

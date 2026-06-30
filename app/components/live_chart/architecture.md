@@ -16,7 +16,10 @@ Die LiveChart visualisiert den Kurvenverlauf der Beschleunigung (X, Y, Z) und op
 
 ## Requirements
 
-**FA1.5**: Die App visualisiert die empfangenen Sensordaten und den Übungsfortschritt in Echtzeit.
+**FA1.5.1**: Die App visualisiert die empfangenen Sensordaten und den Übungsfortschritt in Echtzeit.
+**FA1.5.2**: Die App visualisiert den Anomalie-Score
+**FA1.5.3**: Die App visualisiert die Accuracy
+
 **NF1**: Die End-to-End-Latenz von der physischen Sensorbewegung bis zur visuellen Darstellung in der App muss ≤ 100 ms sein.
 
 ## Datenfluss

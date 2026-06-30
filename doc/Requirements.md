@@ -10,7 +10,7 @@ Dieses Dokument definiert die funktionalen und nicht-funktionalen Anforderungen 
 
 **FA2**: Zu dem System wird ein Trainingsgerät benötigt, welche als Input für der Bewegungen des Benutzers dient. Dieses Gerät gibt die Sensorwerte als auch die Art der Bewegung zurück. (UC-1, UC-2)
 
-**FA3**: Es wird eine Datenbank benötigt, welche die Daten des Benutzers speichert. (UC-1, UC-3)
+**FA3**: Es wird ein Ort benötigt, welche die Daten des Benutzers speichert. (UC-1, UC-3)
 
 ---
 
