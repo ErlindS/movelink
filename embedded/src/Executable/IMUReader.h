@@ -1,1 +1,1 @@
-../../components/sensordatenerfassung/IMUReader.h
+../components/sensordatenerfassung/IMUReader.h

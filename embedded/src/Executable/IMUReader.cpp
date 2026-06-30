@@ -1,1 +1,1 @@
-../../components/sensordatenerfassung/IMUReader.cpp
+../components/sensordatenerfassung/IMUReader.cpp

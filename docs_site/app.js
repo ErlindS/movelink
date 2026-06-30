@@ -1196,11 +1196,11 @@ document.addEventListener('DOMContentLoaded', () => {
             firmware: {
                 title: "Sensor-Firmware Komponenten",
                 elements: [
-                    { id: 'imu_reader', type: 'component', title: 'Sensordatenerfassung (Loop)', description: 'Periodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz.', tech: 'C++ Module', file: 'embedded/components/sensordatenerfassung/architecture.md' },
-                    { id: 'inference_engine', type: 'component', title: 'Inferenz-Engine (Edge Impulse)', description: 'Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.', tech: 'Inferenzbibliothek', file: 'embedded/components/inferenz_engine/architecture.md' },
-                    { id: 'led_display_controller', type: 'component', title: 'LED- & Display-Controller', description: 'Gibt dem Trainierenden direktes visuelles Feedback zur Qualität der Übungsausführung.', tech: 'C++ Module', file: 'embedded/components/led_display_controller/architecture.md' },
-                    { id: 'ble_streamer', type: 'component', title: 'BLE-Streamer', description: 'Überträgt die erfassten 6-Achsen-Messwerte über Bluetooth Low Energy (BLE) an die Mobile App.', tech: 'C++ Module', file: 'embedded/components/ble_streamer/architecture.md' },
-                    { id: 'gehause', type: 'component', title: 'Gehäuse', description: 'Physisches, schützendes 3D-Druck-Gehäuse des Sensors.', tech: '3D CAD Model (Blender Python)', file: 'embedded/components/gehause/architecture.md' },
+                    { id: 'imu_reader', type: 'component', title: 'Sensordatenerfassung (Loop)', description: 'Periodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz.', tech: 'C++ Module', file: 'embedded/src/components/sensordatenerfassung/architecture.md' },
+                    { id: 'inference_engine', type: 'component', title: 'Inferenz-Engine (Edge Impulse)', description: 'Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.', tech: 'Inferenzbibliothek', file: 'embedded/src/components/inferenz_engine/architecture.md' },
+                    { id: 'led_display_controller', type: 'component', title: 'LED- & Display-Controller', description: 'Gibt dem Trainierenden direktes visuelles Feedback zur Qualität der Übungsausführung.', tech: 'C++ Module', file: 'embedded/src/components/led_display_controller/architecture.md' },
+                    { id: 'ble_streamer', type: 'component', title: 'BLE-Streamer', description: 'Überträgt die erfassten 6-Achsen-Messwerte über Bluetooth Low Energy (BLE) an die Mobile App.', tech: 'C++ Module', file: 'embedded/src/components/ble_streamer/architecture.md' },
+                    { id: 'gehause', type: 'component', title: 'Gehäuse', description: 'Physisches, schützendes 3D-Druck-Gehäuse des Sensors.', tech: '3D CAD Model (Blender Python)', file: 'embedded/src/components/gehause/architecture.md' },
                     { id: 'app_ghost', type: 'external', title: 'Mobile App Container', description: 'Visualisiert Echtzeitdaten, steuert Geräte-Pairing und verwaltet Trainings.', tech: 'C4 Container (React Native)' }
                 ],
                 connections: [
@@ -1215,24 +1215,24 @@ document.addEventListener('DOMContentLoaded', () => {
             imu_reader: {
                 title: "Sensordatenerfassung Klassen & Funktionen",
                 elements: [
-                    { id: 'init_imu', type: 'class', title: 'initIMU()', description: 'Initialisiert die LSM6DS3 IMU-Hardware über den I2C-Bus.', tech: 'C++ Function', file: 'embedded/components/sensordatenerfassung/IMUReader.cpp', line: 12 },
-                    { id: 'read_sensor_data', type: 'class', title: 'readSensorData()', description: 'Liest Beschleunigungs- und Drehratenwerte mit 50Hz, clampt auf 2G und skaliert in m/s².', tech: 'C++ Function', file: 'embedded/components/sensordatenerfassung/IMUReader.cpp', line: 17 }
+                    { id: 'init_imu', type: 'class', title: 'initIMU()', description: 'Initialisiert die LSM6DS3 IMU-Hardware über den I2C-Bus.', tech: 'C++ Function', file: 'embedded/src/components/sensordatenerfassung/IMUReader.cpp', line: 12 },
+                    { id: 'read_sensor_data', type: 'class', title: 'readSensorData()', description: 'Liest Beschleunigungs- und Drehratenwerte mit 50Hz, clampt auf 2G und skaliert in m/s².', tech: 'C++ Function', file: 'embedded/src/components/sensordatenerfassung/IMUReader.cpp', line: 17 }
                 ],
                 connections: []
             },
             inference_engine: {
                 title: "Inferenz-Engine Klassen & Funktionen",
                 elements: [
-                    { id: 'run_model_inference', type: 'class', title: 'runModelInference()', description: 'Erstellt das Signal aus dem DSP-Puffer und führt den CNN-Klassifikator aus.', tech: 'C++ Function', file: 'embedded/components/inferenz_engine/InferenceEngine.cpp', line: 7 }
+                    { id: 'run_model_inference', type: 'class', title: 'runModelInference()', description: 'Erstellt das Signal aus dem DSP-Puffer und führt den CNN-Klassifikator aus.', tech: 'C++ Function', file: 'embedded/src/components/inferenz_engine/InferenceEngine.cpp', line: 7 }
                 ],
                 connections: []
             },
             led_display_controller: {
                 title: "LED- & Display-Controller Klassen & Funktionen",
                 elements: [
-                    { id: 'init_feedback', type: 'class', title: 'initFeedback()', description: 'Initialisiert OLED-Display (U8x8) und konfiguriert RGB LED Pins (11, 12, 13) als Ausgang.', tech: 'C++ Function', file: 'embedded/components/led_display_controller/VisualFeedback.cpp', line: 12 },
-                    { id: 'update_feedback', type: 'class', title: 'updateFeedback()', description: 'Steuert Low-Active RGB-LEDs (Blau=Idle, Grün=Perfekt, Rot=Fehler) und zeigt Statusmeldungen an.', tech: 'C++ Function', file: 'embedded/components/led_display_controller/VisualFeedback.cpp', line: 25 },
-                    { id: 'send_json_to_pc', type: 'class', title: 'sendJsonToPC()', description: 'Formatiert Inferenzwerte, Konfidenz und Tipps als JSON-String und sendet diese via Serial.', tech: 'C++ Function', file: 'embedded/components/led_display_controller/VisualFeedback.cpp', line: 68 }
+                    { id: 'init_feedback', type: 'class', title: 'initFeedback()', description: 'Initialisiert OLED-Display (U8x8) und konfiguriert RGB LED Pins (11, 12, 13) als Ausgang.', tech: 'C++ Function', file: 'embedded/src/components/led_display_controller/VisualFeedback.cpp', line: 12 },
+                    { id: 'update_feedback', type: 'class', title: 'updateFeedback()', description: 'Steuert Low-Active RGB-LEDs (Blau=Idle, Grün=Perfekt, Rot=Fehler) und zeigt Statusmeldungen an.', tech: 'C++ Function', file: 'embedded/src/components/led_display_controller/VisualFeedback.cpp', line: 25 },
+                    { id: 'send_json_to_pc', type: 'class', title: 'sendJsonToPC()', description: 'Formatiert Inferenzwerte, Konfidenz und Tipps als JSON-String und sendet diese via Serial.', tech: 'C++ Function', file: 'embedded/src/components/led_display_controller/VisualFeedback.cpp', line: 68 }
                 ],
                 connections: [
                     { from: 'update_feedback', to: 'send_json_to_pc', text: 'ruft auf' }
@@ -1290,8 +1290,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ble_streamer: {
                 title: "BLE-Streamer Klassen & Funktionen",
                 elements: [
-                    { id: 'init_ble', type: 'class', title: 'initBLE()', description: 'Initialisiert den BLE-Stack des nRF52840, konfiguriert den GATT-Service und startet Advertising.', tech: 'C++ Function', file: 'embedded/components/ble_streamer/BLEStreamer.cpp', line: 8 },
-                    { id: 'stream_imu_data', type: 'class', title: 'streamIMUData()', description: 'Formatiert 6-Achsen-Daten in einen 24-Byte-Puffer und updatet die BLE GATT Characteristic.', tech: 'C++ Function', file: 'embedded/components/ble_streamer/BLEStreamer.cpp', line: 27 }
+                    { id: 'init_ble', type: 'class', title: 'initBLE()', description: 'Initialisiert den BLE-Stack des nRF52840, konfiguriert den GATT-Service und startet Advertising.', tech: 'C++ Function', file: 'embedded/src/components/ble_streamer/BLEStreamer.cpp', line: 8 },
+                    { id: 'stream_imu_data', type: 'class', title: 'streamIMUData()', description: 'Formatiert 6-Achsen-Daten in einen 24-Byte-Puffer und updatet die BLE GATT Characteristic.', tech: 'C++ Function', file: 'embedded/src/components/ble_streamer/BLEStreamer.cpp', line: 27 }
                 ],
                 connections: []
             }

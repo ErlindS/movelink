@@ -28,11 +28,11 @@ Die Sensor-Firmware läuft auf dem XIAO nRF52840 Sense Controller. Sie erfasst B
 
 ## Komponenten in diesem Container
 Die Sensor-Firmware besteht aus folgenden logischen Komponenten:
-**FA2.1** -> **[Sensordatenerfassung (Loop)](file:///home/arch/repo/movelink/embedded/components/sensordatenerfassung/architecture.md)**: Liest kontinuierlich Beschleunigung (X, Y, Z) und Gyroskop (X, Y, Z).
-**FA2.2, FA2.3** -> **[Inferenz-Engine (Edge Impulse)](file:///home/arch/repo/movelink/embedded/components/inferenz_engine/architecture.md)**: Klassifiziert Übungsausführungen lokal auf dem Chip.
-**FA2.4** -> **[LED- & Display-Controller](file:///home/arch/repo/movelink/embedded/components/led_display_controller/architecture.md)**: Bietet direktes visuelles Feedback an den Nutzer bei Fehlern über RGB-LEDs.
-**FA2.5** -> **[BLE-Streamer](file:///home/arch/repo/movelink/embedded/components/ble_streamer/architecture.md)**: Überträgt die erfassten Daten an den App-Container.
-**FA2.6** -> **[Gehäuse](file:///home/arch/repo/movelink/embedded/components/gehause/architecture.md)**: Bietet physischen Schutz, sodass das Tragen erleichtert wird.
+**FA2.1** -> **[Sensordatenerfassung (Loop)](file:///home/arch/repo/movelink/embedded/src/components/sensordatenerfassung/architecture.md)**: Liest kontinuierlich Beschleunigung (X, Y, Z) und Gyroskop (X, Y, Z).
+**FA2.2, FA2.3** -> **[Inferenz-Engine (Edge Impulse)](file:///home/arch/repo/movelink/embedded/src/components/inferenz_engine/architecture.md)**: Klassifiziert Übungsausführungen lokal auf dem Chip.
+**FA2.4** -> **[LED- & Display-Controller](file:///home/arch/repo/movelink/embedded/src/components/led_display_controller/architecture.md)**: Bietet direktes visuelles Feedback an den Nutzer bei Fehlern über RGB-LEDs.
+**FA2.5** -> **[BLE-Streamer](file:///home/arch/repo/movelink/embedded/src/components/ble_streamer/architecture.md)**: Überträgt die erfassten Daten an den App-Container.
+**FA2.6** -> **[Gehäuse](file:///home/arch/repo/movelink/embedded/src/components/gehause/architecture.md)**: Bietet physischen Schutz, sodass das Tragen erleichtert wird.
 
 ## Datenfluss
 ```mermaid

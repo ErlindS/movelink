@@ -1,1 +1,1 @@
-../../components/ble_streamer/BLEStreamer.cpp
+../components/ble_streamer/BLEStreamer.cpp

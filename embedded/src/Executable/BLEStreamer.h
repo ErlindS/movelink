@@ -1,1 +1,1 @@
-../../components/ble_streamer/BLEStreamer.h
+../components/ble_streamer/BLEStreamer.h
