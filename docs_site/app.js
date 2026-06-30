@@ -1,5 +1,10 @@
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Mermaid
+    if (typeof mermaid !== 'undefined') {
+        mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
+    }
+
     // 1. Initialize State
     const state = {
         activeTab: 'docs-tab',
@@ -22,7 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app = {
         showTraceDetails,
         openCodeView,
-        navigateToHeader
+        navigateToHeader,
+        onC4MermaidNodeClick,
+        onC4MermaidComponentClick
     };
 
     // 2. DOM Elements
@@ -356,15 +363,32 @@ document.addEventListener('DOMContentLoaded', () => {
             table.parentNode.insertBefore(wrapper, table);
             wrapper.appendChild(table);
         });
-
         // Trigger Mermaid and Prism
         try {
-            mermaid.init(undefined, '.mermaid');
+            if (typeof mermaid !== 'undefined') {
+                const mermaidBlocks = elements.markdownRender.querySelectorAll('code.language-mermaid');
+                if (mermaidBlocks.length > 0) {
+                    mermaidBlocks.forEach((block, index) => {
+                        const pre = block.parentElement;
+                        const div = document.createElement('div');
+                        div.className = 'mermaid';
+                        div.id = `mermaid-dyn-${Date.now()}-${index}`;
+                        div.textContent = block.textContent;
+                        pre.parentNode.replaceChild(div, pre);
+                    });
+                    if (typeof mermaid.run === 'function') {
+                        mermaid.run({ querySelector: '.mermaid' });
+                    } else if (typeof mermaid.init === 'function') {
+                        mermaid.init(undefined, '.mermaid');
+                    }
+                }
+            }
         } catch (e) {
             console.error('Mermaid render error:', e);
         }
-        Prism.highlightAllUnder(elements.markdownRender);
-
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAllUnder(elements.markdownRender);
+        }
         // Render TOC
         renderTOC(file.headings);
 
@@ -1034,6 +1058,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
 
+    // 12.5 C4 Mermaid Node Click handler (Code Level)
+    function onC4MermaidNodeClick(nodeId) {
+        if (!state.c4ActiveComponent) return;
+        const componentData = C4_DATA.classes[state.c4ActiveComponent];
+        if (!componentData) return;
+        const el = componentData.elements.find(e => e.id === nodeId);
+        if (el) {
+            showC4Detail(el);
+            if (el.file) {
+                openCodeView(el.file, el.line || 1);
+            }
+        }
+    }
+
+    // 12.6 C4 Mermaid Component Click handler (Components Level -> drills into Code Level)
+    function onC4MermaidComponentClick(nodeId) {
+        if (!state.c4ActiveContainer) return;
+        const containerData = C4_DATA.components[state.c4ActiveContainer];
+        if (!containerData) return;
+        const el = containerData.elements.find(e => e.id === nodeId);
+        if (el) {
+            // Show detail in sidebar
+            showC4Detail(el);
+            // Only drill down for real components (not ghosts/externals)
+            if (el.type === 'component' && C4_DATA.classes[el.id]) {
+                zoomToLevel('code', state.c4ActiveContainer, el.id);
+            }
+        }
+    }
+
     // 13. Open Source Code Modal View
     function openCodeView(filePath, lineNum) {
         elements.codeModalTitle.textContent = `Datei: ${filePath} (Zeile ${lineNum})`;
@@ -1204,10 +1258,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'app_ghost', type: 'external', title: 'Mobile App Container', description: 'Visualisiert Echtzeitdaten, steuert Geräte-Pairing und verwaltet Trainings.', tech: 'C4 Container (React Native)' }
                 ],
                 connections: [
-                    { from: 'imu_reader', to: 'inference_engine', text: 'Liefert Sensor-Rohdaten' },
-                    { from: 'inference_engine', to: 'led_display_controller', text: 'Steuert Status-LED/Display' },
-                    { from: 'imu_reader', to: 'ble_streamer', text: 'Überträgt Rohdaten' },
-                    { from: 'ble_streamer', to: 'app_ghost', text: 'BLE Data Stream' }
+                    { from: 'imu_reader', to: 'inference_engine', text: 'Arrays([accelerometerX, accelerometerY, accelerometerZ, gyroscopeX, gyroscopeY, gyroscopeZ])' },
+                    { from: 'inference_engine', to: 'led_display_controller', text: '{ klasse, wahrscheinlichkeit, anomalie_score }' },
+                    { from: 'inference_engine', to: 'ble_streamer', text: '{ klasse, wahrscheinlichkeit, anomalie_score }' },
+                    { from: 'imu_reader', to: 'ble_streamer', text: 'Raw IMU Data (6-Axis)' },
+                    { from: 'ble_streamer', to: 'app_ghost', text: 'Json ({"event": "inferenz_ergebnis", "klasse": "LateralRaises", "wahrscheinlichkeit": 0.824, "anomalie_score": 4.515, "tipp": "Warte auf Bluetooth-Verbindung..."})' }
                 ]
             }
         },
@@ -1408,40 +1463,116 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         else if (state.c4Level === 'components') {
-            if (state.c4ActiveContainer === 'app') {
-                board.classList.add('c4-grid-app');
-            } else if (state.c4ActiveContainer === 'firmware') {
-                board.classList.add('c4-grid-firmware');
-            } else {
-                board.classList.add('c4-grid-components');
-            }
-            const elementsList = C4_DATA.components[state.c4ActiveContainer].elements;
+            board.classList.add('c4-mermaid-view');
+            const containerData = C4_DATA.components[state.c4ActiveContainer];
+            const elementsList = containerData.elements;
+            const connections = containerData.connections || [];
+
+            // Build clean Mermaid flowchart - keep labels simple to avoid syntax issues
+            let mmd = 'flowchart LR\n';
+            mmd += '    classDef comp fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a\n';
+            mmd += '    classDef ext fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#334155\n';
 
             elementsList.forEach(el => {
-                const card = createC4Card(el);
-
-                // Clicking component drills down to code/class level
-                card.title = "Klicke zum Betrachten der Code-Ebene (Klassen & Funktionen)";
-                card.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    zoomToLevel('code', state.c4ActiveContainer, el.id);
-                });
-
-                board.appendChild(card);
+                const label = el.title.replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
+                const cls = el.type === 'external' ? 'ext' : 'comp';
+                mmd += `    ${el.id}["${label}"]:::${cls}\n`;
             });
+
+            connections.forEach(conn => {
+                // Use short, clean edge labels - strip all special chars
+                let label = (conn.text || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
+                if (label.length > 35) label = label.substring(0, 33) + '...';
+                if (label) {
+                    mmd += `    ${conn.from} -->|"${label}"|${conn.to}\n`;
+                } else {
+                    mmd += `    ${conn.from} --> ${conn.to}\n`;
+                }
+            });
+
+            const mermaidDiv = document.createElement('div');
+            mermaidDiv.className = 'mermaid';
+            mermaidDiv.id = 'c4-components-mermaid';
+            mermaidDiv.textContent = mmd;
+            board.appendChild(mermaidDiv);
+
+            setTimeout(async () => {
+                try {
+                    if (typeof mermaid !== 'undefined') {
+                        await mermaid.run({ querySelector: '#c4-components-mermaid' });
+                        // Attach click handlers programmatically after Mermaid renders
+                        const svgEl = mermaidDiv.querySelector('svg');
+                        if (svgEl) {
+                            svgEl.querySelectorAll('.node').forEach(nodeEl => {
+                                const nodeId = nodeEl.id ? nodeEl.id.split('-')[0] : (nodeEl.getAttribute('data-id') || '');
+                                if (!nodeId) return;
+                                nodeEl.style.cursor = 'pointer';
+                                nodeEl.addEventListener('click', () => {
+                                    onC4MermaidComponentClick(nodeId);
+                                });
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error('Mermaid components render error:', err);
+                }
+            }, 100);
         }
         else if (state.c4Level === 'code') {
-            board.classList.add('c4-grid-components');
+            board.classList.add('c4-mermaid-view');
             const componentData = C4_DATA.classes[state.c4ActiveComponent];
 
             if (componentData && componentData.elements) {
+                let mmd = 'flowchart TD\n';
+                mmd += '    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a\n';
+
                 componentData.elements.forEach(el => {
-                    const card = createC4Card(el);
-                    board.appendChild(card);
+                    const label = el.title.replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
+                    const tech = (el.tech || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
+                    mmd += `    ${el.id}["${label} - ${tech}"]\n`;
                 });
+
+                if (componentData.connections && componentData.connections.length > 0) {
+                    componentData.connections.forEach(conn => {
+                        let label = (conn.text || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
+                        if (label) {
+                            mmd += `    ${conn.from} -->|"${label}"|${conn.to}\n`;
+                        } else {
+                            mmd += `    ${conn.from} --> ${conn.to}\n`;
+                        }
+                    });
+                }
+
+                const mermaidDiv = document.createElement('div');
+                mermaidDiv.className = 'mermaid';
+                mermaidDiv.id = 'c4-code-mermaid';
+                mermaidDiv.textContent = mmd;
+                board.appendChild(mermaidDiv);
+
+                setTimeout(async () => {
+                    try {
+                        if (typeof mermaid !== 'undefined') {
+                            await mermaid.run({ querySelector: '#c4-code-mermaid' });
+                            // Attach click handlers programmatically
+                            const svgEl = mermaidDiv.querySelector('svg');
+                            if (svgEl) {
+                                svgEl.querySelectorAll('.node').forEach(nodeEl => {
+                                    const nodeId = nodeEl.id ? nodeEl.id.split('-')[0] : (nodeEl.getAttribute('data-id') || '');
+                                    if (!nodeId) return;
+                                    nodeEl.style.cursor = 'pointer';
+                                    nodeEl.addEventListener('click', () => {
+                                        onC4MermaidNodeClick(nodeId);
+                                    });
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Mermaid code view render error:', err);
+                    }
+                }, 100);
             } else {
                 board.innerHTML = `
-                    <div class="detail-placeholder" style="grid-column: span 3; text-align: center;">
+                    <div class="detail-placeholder" style="text-align: center; margin: auto;">
                         <i class="fa-solid fa-code"></i>
                         <p>Keine detaillierten Klassen oder Funktionen für diese Komponente modelliert.</p>
                     </div>
@@ -1705,10 +1836,10 @@ document.addEventListener('DOMContentLoaded', () => {
             connections = C4_DATA.context.connections || [];
         } else if (state.c4Level === 'containers') {
             connections = C4_DATA.containers.connections || [];
-        } else if (state.c4Level === 'components' && state.c4ActiveContainer) {
-            connections = C4_DATA.components[state.c4ActiveContainer].connections || [];
-        } else if (state.c4Level === 'code' && state.c4ActiveComponent) {
-            connections = (C4_DATA.classes[state.c4ActiveComponent] && C4_DATA.classes[state.c4ActiveComponent].connections) || [];
+        } else if (state.c4Level === 'components') {
+            connections = []; // Mermaid handles connections natively
+        } else if (state.c4Level === 'code') {
+            connections = []; // Mermaid handles connections natively
         }
 
         if (connections.length === 0) {
@@ -1792,15 +1923,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let pathData = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
             let isSegmented = false;
 
-            if (state.c4Level === 'components' && state.c4ActiveContainer === 'firmware' && conn.from === 'imu_reader' && conn.to === 'ble_streamer') {
-                const startX = boxA.x + boxA.w / 2;
-                const startY = boxA.y + boxA.h + 8; // 8px gap from start card bottom
-                const endX = boxB.x + boxB.w / 2;
-                const endY = boxB.y + boxB.h + 12; // 12px gap from end card bottom
-
-                pathData = `M ${startX} ${startY} L ${startX} ${startY + 25} L ${endX} ${startY + 25} L ${endX} ${endY}`;
-                isSegmented = true;
-            }
 
             path.setAttribute('d', pathData);
             path.setAttribute('stroke', strokeColor);
@@ -1822,11 +1944,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isSegmented) {
                     const startX = boxA.x + boxA.w / 2;
-                    const startY = boxA.y + boxA.h;
+                    const startY = boxA.y;
                     const endX = boxB.x + boxB.w / 2;
 
                     midX = (startX + endX) / 2;
-                    midY = startY + 30;
+                    midY = startY - 35;
                 }
 
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');

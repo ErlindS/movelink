@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.6/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f1f5f9; }
+        #diagram-container { background: #fff; border-radius: 12px; padding: 24px; min-height: 200px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        #breadcrumb { margin-bottom: 16px; font-size: 14px; color: #64748b; }
+        #breadcrumb span { cursor: pointer; color: #8b5cf6; }
+        #breadcrumb span:hover { text-decoration: underline; }
+        h2 { color: #0f172a; margin-top: 0; }
+    </style>
+</head>
+<body>
+
+<h2>Mermaid Drill-Down Test</h2>
+<div id="breadcrumb"></div>
+<div id="diagram-container"></div>
+
+<script>
+mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
+
+// Level 1: Komponenten
+const level1 = `flowchart LR
+    classDef comp fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
+    classDef ext fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#334155
+    imu["Sensordatenerfassung"]:::comp
+    engine["Inferenz-Engine"]:::comp
+    ble["BLE-Streamer"]:::comp
+    led["LED Controller"]:::comp
+    app["Mobile App"]:::ext
+    imu -->|"IMU Arrays"|engine
+    engine -->|"Klasse, Score"|led
+    engine -->|"Klasse, Score"|ble
+    imu -->|"Raw IMU"|ble
+    ble -->|"JSON Stream"|app
+    click imu call drillDown()
+    click engine call drillDown()
+    click ble call drillDown()
+    click led call drillDown()`;
+
+// Level 2: Innenansichten pro Komponente
+const level2 = {
+    imu: `flowchart TD
+    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
+    initIMU["initIMU - C++ Function"]:::cls
+    readSensor["readSensorData - C++ Function"]:::cls
+    initIMU --> readSensor
+    click initIMU call codeClick()
+    click readSensor call codeClick()`,
+
+    engine: `flowchart TD
+    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
+    runInference["runModelInference - C++ Function"]:::cls
+    click runInference call codeClick()`,
+
+    ble: `flowchart TD
+    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
+    initBLE["initBLE - C++ Function"]:::cls
+    streamIMU["streamIMUData - C++ Function"]:::cls
+    initBLE --> streamIMU
+    click initBLE call codeClick()
+    click streamIMU call codeClick()`,
+
+    led: `flowchart TD
+    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
+    initFB["initFeedback - C++ Function"]:::cls
+    updateFB["updateFeedback - C++ Function"]:::cls
+    sendJson["sendJsonToPC - C++ Function"]:::cls
+    initFB --> updateFB
+    updateFB --> sendJson
+    click initFB call codeClick()
+    click updateFB call codeClick()
+    click sendJson call codeClick()`
+};
+
+const nodeNames = {
+    imu: 'Sensordatenerfassung',
+    engine: 'Inferenz-Engine',
+    ble: 'BLE-Streamer',
+    led: 'LED Controller'
+};
+
+// Global callbacks (simple names, no dots - required for Mermaid v10)
+window.drillDown = function(nodeId) {
+    if (level2[nodeId]) {
+        showLevel2(nodeId);
+    }
+};
+
+window.codeClick = function(nodeId) {
+    alert('Quellcode öffnen für: ' + nodeId);
+};
+
+let mermaidCounter = 0;
+
+async function renderDiagram(mmdText) {
+    const container = document.getElementById('diagram-container');
+    container.innerHTML = '';
+
+    mermaidCounter++;
+    const div = document.createElement('div');
+    div.className = 'mermaid';
+    div.id = 'mmd-' + mermaidCounter;
+    div.textContent = mmdText;
+    container.appendChild(div);
+
+    await mermaid.run({ querySelector: '#' + div.id });
+}
+
+function updateBreadcrumb(componentId) {
+    const bc = document.getElementById('breadcrumb');
+    if (componentId) {
+        bc.innerHTML = `<span onclick="showLevel1()">⬅ Komponenten</span> &rsaquo; <b>${nodeNames[componentId] || componentId}</b>`;
+    } else {
+        bc.innerHTML = `<b>Komponenten-Übersicht</b> <span style="color:#94a3b8">(Klicke auf eine Komponente)</span>`;
+    }
+}
+
+window.showLevel1 = function() {
+    updateBreadcrumb(null);
+    renderDiagram(level1);
+};
+
+function showLevel2(componentId) {
+    updateBreadcrumb(componentId);
+    renderDiagram(level2[componentId]);
+}
+
+// Start
+showLevel1();
+</script>
+</body>
+</html>
