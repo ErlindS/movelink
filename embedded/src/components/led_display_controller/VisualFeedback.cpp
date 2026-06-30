@@ -1,12 +1,18 @@
 // @implements FA2.4
 #include "VisualFeedback.h"
-#ifdef ARDUINO
-#include "BLEStreamer.h"
-#else
 #include "../ble_streamer/BLEStreamer.h"
-#endif
 
 // RGB LED Pins des XIAO nRF52840 (LOW = An, HIGH = Aus)
+#ifndef LEDR
+#define LEDR LED_RED
+#endif
+#ifndef LEDB
+#define LEDB LED_BLUE
+#endif
+#ifndef LEDG
+#define LEDG LED_GREEN
+#endif
+
 static const int RED_ledPin = LEDR;
 static const int BLUE_ledPin = LEDB;
 static const int GREEN_ledPin = LEDG;
