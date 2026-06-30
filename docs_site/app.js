@@ -1273,12 +1273,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'init_imu', type: 'class', title: 'initIMU()', description: 'Initialisiert die LSM6DS3 IMU-Hardware über den I2C-Bus.', tech: 'C++ Function', file: 'embedded/src/components/sensordatenerfassung/IMUReader.cpp', line: 12 },
                     { id: 'read_sensor_data', type: 'class', title: 'readSensorData()', description: 'Liest Beschleunigungs- und Drehratenwerte mit 50Hz, clampt auf 2G und skaliert in m/s².', tech: 'C++ Function', file: 'embedded/src/components/sensordatenerfassung/IMUReader.cpp', line: 17 }
                 ],
-                connections: []
+                connections: [
+                    { from: 'init_imu', to: 'read_sensor_data' }
+                ]
             },
             inference_engine: {
                 title: "Inferenz-Engine Klassen & Funktionen",
                 elements: [
-                    { id: 'run_model_inference', type: 'class', title: 'runModelInference()', description: 'Erstellt das Signal aus dem DSP-Puffer und führt den CNN-Klassifikator aus.', tech: 'C++ Function', file: 'embedded/src/components/inferenz_engine/InferenceEngine.cpp', line: 7 }
+                    { id: 'run_model_inference', type: 'class', title: 'runModelInference()', description: 'Erstellt das Signal aus dem DSP-Puffer und führt den CNN-Klassifikator aus.', tech: 'C++ Function', file: 'embedded/src/components/inferenz_engine/InferenceEngine_impl.h', line: 7 }
                 ],
                 connections: []
             },
@@ -1290,6 +1292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'send_json_to_pc', type: 'class', title: 'sendJsonToPC()', description: 'Formatiert Inferenzwerte, Konfidenz und Tipps als JSON-String und sendet diese via Serial.', tech: 'C++ Function', file: 'embedded/src/components/led_display_controller/VisualFeedback.cpp', line: 68 }
                 ],
                 connections: [
+                    { from: 'init_feedback', to: 'update_feedback' },
                     { from: 'update_feedback', to: 'send_json_to_pc', text: 'ruft auf' }
                 ]
             },
@@ -1348,7 +1351,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'init_ble', type: 'class', title: 'initBLE()', description: 'Initialisiert den BLE-Stack des nRF52840, konfiguriert den GATT-Service und startet Advertising.', tech: 'C++ Function', file: 'embedded/src/components/ble_streamer/BLEStreamer.cpp', line: 8 },
                     { id: 'stream_imu_data', type: 'class', title: 'streamIMUData()', description: 'Formatiert 6-Achsen-Daten in einen 24-Byte-Puffer und updatet die BLE GATT Characteristic.', tech: 'C++ Function', file: 'embedded/src/components/ble_streamer/BLEStreamer.cpp', line: 27 }
                 ],
-                connections: []
+                connections: [
+                    { from: 'init_ble', to: 'stream_imu_data' }
+                ]
             }
         }
     };
@@ -1468,10 +1473,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const elementsList = containerData.elements;
             const connections = containerData.connections || [];
 
-            // Build clean Mermaid flowchart - keep labels simple to avoid syntax issues
+            // Helper to reliably extract original node id from Mermaid generated SVG node
+            const extractId = (nodeEl, knownIds) => {
+                let raw = nodeEl.id || nodeEl.getAttribute('data-id') || '';
+                let cleaned = raw.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+                if (knownIds.includes(cleaned)) return cleaned;
+                for (const id of knownIds) {
+                    if (raw === id || raw.startsWith('flowchart-' + id + '-') || raw.includes('-' + id + '-')) {
+                        return id;
+                    }
+                }
+                return cleaned;
+            };
+
+            const knownComponentIds = elementsList.map(e => e.id);
+
+            // Build clean Mermaid flowchart with high-contrast palette
             let mmd = 'flowchart LR\n';
-            mmd += '    classDef comp fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a\n';
-            mmd += '    classDef ext fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#334155\n';
+            mmd += '    classDef comp fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc\n';
+            mmd += '    classDef ext fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0\n';
 
             elementsList.forEach(el => {
                 const label = el.title.replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
@@ -1480,7 +1500,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             connections.forEach(conn => {
-                // Use short, clean edge labels - strip all special chars
                 let label = (conn.text || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
                 if (label.length > 35) label = label.substring(0, 33) + '...';
                 if (label) {
@@ -1500,14 +1519,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     if (typeof mermaid !== 'undefined') {
                         await mermaid.run({ querySelector: '#c4-components-mermaid' });
-                        // Attach click handlers programmatically after Mermaid renders
                         const svgEl = mermaidDiv.querySelector('svg');
                         if (svgEl) {
                             svgEl.querySelectorAll('.node').forEach(nodeEl => {
-                                const nodeId = nodeEl.id ? nodeEl.id.split('-')[0] : (nodeEl.getAttribute('data-id') || '');
-                                if (!nodeId) return;
+                                const nodeId = extractId(nodeEl, knownComponentIds);
+                                if (!nodeId || !knownComponentIds.includes(nodeId)) return;
                                 nodeEl.style.cursor = 'pointer';
-                                nodeEl.addEventListener('click', () => {
+                                nodeEl.classList.add('clickable');
+                                nodeEl.addEventListener('click', (e) => {
+                                    e.stopPropagation();
                                     onC4MermaidComponentClick(nodeId);
                                 });
                             });
@@ -1523,15 +1543,86 @@ document.addEventListener('DOMContentLoaded', () => {
             const componentData = C4_DATA.classes[state.c4ActiveComponent];
 
             if (componentData && componentData.elements) {
-                let mmd = 'flowchart TD\n';
-                mmd += '    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a\n';
+                let parentContainerData = state.c4ActiveContainer ? C4_DATA.components[state.c4ActiveContainer] : null;
+                if (!parentContainerData) {
+                    for (const key in C4_DATA.components) {
+                        if (C4_DATA.components[key].elements.some(e => e.id === state.c4ActiveComponent)) {
+                            parentContainerData = C4_DATA.components[key];
+                            break;
+                        }
+                    }
+                }
 
+                const compTitleMap = {};
+                if (parentContainerData && parentContainerData.elements) {
+                    parentContainerData.elements.forEach(el => {
+                        compTitleMap[el.id] = el.title.replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
+                    });
+                }
+
+                const inputs = parentContainerData && parentContainerData.connections ?
+                    parentContainerData.connections.filter(c => c.to === state.c4ActiveComponent) : [];
+                const outputs = parentContainerData && parentContainerData.connections ?
+                    parentContainerData.connections.filter(c => c.from === state.c4ActiveComponent) : [];
+
+                // Helper to reliably extract original node id from Mermaid generated SVG node
+                const extractId = (nodeEl, knownIds) => {
+                    let raw = nodeEl.id || nodeEl.getAttribute('data-id') || '';
+                    let cleaned = raw.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+                    if (knownIds.includes(cleaned)) return cleaned;
+                    for (const id of knownIds) {
+                        if (raw === id || raw.startsWith('flowchart-' + id + '-') || raw.includes('-' + id + '-')) {
+                            return id;
+                        }
+                    }
+                    return cleaned;
+                };
+
+                const internalIds = componentData.elements.map(e => e.id);
+                const ghostInIds = inputs.map((_, i) => 'ghost_in_' + i);
+                const ghostOutIds = outputs.map((_, i) => 'ghost_out_' + i);
+                const allKnownIds = [...internalIds, ...ghostInIds, ...ghostOutIds];
+
+                let mmd = 'flowchart LR\n';
+                mmd += '    classDef cls fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc\n';
+                mmd += '    classDef ghost fill:#0f172a,stroke:#38bdf8,stroke-width:2px,stroke-dasharray:5 5,color:#38bdf8\n';
+
+                // Ghost inputs
+                inputs.forEach((inp, i) => {
+                    const ghostId = 'ghost_in_' + i;
+                    const ghostLabel = compTitleMap[inp.from] || inp.from;
+                    mmd += `    ${ghostId}["⬅ ${ghostLabel}"]:::ghost\n`;
+                });
+
+                // Internal classes/functions
                 componentData.elements.forEach(el => {
                     const label = el.title.replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
                     const tech = (el.tech || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
-                    mmd += `    ${el.id}["${label} - ${tech}"]\n`;
+                    mmd += `    ${el.id}["${label} (${tech})"]:::cls\n`;
                 });
 
+                // Ghost outputs
+                outputs.forEach((out, i) => {
+                    const ghostId = 'ghost_out_' + i;
+                    const ghostLabel = compTitleMap[out.to] || out.to;
+                    mmd += `    ${ghostId}["${ghostLabel} ➡"]:::ghost\n`;
+                });
+
+                // Connect ghost inputs to first internal element
+                if (componentData.elements.length > 0) {
+                    const firstEl = componentData.elements[0].id;
+                    inputs.forEach((inp, i) => {
+                        let label = (inp.text || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
+                        if (label.length > 35) label = label.substring(0, 33) + '...';
+                        if (label) {
+                            mmd += `    ghost_in_${i} -->|"${label}"|${firstEl}\n`;
+                        } else {
+                            mmd += `    ghost_in_${i} --> ${firstEl}\n`;
+                        }
+                    });
+                }
+
+                // Internal connections
                 if (componentData.connections && componentData.connections.length > 0) {
                     componentData.connections.forEach(conn => {
                         let label = (conn.text || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
@@ -1539,6 +1630,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             mmd += `    ${conn.from} -->|"${label}"|${conn.to}\n`;
                         } else {
                             mmd += `    ${conn.from} --> ${conn.to}\n`;
+                        }
+                    });
+                }
+
+                // Connect last internal element to ghost outputs
+                if (componentData.elements.length > 0) {
+                    const lastEl = componentData.elements[componentData.elements.length - 1].id;
+                    outputs.forEach((out, i) => {
+                        let label = (out.text || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
+                        if (label.length > 35) label = label.substring(0, 33) + '...';
+                        if (label) {
+                            mmd += `    ${lastEl} -->|"${label}"|ghost_out_${i}\n`;
+                        } else {
+                            mmd += `    ${lastEl} --> ghost_out_${i}\n`;
                         }
                     });
                 }
@@ -1553,16 +1658,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         if (typeof mermaid !== 'undefined') {
                             await mermaid.run({ querySelector: '#c4-code-mermaid' });
-                            // Attach click handlers programmatically
                             const svgEl = mermaidDiv.querySelector('svg');
                             if (svgEl) {
                                 svgEl.querySelectorAll('.node').forEach(nodeEl => {
-                                    const nodeId = nodeEl.id ? nodeEl.id.split('-')[0] : (nodeEl.getAttribute('data-id') || '');
-                                    if (!nodeId) return;
+                                    const rawId = extractId(nodeEl, allKnownIds);
+                                    if (!rawId || !allKnownIds.includes(rawId)) return;
                                     nodeEl.style.cursor = 'pointer';
-                                    nodeEl.addEventListener('click', () => {
-                                        onC4MermaidNodeClick(nodeId);
-                                    });
+                                    nodeEl.classList.add('clickable');
+                                    if (internalIds.includes(rawId)) {
+                                        nodeEl.addEventListener('click', (e) => {
+                                            e.stopPropagation();
+                                            onC4MermaidNodeClick(rawId);
+                                        });
+                                    } else if (rawId.startsWith('ghost_in_')) {
+                                        const idx = parseInt(rawId.replace('ghost_in_', ''), 10);
+                                        if (!isNaN(idx) && inputs[idx] && C4_DATA.classes[inputs[idx].from]) {
+                                            nodeEl.title = 'Drilldown in ' + (compTitleMap[inputs[idx].from] || inputs[idx].from);
+                                            nodeEl.addEventListener('click', (e) => {
+                                                e.stopPropagation();
+                                                zoomToLevel('code', state.c4ActiveContainer, inputs[idx].from);
+                                            });
+                                        }
+                                    } else if (rawId.startsWith('ghost_out_')) {
+                                        const idx = parseInt(rawId.replace('ghost_out_', ''), 10);
+                                        if (!isNaN(idx) && outputs[idx] && C4_DATA.classes[outputs[idx].to]) {
+                                            nodeEl.title = 'Drilldown in ' + (compTitleMap[outputs[idx].to] || outputs[idx].to);
+                                            nodeEl.addEventListener('click', (e) => {
+                                                e.stopPropagation();
+                                                zoomToLevel('code', state.c4ActiveContainer, outputs[idx].to);
+                                            });
+                                        }
+                                    }
                                 });
                             }
                         }

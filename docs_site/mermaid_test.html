@@ -3,22 +3,62 @@
 <head>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.6/dist/mermaid.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f1f5f9; }
-        #diagram-container { background: #fff; border-radius: 12px; padding: 24px; min-height: 200px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        #breadcrumb { margin-bottom: 16px; font-size: 14px; color: #64748b; }
-        #breadcrumb span { cursor: pointer; color: #8b5cf6; }
+        body { font-family: sans-serif; padding: 24px; background: #0f172a; color: #f8fafc; }
+        #diagram-container { 
+            background: #1e293b; 
+            border-radius: 16px; 
+            padding: 32px; 
+            min-height: 450px; 
+            border: 1px solid #334155;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: auto;
+        }
+        #diagram-container .mermaid {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        #diagram-container svg {
+            width: 100% !important;
+            max-width: 1100px !important;
+            min-height: 380px !important;
+        }
+        .mermaid .nodeLabel, .mermaid .label {
+            font-size: 16px !important;
+            font-weight: bold !important;
+        }
+        #breadcrumb { margin-bottom: 20px; font-size: 16px; color: #94a3b8; }
+        #breadcrumb span { cursor: pointer; color: #38bdf8; font-weight: bold; }
         #breadcrumb span:hover { text-decoration: underline; }
-        h2 { color: #0f172a; margin-top: 0; }
+        h2 { color: #f8fafc; margin-top: 0; font-size: 24px; }
+        .node { cursor: pointer !important; }
+        .node:hover rect, .node:hover polygon {
+            filter: brightness(1.25);
+            stroke: #00e5ff !important;
+            stroke-width: 3.5px !important;
+            transition: all 0.2s ease;
+        }
     </style>
 </head>
 <body>
 
-<h2>Mermaid Drill-Down Test</h2>
+<h2>Mermaid Drill-Down Test (Level 4 Demo)</h2>
 <div id="breadcrumb"></div>
 <div id="diagram-container"></div>
 
 <script>
-mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
+mermaid.initialize({ 
+    startOnLoad: false, 
+    theme: 'dark', 
+    securityLevel: 'loose',
+    flowchart: { useMaxWidth: false },
+    themeVariables: {
+        fontSize: '16px',
+        fontFamily: 'sans-serif'
+    }
+});
 
 // Component names
 const nodeNames = {
@@ -29,55 +69,50 @@ const nodeNames = {
     app: 'Mobile App'
 };
 
-// Connections between components (used to generate input/output ghost nodes)
+// Connections between components
 const componentConnections = [
-    { from: 'imu', to: 'engine', text: 'IMU Arrays' },
+    { from: 'imu', to: 'engine', text: 'IMU Arrays (6-Axis)' },
     { from: 'engine', to: 'led', text: 'Klasse, Score' },
     { from: 'engine', to: 'ble', text: 'Klasse, Score' },
-    { from: 'imu', to: 'ble', text: 'Raw IMU' },
+    { from: 'imu', to: 'ble', text: 'Raw IMU (50Hz)' },
     { from: 'ble', to: 'app', text: 'JSON Stream' }
 ];
 
 // Level 1: Komponenten-Übersicht
 const level1 = `flowchart LR
-    classDef comp fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
-    classDef ext fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#334155
+    classDef comp fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc
+    classDef ext fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0
     imu["Sensordatenerfassung"]:::comp
     engine["Inferenz-Engine"]:::comp
     ble["BLE-Streamer"]:::comp
     led["LED Controller"]:::comp
     app["Mobile App"]:::ext
-    imu -->|"IMU Arrays"|engine
+    imu -->|"IMU Arrays (6-Axis)"|engine
     engine -->|"Klasse, Score"|led
     engine -->|"Klasse, Score"|ble
-    imu -->|"Raw IMU"|ble
-    ble -->|"JSON Stream"|app
-    click imu call drillDown()
-    click engine call drillDown()
-    click ble call drillDown()
-    click led call drillDown()`;
+    imu -->|"Raw IMU (50Hz)"|ble
+    ble -->|"JSON Stream"|app`;
 
 // Level 2: Inner functions per component
 const innerFunctions = {
     imu: [
-        { id: 'initIMU', label: 'initIMU - C++ Function' },
-        { id: 'readSensor', label: 'readSensorData - C++ Function' }
+        { id: 'initIMU', label: 'initIMU() - C++ Function' },
+        { id: 'readSensor', label: 'readSensorData() - C++ Function' }
     ],
     engine: [
-        { id: 'runInference', label: 'runModelInference - C++ Function' }
+        { id: 'runInference', label: 'runModelInference() - C++ Function' }
     ],
     ble: [
-        { id: 'initBLE', label: 'initBLE - C++ Function' },
-        { id: 'streamIMU', label: 'streamIMUData - C++ Function' }
+        { id: 'initBLE', label: 'initBLE() - C++ Function' },
+        { id: 'streamIMU', label: 'streamIMUData() - C++ Function' }
     ],
     led: [
-        { id: 'initFB', label: 'initFeedback - C++ Function' },
-        { id: 'updateFB', label: 'updateFeedback - C++ Function' },
-        { id: 'sendJson', label: 'sendJsonToPC - C++ Function' }
+        { id: 'initFB', label: 'initFeedback() - C++ Function' },
+        { id: 'updateFB', label: 'updateFeedback() - C++ Function' },
+        { id: 'sendJson', label: 'sendJsonToPC() - C++ Function' }
     ]
 };
 
-// Inner connections (within a component)
 const innerConnections = {
     imu: [{ from: 'initIMU', to: 'readSensor' }],
     engine: [],
@@ -87,46 +122,38 @@ const innerConnections = {
 
 function buildLevel2(componentId) {
     let mmd = 'flowchart LR\n';
-    mmd += '    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a\n';
-    mmd += '    classDef ghost fill:#f8fafc,stroke:#94a3b8,stroke-width:1px,stroke-dasharray:5 5,color:#64748b\n';
+    mmd += '    classDef cls fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc\n';
+    mmd += '    classDef ghost fill:#0f172a,stroke:#38bdf8,stroke-width:2px,stroke-dasharray:5 5,color:#38bdf8\n';
 
-    // Find incoming connections (other component -> this component)
     const inputs = componentConnections.filter(c => c.to === componentId);
-    // Find outgoing connections (this component -> other component)
     const outputs = componentConnections.filter(c => c.from === componentId);
 
-    // Create ghost input nodes
     inputs.forEach((inp, i) => {
         const ghostId = 'in_' + i;
-        mmd += `    ${ghostId}["${nodeNames[inp.from] || inp.from}"]:::ghost\n`;
+        mmd += `    ${ghostId}["⬅ ${nodeNames[inp.from] || inp.from}"]:::ghost\n`;
     });
 
-    // Create inner function nodes
     const funcs = innerFunctions[componentId] || [];
     funcs.forEach(fn => {
         mmd += `    ${fn.id}["${fn.label}"]:::cls\n`;
     });
 
-    // Create ghost output nodes
     outputs.forEach((out, i) => {
         const ghostId = 'out_' + i;
-        mmd += `    ${ghostId}["${nodeNames[out.to] || out.to}"]:::ghost\n`;
+        mmd += `    ${ghostId}["${nodeNames[out.to] || out.to} ➡"]:::ghost\n`;
     });
 
-    // Connect inputs to first inner function
     if (funcs.length > 0) {
         inputs.forEach((inp, i) => {
             mmd += `    in_${i} -->|"${inp.text}"|${funcs[0].id}\n`;
         });
     }
 
-    // Inner connections
     const inner = innerConnections[componentId] || [];
     inner.forEach(c => {
         mmd += `    ${c.from} --> ${c.to}\n`;
     });
 
-    // Connect last inner function to outputs
     if (funcs.length > 0) {
         const lastFunc = funcs[funcs.length - 1].id;
         outputs.forEach((out, i) => {
@@ -134,62 +161,120 @@ function buildLevel2(componentId) {
         });
     }
 
-    // Click callbacks for inner functions
-    funcs.forEach(fn => {
-        mmd += `    click ${fn.id} call codeClick()\n`;
-    });
-
-    return mmd;
+    return { mmd, inputs, outputs, funcs };
 }
 
-// Global callbacks
-window.drillDown = function(nodeId) {
-    if (innerFunctions[nodeId]) {
-        showLevel2(nodeId);
+// Helper to reliably extract original node id from Mermaid generated SVG node
+function extractId(nodeEl, knownIds) {
+    let raw = nodeEl.id || nodeEl.getAttribute('data-id') || '';
+    let cleaned = raw.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+    if (knownIds.includes(cleaned)) return cleaned;
+    for (const id of knownIds) {
+        if (raw === id || raw.startsWith('flowchart-' + id + '-') || raw.includes('-' + id + '-')) {
+            return id;
+        }
     }
-};
+    return cleaned;
+}
 
-window.codeClick = function(nodeId) {
-    alert('Quellcode öffnen für: ' + nodeId);
-};
+let currentLevel = 'level1';
+let activeComponent = null;
 
-let mermaidCounter = 0;
+async function renderLevel1() {
+    currentLevel = 'level1';
+    activeComponent = null;
+    updateBreadcrumb(null);
 
-async function renderDiagram(mmdText) {
     const container = document.getElementById('diagram-container');
-    container.innerHTML = '';
+    container.innerHTML = '<div class="mermaid" id="mmd-view">' + level1 + '</div>';
 
-    mermaidCounter++;
-    const div = document.createElement('div');
-    div.className = 'mermaid';
-    div.id = 'mmd-' + mermaidCounter;
-    div.textContent = mmdText;
-    container.appendChild(div);
+    try {
+        await mermaid.run({ querySelector: '#mmd-view' });
+    } catch (err) {
+        container.innerHTML = '<div style="color:#ef4444;padding:20px;">Mermaid Render Error: ' + err.message + '</div>';
+        console.error(err);
+        return;
+    }
 
-    await mermaid.run({ querySelector: '#' + div.id });
+    const knownIds = Object.keys(nodeNames);
+    const svgEl = container.querySelector('svg');
+    if (svgEl) {
+        svgEl.querySelectorAll('.node').forEach(nodeEl => {
+            const nodeId = extractId(nodeEl, knownIds);
+            if (!nodeId || !innerFunctions[nodeId]) return;
+            nodeEl.style.cursor = 'pointer';
+            nodeEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                renderLevel2(nodeId);
+            });
+        });
+    }
+}
+
+async function renderLevel2(componentId) {
+    currentLevel = 'level2';
+    activeComponent = componentId;
+    updateBreadcrumb(componentId);
+
+    const { mmd, inputs, outputs, funcs } = buildLevel2(componentId);
+    const container = document.getElementById('diagram-container');
+    container.innerHTML = '<div class="mermaid" id="mmd-view">' + mmd + '</div>';
+
+    try {
+        await mermaid.run({ querySelector: '#mmd-view' });
+    } catch (err) {
+        container.innerHTML = '<div style="color:#ef4444;padding:20px;">Mermaid Render Error: ' + err.message + '</div>';
+        console.error(err);
+        return;
+    }
+
+    const funcIds = funcs.map(f => f.id);
+    const inIds = inputs.map((_, i) => 'in_' + i);
+    const outIds = outputs.map((_, i) => 'out_' + i);
+    const allKnownIds = [...funcIds, ...inIds, ...outIds];
+
+    const svgEl = container.querySelector('svg');
+    if (svgEl) {
+        svgEl.querySelectorAll('.node').forEach(nodeEl => {
+            const rawId = extractId(nodeEl, allKnownIds);
+            if (!rawId || !allKnownIds.includes(rawId)) return;
+            nodeEl.style.cursor = 'pointer';
+            if (funcIds.includes(rawId)) {
+                nodeEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    alert('Öffne Quellcode-Viewer für Funktion/Klasse:\n\n👉 ' + rawId + ' (in ' + nodeNames[componentId] + ')');
+                });
+            } else if (rawId.startsWith('in_')) {
+                const idx = parseInt(rawId.replace('in_', ''), 10);
+                if (inputs[idx] && innerFunctions[inputs[idx].from]) {
+                    nodeEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        renderLevel2(inputs[idx].from);
+                    });
+                }
+            } else if (rawId.startsWith('out_')) {
+                const idx = parseInt(rawId.replace('out_', ''), 10);
+                if (outputs[idx] && innerFunctions[outputs[idx].to]) {
+                    nodeEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        renderLevel2(outputs[idx].to);
+                    });
+                }
+            }
+        });
+    }
 }
 
 function updateBreadcrumb(componentId) {
     const bc = document.getElementById('breadcrumb');
     if (componentId) {
-        bc.innerHTML = `<span onclick="showLevel1()">⬅ Komponenten</span> &rsaquo; <b>${nodeNames[componentId]}</b>`;
+        bc.innerHTML = `<span onclick="renderLevel1()">⬅ Komponenten-Übersicht</span> &rsaquo; <b style="color:#f8fafc">${nodeNames[componentId]}</b> <span style="color:#64748b;font-size:14px">(Klicke auf einen internen Block für Code oder Ghost Nodes zum Springen)</span>`;
     } else {
-        bc.innerHTML = `<b>Komponenten-Übersicht</b> <span style="color:#94a3b8">(Klicke auf eine Komponente)</span>`;
+        bc.innerHTML = `<b style="color:#f8fafc">Komponenten-Übersicht</b> <span style="color:#64748b;font-size:14px">(Klicke auf eine Komponente für Drilldown)</span>`;
     }
 }
 
-window.showLevel1 = function() {
-    updateBreadcrumb(null);
-    renderDiagram(level1);
-};
-
-function showLevel2(componentId) {
-    updateBreadcrumb(componentId);
-    renderDiagram(buildLevel2(componentId));
-}
-
-// Start
-showLevel1();
+renderLevel1();
 </script>
 </body>
 </html>

@@ -536,13 +536,14 @@ body {
 
 /* Mermaid Rendering */
 .mermaid {
-    background-color: #0c1816;
+    background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 16px;
+    padding: 24px;
     margin: 16px 0;
     display: flex;
     justify-content: center;
+    overflow-x: auto;
 }
 
 /* Tab 2: E2E Trace Tree View Styles */
@@ -1707,26 +1708,47 @@ body.light-mode .c4-tech {
 /* C4 Mermaid View & Interaction Styling */
 .c4-board.c4-mermaid-view {
     display: flex !important;
+    flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
     width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
-    min-height: 350px !important;
+    min-height: 480px !important;
+    padding: 16px !important;
+}
+
+.c4-board.c4-mermaid-view .mermaid {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 10px !important;
+}
+
+.c4-board.c4-mermaid-view .mermaid svg {
+    width: 100% !important;
+    max-width: 1100px !important;
+    min-height: 400px !important;
+    height: auto !important;
 }
 
 .mermaid .clickable, 
 .mermaid .node.clickable, 
-.mermaid g.clickable {
+.mermaid g.clickable,
+.mermaid .node {
     cursor: pointer !important;
 }
 
-.mermaid .clickable:hover rect, 
-.mermaid .node.clickable:hover rect,
-.mermaid .clickable:hover polygon,
-.mermaid .node.clickable:hover polygon {
-    filter: brightness(0.97);
-    stroke: #8b5cf6 !important;
-    stroke-width: 3px !important;
+.mermaid .node:hover rect,
+.mermaid .node:hover polygon,
+.mermaid .node:hover circle {
+    filter: brightness(1.2);
+    stroke: #00e5ff !important;
+    stroke-width: 3.5px !important;
     transition: all 0.2s ease;
 }
 
