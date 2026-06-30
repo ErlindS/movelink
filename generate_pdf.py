@@ -655,13 +655,11 @@ def create_container_diagram():
     teal = colors.HexColor('#00a685')
     
     # Draw boxes
-    draw_c4_box(d, 20, 30, 110, 70, "Sensor Firmware", "Arduino C/C++", "Erfasst Sensordaten, wendet Filter an und sendet BLE Pakete.", "container")
-    draw_c4_box(d, 185, 30, 110, 70, "Mobile App", "React Native", "Bietet UI für Verbindung, Live-Visualisierung und Verlauf.", "container")
-    draw_c4_box(d, 350, 30, 110, 70, "Backend", "Node.js / Express", "Verwaltet Nutzer und speichert Trainingsverlauf.", "container")
+    draw_c4_box(d, 80, 30, 140, 70, "Sensor Firmware", "Arduino C/C++", "Erfasst Sensordaten, wendet Filter an und streamt BLE-Pakete.", "container")
+    draw_c4_box(d, 280, 30, 140, 70, "Mobile App", "React Native", "Bietet UI für Verbindung, Live-Visualisierung, Verlauf und lokale Datenhaltung.", "container")
     
     # Draw arrows
-    draw_c4_arrow(d, 130, 65, 185, 65, "BLE Data Stream", teal)
-    draw_c4_arrow(d, 295, 65, 350, 65, "HTTPS / WebSockets", teal)
+    draw_c4_arrow(d, 220, 65, 280, 65, "BLE Data Stream", teal)
     return d
 
 def create_firmware_components_diagram():
@@ -703,13 +701,13 @@ def create_app_components_diagram():
     
     # Row 1 (Bottom, y=25)
     draw_c4_box(d, 70, 25, 130, 60, "useBLE Hook", "TypeScript Hook", "Custom Hook für Scanning und BLE-Verbindung.", "component")
-    draw_c4_box(d, 280, 25, 130, 60, "useWebSocket Hook", "TypeScript Hook", "Verbindung zum Backend zwecks Live-Datentransfer.", "component")
+    draw_c4_box(d, 280, 25, 130, 60, "Local Store", "Zustand & AsyncStorage", "Verwaltet den Zustand und persistiert Daten lokal.", "component")
     
     # Draw arrows
     draw_c4_arrow(d, 65, 125, 110, 85, "Steuert BLE", purple)
     draw_c4_arrow(d, 177, 125, 160, 85, "Liest IMU", purple)
-    draw_c4_arrow(d, 289, 125, 320, 85, "Lädt Daten", purple)
-    draw_c4_arrow(d, 408, 125, 370, 85, "Nutzt API", purple)
+    draw_c4_arrow(d, 289, 125, 320, 85, "Lädt/Speichert", purple)
+    draw_c4_arrow(d, 408, 125, 370, 85, "Nutzt Store", purple)
     return d
 
 def create_data_control_flow_diagram():
@@ -717,30 +715,23 @@ def create_data_control_flow_diagram():
     d.add(Rect(0, 0, 480, 185, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
     
     teal = colors.HexColor('#00a685')
-    purple = colors.HexColor('#8b5cf6')
     grey = colors.HexColor('#666666')
     
-    # Draw 5 blocks
-    draw_c4_box(d, 15, 60, 80, 60, "LSM6DS3 Sensor", "Hardware IMU", "Erfasst Rohbeschleunigung & Gyro mit 50Hz.", "external")
-    draw_c4_box(d, 105, 60, 80, 60, "XIAO MCU", "nRF52840 MCU", "Filtert Rohwerte, führt Edge Impulse Inferenz aus.", "component")
-    draw_c4_box(d, 200, 60, 80, 60, "Mobile App", "React Native", "Empfängt BLE-Pakete, aktualisiert UI State.", "container")
-    draw_c4_box(d, 295, 60, 80, 60, "Backend API", "Node.js Express", "Empfängt Trainingsdaten per WebSockets.", "container")
-    draw_c4_box(d, 390, 60, 80, 60, "Datenbank", "PostgreSQL", "Speichert historische Trainingsdaten.", "external")
+    # Draw 3 blocks
+    draw_c4_box(d, 30, 60, 110, 60, "LSM6DS3 Sensor", "Hardware IMU", "Erfasst Rohbeschleunigung & Gyro mit 50Hz.", "external")
+    draw_c4_box(d, 185, 60, 110, 60, "XIAO MCU", "nRF52840 MCU", "Filtert Rohwerte, führt Edge Impulse Inferenz aus.", "component")
+    draw_c4_box(d, 340, 60, 110, 60, "Mobile App", "React Native & Stores", "Empfängt BLE-Pakete, aktualisiert UI State und speichert lokal.", "container")
     
     # --- Forward Data Flow (Upper path, y=95) ---
-    draw_c4_arrow(d, 95, 95, 105, 95, "Rohwerte", grey)
-    draw_c4_arrow(d, 185, 95, 200, 95, "BLE Daten", teal)
-    draw_c4_arrow(d, 280, 95, 295, 95, "WS Daten", teal)
-    draw_c4_arrow(d, 375, 95, 390, 95, "SQL Insert", grey)
+    draw_c4_arrow(d, 140, 95, 185, 95, "Rohwerte", grey)
+    draw_c4_arrow(d, 295, 95, 340, 95, "BLE Daten", teal)
     
     # --- Backward Control & Feedback Flow (Lower path, y=85) ---
-    draw_c4_arrow(d, 390, 85, 375, 85, "Ack OK", grey, is_dashed=True)
-    draw_c4_arrow(d, 295, 85, 280, 85, "Sync OK", teal, is_dashed=True)
-    draw_c4_arrow(d, 200, 85, 185, 85, "BLE Ctrl", teal, is_dashed=True)
+    draw_c4_arrow(d, 340, 85, 295, 85, "BLE Ctrl", teal, is_dashed=True)
     
     # Explanatory annotations
-    d.add(String(240, 25, "Datenfluss: Sensorik (50Hz) -> Inferenz -> BLE Notification -> UI State -> WebSockets -> DB", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
-    d.add(String(240, 13, "Kontroll- & Feedbackfluss: Datenbank-Ack -> Sync-Bestätigung -> BLE-Steuerung", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
+    d.add(String(240, 25, "Datenfluss: Sensorik (50Hz) -> Inferenz -> BLE Notification -> UI State -> AsyncStorage Speicherung", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
+    d.add(String(240, 13, "Kontroll- & Feedbackfluss: App-Steuerungssignale -> BLE-Steuerung an den Sensor", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
     return d
 
 def create_firmware_dataflow_diagram():
@@ -1228,8 +1219,23 @@ def main():
     
     # ------------------ SECTION 4: C4 MODEL WITH SUB-SECTIONS ------------------
     story.append(Paragraph("4. System-Architektur (C4 Modell)", styles['Heading1']))
-    story.append(Paragraph("Die Software-Architektur von MoveLink ist nach dem C4-Modell strukturiert. Im Folgenden werden die einzelnen Container des Systems (Embedded Firmware, Mobile App und Datenbank & Backend) im Detail beschrieben. Für jeden dieser Unterpunkte werden die C4-Komponenten und Datenflüsse visuell und textuell dargestellt, gefolgt von den Anforderungen und der Architekturentscheidung (ADR).", styles['NormalText']))
+    story.append(Paragraph("Die Software-Architektur von MoveLink ist nach dem C4-Modell strukturiert. Im Folgenden werden die einzelnen Container des Systems (Embedded Firmware und Mobile App) im Detail beschrieben. Die Datenhaltung erfolgt lokal in der Mobile App. Für jeden dieser Unterpunkte werden die C4-Komponenten und Datenflüsse visuell und textuell dargestellt, gefolgt von den Anforderungen und der Architekturentscheidung (ADR).", styles['NormalText']))
     story.append(Spacer(1, 10))
+    
+    # Show System Context diagram first
+    story.append(Paragraph("System-Kontext-Diagramm (C4 Level 1)", styles['Heading2']))
+    story.append(Paragraph("Das folgende System-Kontext-Diagramm zeigt die Position des MoveLink-Systems in seiner Betriebsumgebung und die Interaktion mit dem Trainierenden:", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_system_context_diagram())
+    story.append(Spacer(1, 10))
+    
+    # End-to-End flow diagram
+    story.append(Paragraph("System-Daten- &amp; Kontrollfluss-Diagramm", styles['Heading2']))
+    story.append(Paragraph("Das folgende Diagramm visualisiert den End-to-End Daten- und Kontrollfluss im Gesamtsystem:", styles['NormalText']))
+    story.append(Spacer(1, 5))
+    story.append(create_data_control_flow_diagram())
+    story.append(Spacer(1, 10))
+    story.append(PageBreak())
     
     # --- 4.1 embedded ---
     story.append(Paragraph("<a name='sec_embedded'></a>4.1 Embedded Sensor-Firmware (Xiao MCU)", styles['Heading2']))
@@ -1298,47 +1304,16 @@ def main():
     story.append(Spacer(1, 8))
     story.append(PageBreak())
     
-    # --- 4.3 Datenbank ---
-    story.append(Paragraph("<a name='sec_database'></a>4.3 Datenbank & Backend (PostgreSQL & Node.js)", styles['Heading2']))
-    story.append(Paragraph("Der Datenbank- und Backend-Container dient als zentraler Speicher und API-Gateway des Gesamtsystems. Er nimmt Profile und Trainingshistorien auf und stellt diese persistent bereit.", styles['NormalText']))
-    story.append(Spacer(1, 8))
-    
-    # Show System Context diagram first
-    story.append(Paragraph("System-Kontext-Diagramm (C4 Level 1)", styles['Heading3']))
-    story.append(Paragraph("Das folgende System-Kontext-Diagramm zeigt die Position des MoveLink-Systems in seiner Betriebsumgebung, die Interaktion mit dem Trainierenden sowie die Verbindung zur persistenten Datenbank:", styles['NormalText']))
-    story.append(Spacer(1, 5))
-    story.append(create_system_context_diagram())
-    story.append(Spacer(1, 10))
-    
-    # Parse database/architecture.md
-    if 'database/architecture.md' in files_by_path:
-        clean_content = get_clean_markdown(files_by_path['database/architecture.md']['content'])
-        story.extend(markdown_to_flowables(clean_content, styles))
-        
-    # End-to-End flow diagram
-    story.append(Paragraph("System-Daten- &amp; Kontrollfluss-Diagramm", styles['Heading3']))
-    story.append(Paragraph("Das folgende Diagramm visualisiert den End-to-End Daten- und Kontrollfluss im Gesamtsystem:", styles['NormalText']))
-    story.append(Spacer(1, 5))
-    story.append(create_data_control_flow_diagram())
-    story.append(Spacer(1, 10))
-    
-    # ADR
-    story.append(Paragraph("Architekturentscheidung (ADR / Abwägungen)", styles['Heading3']))
-    story.append(Paragraph("<b>Entscheidung:</b> Verwendung einer <b>PostgreSQL-Datenbank</b> zur persistenten und relationalen Ablage von Trainingsdaten und Nutzerprofilen. Das Backend wird mit <b>Node.js & Express</b> realisiert, um hohe Parallelität zu gewährleisten und asynchrone WebSocket-Verbindungen für Live-Streaming-Daten ressourcenschonend zu verarbeiten.", styles['NormalText']))
-    story.append(Spacer(1, 8))
-    story.append(PageBreak())
-    
     # ------------------ SECTION 5: TRACEABILITY MATRIX (AT THE END) ------------------
     story.append(Paragraph("5. Rückverfolgbarkeits-Matrix (Traceability)", styles['Heading1']))
     story.append(Paragraph("Die folgende Matrix veranschaulicht die Beziehungen und Verknüpfungen zwischen den Use Cases, den funktionalen Anforderungen (FA), den Systemkomponenten und den entsprechenden Klassen/Code-Dateien im System. Klicken Sie auf eine Anforderungs-ID, um zu deren Definition zu springen, oder auf eine Komponente, um deren C4-Modell-Kapitel aufzurufen.", styles['NormalText']))
     story.append(Spacer(1, 10))
 
     # Build the data tree
-    container_ids = ['FA1', 'FA2', 'FA3']
+    container_ids = ['FA1', 'FA2']
     container_names = {
         'FA1': 'Applikation (Mobile App)',
-        'FA2': 'Trainingsgerät (Sensor-Firmware)',
-        'FA3': 'Datenbank & Backend'
+        'FA2': 'Trainingsgerät (Sensor-Firmware)'
     }
     
     container_files = [f for f in data['files'] if f.get('c4_level') == 'Container']
@@ -1361,9 +1336,6 @@ def main():
                 container_file = f
                 break
             if container_id == 'FA2' and 'embedded/' in f['path']:
-                container_file = f
-                break
-            if container_id == 'FA3' and 'database/' in f['path']:
                 container_file = f
                 break
         

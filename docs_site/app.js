@@ -747,18 +747,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. Structure data hierarchically: Container -> Sub-FA -> Detail-FA
-        const containerIds = ['FA1', 'FA2', 'FA3'];
+        const containerIds = ['FA1', 'FA2'];
         const containerNames = {
             'FA1': 'Applikation (Mobile App)',
-            'FA2': 'Trainingsgerät (Sensor-Firmware)',
-            'FA3': 'Datenbank & Backend'
+            'FA2': 'Trainingsgerät (Sensor-Firmware)'
         };
 
         const tree = containerIds.map(containerId => {
             const containerFile = containerFiles.find(f => {
                 if (containerId === 'FA1' && f.path.includes('app/')) return true;
                 if (containerId === 'FA2' && f.path.includes('embedded/')) return true;
-                if (containerId === 'FA3' && f.path.includes('database/')) return true;
                 return false;
             });
 
@@ -1191,20 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 drawArchMatrixArrows();
             }
         }
-        if (state.activeTab === 'c4-tab') {
-            drawC4Connections();
-        }
     });
-
-    // Also draw connections on scroll to prevent alignment lag
-    const c4BoardContainer = document.getElementById('c4BoardContainer');
-    if (c4BoardContainer) {
-        c4BoardContainer.addEventListener('scroll', () => {
-            if (state.activeTab === 'c4-tab') {
-                drawC4Connections();
-            }
-        });
-    }
 
     // 13.5 C4 Model Explorer Logic
     const C4_DATA = {
@@ -1222,12 +1207,10 @@ document.addEventListener('DOMContentLoaded', () => {
         containers: {
             elements: [
                 { id: 'firmware', type: 'container', title: 'Sensor Firmware Container', description: 'Arduino C++ Code auf dem XIAO-Mikrocontroller. Erfasst Sensordaten, wendet Filter an und sendet BLE Pakete.', tech: 'Arduino C/C++, Edge Impulse SDK', deployable: true, file: 'embedded/architecture.md' },
-                { id: 'app', type: 'container', title: 'Mobile App Container', description: 'React Native / Expo App für Smartphones. Bietet UI für Verbindung, Live-Visualisierung und Verlauf.', tech: 'React Native, TypeScript, Zustand', deployable: true, file: 'app/architecture.md' },
-                { id: 'backend', type: 'container', title: 'Backend & Database Container', description: 'Node.js/Express API und PostgreSQL/SQLite Datenbank. Speichert Benutzerprofile und historische Trainingsdaten.', tech: 'Node.js, Express, PostgreSQL / SQLite', deployable: true, file: 'database/architecture.md' }
+                { id: 'app', type: 'container', title: 'Mobile App Container', description: 'React Native / Expo App für Smartphones. Bietet UI für Verbindung, Live-Visualisierung und Verlauf sowie die lokale Speicherung.', tech: 'React Native, TypeScript, Zustand, AsyncStorage', deployable: true, file: 'app/architecture.md' }
             ],
             connections: [
-                { from: 'firmware', to: 'app', text: 'BLE Data Stream' },
-                { from: 'app', to: 'backend', text: 'HTTPS / WebSockets' }
+                { from: 'firmware', to: 'app', text: 'BLE Data Stream' }
             ]
         },
 
@@ -1242,16 +1225,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'session_card', type: 'component', title: 'SessionCard UI', description: 'Zeigt eine Zusammenfassung einer vergangenen Trainingseinheit.', tech: 'React Native Component', file: 'app/components/session_card/architecture.md' },
                     { id: 'profile_card', type: 'component', title: 'ProfileCard UI', description: 'Komponente zur Darstellung der Benutzerdaten und Authentifizierung.', tech: 'React Native Component', file: 'app/components/ProfileCard/architecture.md' },
                     { id: 'use_ble', type: 'component', title: 'useBLE Hook', description: 'Custom React Hook für das Scanning und die BLE-Verbindung.', tech: 'TypeScript Hook', file: 'app/hooks/useBLE.ts' },
-                    { id: 'use_ws', type: 'component', title: 'useWebSocket Hook', description: 'Verbindung zum Backend zwecks Live-Datentransfer.', tech: 'TypeScript Hook', file: 'app/hooks/useWebSocket.ts' },
-                    { id: 'backend_ghost', type: 'external', title: 'Backend Container', description: 'API und PostgreSQL Datenbank zur Verwaltung und Speicherung.', tech: 'C4 Container (Node.js)' }
+                    { id: 'local_store', type: 'component', title: 'Local Storage & State Store (Zustand)', description: 'Verwaltet den App-Zustand und persistiert die Trainingsdaten lokal auf dem Gerät.', tech: 'Zustand, AsyncStorage', file: 'app/store/index.ts' }
                 ],
                 connections: [
                     { from: 'firmware_ghost', to: 'use_ble', text: 'BLE Data Stream' },
                     { from: 'sensor_card', to: 'use_ble', text: 'Steuert BLE-Verbindung' },
                     { from: 'live_chart', to: 'use_ble', text: 'Liest IMU-Daten' },
-                    { from: 'profile_card', to: 'use_ws', text: 'Nutzt API' },
-                    { from: 'session_card', to: 'use_ws', text: 'Lädt historische Daten' },
-                    { from: 'use_ws', to: 'backend_ghost', text: 'HTTPS / WebSockets' }
+                    { from: 'profile_card', to: 'local_store', text: 'Liest/Schreibt Benutzerdaten' },
+                    { from: 'session_card', to: 'local_store', text: 'Lädt historische Trainingsdaten' },
+                    { from: 'use_ble', to: 'local_store', text: 'Aktualisiert Live-Daten & Verlauf' }
                 ]
             },
             firmware: {
@@ -1345,12 +1327,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 ],
                 connections: []
             },
-            use_ws: {
-                title: "useWebSocket Hook Funktionen",
+            local_store: {
+                title: "Lokale Speicherung & Zustand Klassen & Funktionen",
                 elements: [
-                    { id: 'use_ws_hook', type: 'class', title: 'useWebSocket()', description: 'Öffnet einen WebSocket-Kanal zum Backend für das Echtzeit-Streaming der Bewegungsdaten.', tech: 'React Custom Hook', file: 'app/hooks/useWebSocket.ts', line: 5 }
+                    { id: 'use_ble_store', type: 'class', title: 'useBLEStore', description: 'Zustand Store zur Verwaltung des Bluetooth-Verbindungsstatus und der Sensordaten.', tech: 'Zustand Store', file: 'app/store/index.ts', line: 98 },
+                    { id: 'use_training_store', type: 'class', title: 'useTrainingStore', description: 'Zustand Store zur Verwaltung des Trainingsablaufs, der Live-Analyse und der Wiederholungs-FSM.', tech: 'Zustand Store', file: 'app/store/index.ts', line: 116 },
+                    { id: 'async_storage', type: 'class', title: 'AsyncStorage', description: 'Persistiert die Trainingseinheiten im lokalen Speicher des Smartphones.', tech: 'AsyncStorage API', file: 'app/store/index.ts', line: 163 }
                 ],
-                connections: []
+                connections: [
+                    { from: 'use_training_store', to: 'async_storage', text: 'Persistiert Sessions' }
+                ]
             },
             ble_streamer: {
                 title: "BLE-Streamer Klassen & Funktionen",
@@ -1434,45 +1420,164 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // 3. Render Cards based on active level
+        // 3. Render Mermaid diagrams based on active level
         if (state.c4Level === 'context') {
-            board.classList.add('c4-grid-context');
+            board.classList.add('c4-mermaid-view');
             const elementsList = C4_DATA.context.elements;
+            const connections = C4_DATA.context.connections || [];
+
+            const extractId = (nodeEl, knownIds) => {
+                let raw = nodeEl.id || nodeEl.getAttribute('data-id') || '';
+                let cleaned = raw.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+                if (knownIds.includes(cleaned)) return cleaned;
+                for (const id of knownIds) {
+                    if (raw === id || raw.startsWith('flowchart-' + id + '-') || raw.includes('-' + id + '-')) {
+                        return id;
+                    }
+                }
+                return cleaned;
+            };
+
+            const knownContextIds = elementsList.map(e => e.id);
+
+            const isLight = document.body.classList.contains('light-mode');
+            const compFill = isLight ? '#ffffff' : '#0d2530';
+            const compStroke = isLight ? '#2d7eb8' : '#3586c4';
+            const compColor = isLight ? '#1b2a30' : '#f0f5f7';
+            const extFill = isLight ? '#f0f5f7' : '#05151c';
+            const extStroke = isLight ? '#5d7c8a' : '#496b7a';
+            const extColor = isLight ? '#334c57' : '#93abb5';
+
+            let mmd = 'flowchart LR\n';
+            mmd += `    classDef comp fill:${compFill},stroke:${compStroke},stroke-width:2.5px,color:${compColor}\n`;
+            mmd += `    classDef ext fill:${extFill},stroke:${extStroke},stroke-width:2px,color:${extColor}\n`;
 
             elementsList.forEach(el => {
-                const card = createC4Card(el);
-
-                // Clicking system context card drills down to container view
-                if (el.id === 'system') {
-                    card.style.borderStyle = 'dashed';
-                    card.title = "Klicke zum Öffnen der Container-Ebene";
-                    card.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        zoomToLevel('containers');
-                    });
-                }
-
-                board.appendChild(card);
+                const label = el.title.replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
+                const cls = el.type === 'actor' ? 'ext' : 'comp';
+                mmd += `    ${el.id}["${label}"]:::${cls}\n`;
             });
+
+            connections.forEach(conn => {
+                let label = (conn.text || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
+                if (label) {
+                    mmd += `    ${conn.from} -->|"${label}"|${conn.to}\n`;
+                } else {
+                    mmd += `    ${conn.from} --> ${conn.to}\n`;
+                }
+            });
+
+            const mermaidDiv = document.createElement('div');
+            mermaidDiv.className = 'mermaid';
+            mermaidDiv.id = 'c4-context-mermaid';
+            mermaidDiv.textContent = mmd;
+            board.appendChild(mermaidDiv);
+
+            setTimeout(async () => {
+                try {
+                    if (typeof mermaid !== 'undefined') {
+                        await mermaid.run({ querySelector: '#c4-context-mermaid' });
+                        const svgEl = mermaidDiv.querySelector('svg');
+                        if (svgEl) {
+                            svgEl.querySelectorAll('.node').forEach(nodeEl => {
+                                const nodeId = extractId(nodeEl, knownContextIds);
+                                if (!nodeId || !knownContextIds.includes(nodeId)) return;
+                                nodeEl.style.cursor = 'pointer';
+                                nodeEl.classList.add('clickable');
+                                nodeEl.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const el = elementsList.find(item => item.id === nodeId);
+                                    if (el) showC4Detail(el);
+                                    if (nodeId === 'system') {
+                                        zoomToLevel('containers');
+                                    }
+                                });
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error('Mermaid context render error:', err);
+                }
+            }, 100);
         }
         else if (state.c4Level === 'containers') {
-            board.classList.add('c4-grid-containers');
+            board.classList.add('c4-mermaid-view');
             const elementsList = C4_DATA.containers.elements;
+            const connections = C4_DATA.containers.connections || [];
+
+            const extractId = (nodeEl, knownIds) => {
+                let raw = nodeEl.id || nodeEl.getAttribute('data-id') || '';
+                let cleaned = raw.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+                if (knownIds.includes(cleaned)) return cleaned;
+                for (const id of knownIds) {
+                    if (raw === id || raw.startsWith('flowchart-' + id + '-') || raw.includes('-' + id + '-')) {
+                        return id;
+                    }
+                }
+                return cleaned;
+            };
+
+            const knownContainerIds = elementsList.map(e => e.id);
+
+            const isLight = document.body.classList.contains('light-mode');
+            const compFill = isLight ? '#ffffff' : '#0d2530';
+            const compStroke = isLight ? '#2d7eb8' : '#3586c4';
+            const compColor = isLight ? '#1b2a30' : '#f0f5f7';
+            const extFill = isLight ? '#f0f5f7' : '#05151c';
+            const extStroke = isLight ? '#5d7c8a' : '#496b7a';
+            const extColor = isLight ? '#334c57' : '#93abb5';
+
+            let mmd = 'flowchart LR\n';
+            mmd += `    classDef comp fill:${compFill},stroke:${compStroke},stroke-width:2.5px,color:${compColor}\n`;
+            mmd += `    classDef ext fill:${extFill},stroke:${extStroke},stroke-width:2px,color:${extColor}\n`;
 
             elementsList.forEach(el => {
-                const card = createC4Card(el);
-
-                // Double check if clickable container
-                if (el.id === 'app' || el.id === 'firmware') {
-                    card.title = "Klicke zum Betrachten der Komponenten-Ebene";
-                    card.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        zoomToLevel('components', el.id);
-                    });
-                }
-
-                board.appendChild(card);
+                const label = el.title.replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
+                const cls = el.type === 'external' ? 'ext' : 'comp';
+                mmd += `    ${el.id}["${label}"]:::${cls}\n`;
             });
+
+            connections.forEach(conn => {
+                let label = (conn.text || '').replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ').trim();
+                if (label) {
+                    mmd += `    ${conn.from} -->|"${label}"|${conn.to}\n`;
+                } else {
+                    mmd += `    ${conn.from} --> ${conn.to}\n`;
+                }
+            });
+
+            const mermaidDiv = document.createElement('div');
+            mermaidDiv.className = 'mermaid';
+            mermaidDiv.id = 'c4-containers-mermaid';
+            mermaidDiv.textContent = mmd;
+            board.appendChild(mermaidDiv);
+
+            setTimeout(async () => {
+                try {
+                    if (typeof mermaid !== 'undefined') {
+                        await mermaid.run({ querySelector: '#c4-containers-mermaid' });
+                        const svgEl = mermaidDiv.querySelector('svg');
+                        if (svgEl) {
+                            svgEl.querySelectorAll('.node').forEach(nodeEl => {
+                                const nodeId = extractId(nodeEl, knownContainerIds);
+                                if (!nodeId || !knownContainerIds.includes(nodeId)) return;
+                                nodeEl.style.cursor = 'pointer';
+                                nodeEl.classList.add('clickable');
+                                nodeEl.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const el = elementsList.find(item => item.id === nodeId);
+                                    if (el) showC4Detail(el);
+                                    if (nodeId === 'app' || nodeId === 'firmware') {
+                                        zoomToLevel('components', nodeId);
+                                    }
+                                });
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error('Mermaid containers render error:', err);
+                }
+            }, 100);
         }
         else if (state.c4Level === 'components') {
             board.classList.add('c4-mermaid-view');
@@ -1809,8 +1914,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Trigger connector rendering after browser layout
-        setTimeout(drawC4Connections, 100);
     }
 
     function getComponentName(id) {
@@ -1819,36 +1922,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (comp) return comp.title;
         }
         return id;
-    }
-
-    function createC4Card(el) {
-        const card = document.createElement('div');
-        card.className = `c4-card ${el.type}`;
-        card.setAttribute('data-id', el.id);
-
-        const isDeployable = el.deployable;
-        const deployableBadge = isDeployable ? `<span class="node-badge requirement" style="font-size: 8px;"><i class="fa-solid fa-cloud-arrow-up"></i> Deployable</span>` : '';
-
-        card.innerHTML = `
-            <div class="c4-header-row">
-                <span class="c4-tech">${el.tech}</span>
-                ${deployableBadge}
-            </div>
-            <div class="c4-title">${el.title}</div>
-            <div class="c4-desc">${el.description}</div>
-        `;
-
-        card.addEventListener('click', (e) => {
-            // Check if it was double click or drill-down target. We still highlight it first.
-            const cards = document.querySelectorAll('.c4-card');
-            cards.forEach(c => c.style.borderColor = '');
-            card.style.borderColor = 'var(--primary)';
-
-            // Show details in sidebar
-            showC4Detail(el);
-        });
-
-        return card;
     }
 
     function zoomToLevel(level, containerId = null, componentId = null) {
@@ -1928,213 +2001,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             ${fileLinkHtml}
         `;
-    }
-
-    function getBoxIntersection(x1, y1, x2, y2, rx, ry, rw, rh) {
-        const cx = rx + rw / 2;
-        const cy = ry + rh / 2;
-        let tMin = 1;
-        const dx = x2 - cx;
-        const dy = y2 - cy;
-
-        if (Math.abs(dx) > 1e-5) {
-            let t = (rx - cx) / dx;
-            if (t > 0 && t < tMin) {
-                const y = cy + t * dy;
-                if (y >= ry && y <= ry + rh) tMin = t;
-            }
-            t = (rx + rw - cx) / dx;
-            if (t > 0 && t < tMin) {
-                const y = cy + t * dy;
-                if (y >= ry && y <= ry + rh) tMin = t;
-            }
-        }
-
-        if (Math.abs(dy) > 1e-5) {
-            let t = (ry - cy) / dy;
-            if (t > 0 && t < tMin) {
-                const x = cx + t * dx;
-                if (x >= rx && x <= rx + rw) tMin = t;
-            }
-            t = (ry + rh - cy) / dy;
-            if (t > 0 && t < tMin) {
-                const x = cx + t * dx;
-                if (x >= rx && x <= rx + rw) tMin = t;
-            }
-        }
-
-        return {
-            x: cx + tMin * dx,
-            y: cy + tMin * dy
-        };
-    }
-
-    function drawC4Connections() {
-        const svg = document.getElementById('c4Svg');
-        const container = document.getElementById('c4BoardContainer');
-        if (!svg || !container) return;
-
-        // Clear existing drawn paths and texts (keep defs)
-        const defs = svg.querySelector('defs');
-        svg.innerHTML = '';
-        if (defs) svg.appendChild(defs);
-
-        // Get connections based on active level
-        let connections = [];
-        if (state.c4Level === 'context') {
-            connections = C4_DATA.context.connections || [];
-        } else if (state.c4Level === 'containers') {
-            connections = C4_DATA.containers.connections || [];
-        } else if (state.c4Level === 'components') {
-            connections = []; // Mermaid handles connections natively
-        } else if (state.c4Level === 'code') {
-            connections = []; // Mermaid handles connections natively
-        }
-
-        if (connections.length === 0) {
-            svg.style.width = '0px';
-            svg.style.height = '0px';
-            return;
-        }
-
-        // Set SVG size to match container scrollHeight and scrollWidth
-        const scrollWidth = container.scrollWidth;
-        const scrollHeight = container.scrollHeight;
-        svg.setAttribute('width', scrollWidth);
-        svg.setAttribute('height', scrollHeight);
-        svg.style.width = scrollWidth + 'px';
-        svg.style.height = scrollHeight + 'px';
-
-        const containerRect = container.getBoundingClientRect();
-        const isDark = document.body.classList.contains('dark-mode');
-
-        connections.forEach(conn => {
-            const elFrom = document.querySelector(`[data-id="${conn.from}"]`);
-            const elTo = document.querySelector(`[data-id="${conn.to}"]`);
-
-            if (!elFrom || !elTo) return;
-
-            const rectFrom = elFrom.getBoundingClientRect();
-            const rectTo = elTo.getBoundingClientRect();
-
-            // Card positions relative to the container, considering scrolling
-            const boxA = {
-                x: rectFrom.left - containerRect.left + container.scrollLeft,
-                y: rectFrom.top - containerRect.top + container.scrollTop,
-                w: rectFrom.width,
-                h: rectFrom.height
-            };
-
-            const boxB = {
-                x: rectTo.left - containerRect.left + container.scrollLeft,
-                y: rectTo.top - containerRect.top + container.scrollTop,
-                w: rectTo.width,
-                h: rectTo.height
-            };
-
-            const cxA = boxA.x + boxA.w / 2;
-            const cyA = boxA.y + boxA.h / 2;
-            const cxB = boxB.x + boxB.w / 2;
-            const cyB = boxB.y + boxB.h / 2;
-
-            // Calculate start and end at boundaries of boxes
-            const start = getBoxIntersection(cxA, cyA, cxB, cyB, boxA.x, boxA.y, boxA.w, boxA.h);
-            const end = getBoxIntersection(cxB, cyB, cxA, cyA, boxB.x, boxB.y, boxB.w, boxB.h);
-
-            // Shorten start and end to leave a gap from the card borders (improves arrowhead visibility)
-            const dx = end.x - start.x;
-            const dy = end.y - start.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > 30) {
-                const startGap = 8;
-                const endGap = 12;
-                start.x += (dx / dist) * startGap;
-                start.y += (dy / dist) * startGap;
-                end.x -= (dx / dist) * endGap;
-                end.y -= (dy / dist) * endGap;
-            }
-
-            // Determine stroke color and marker arrowhead
-            let strokeColor = isDark ? '#00d4aa' : '#00a685';
-            let markerId = isDark ? 'arrow-teal' : 'arrow-teal-light';
-
-            if (state.c4Level === 'components') {
-                strokeColor = '#8b5cf6';
-                markerId = 'arrow-purple';
-            } else if (state.c4Level === 'code') {
-                strokeColor = '#f97316';
-                markerId = 'arrow-orange';
-            }
-
-            // Draw line
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-
-            let pathData = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
-            let isSegmented = false;
-
-
-            path.setAttribute('d', pathData);
-            path.setAttribute('stroke', strokeColor);
-            path.setAttribute('stroke-width', '2');
-            path.setAttribute('fill', 'none');
-            path.setAttribute('marker-end', `url(#${markerId})`);
-
-            // Context lines to external or database can be dashed
-            if (conn.to === 'external_db' || elTo.classList.contains('external')) {
-                path.setAttribute('stroke-dasharray', '5,5');
-            }
-
-            svg.appendChild(path);
-
-            // Add text label centered on the line
-            if (conn.text) {
-                let midX = (start.x + end.x) / 2;
-                let midY = (start.y + end.y) / 2;
-
-                if (isSegmented) {
-                    const startX = boxA.x + boxA.w / 2;
-                    const startY = boxA.y;
-                    const endX = boxB.x + boxB.w / 2;
-
-                    midX = (startX + endX) / 2;
-                    midY = startY - 35;
-                }
-
-                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.textContent = conn.text;
-                text.setAttribute('font-size', '11px');
-                text.setAttribute('font-family', 'var(--font-body)');
-                text.setAttribute('font-weight', '600');
-                text.setAttribute('fill', isDark ? '#f0f4f3' : '#1e2e2b');
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('dominant-baseline', 'middle');
-                text.setAttribute('x', midX);
-                text.setAttribute('y', midY);
-
-                // Add to SVG to calculate width/height
-                svg.appendChild(text);
-                const bbox = text.getBBox();
-                svg.removeChild(text);
-
-                // Add a styled background rectangle for the text
-                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                rect.setAttribute('x', bbox.x - 8);
-                rect.setAttribute('y', bbox.y - 4);
-                rect.setAttribute('width', bbox.width + 16);
-                rect.setAttribute('height', bbox.height + 8);
-                rect.setAttribute('fill', isDark ? '#0b1614' : '#eaf2f0'); // Pill background matching theme
-                rect.setAttribute('rx', '6');
-                rect.setAttribute('ry', '6');
-                rect.setAttribute('stroke', strokeColor); // Border matching the line color
-                rect.setAttribute('stroke-width', '1.2');
-
-                g.appendChild(rect);
-                g.appendChild(text);
-                svg.appendChild(g);
-            }
-        });
     }
 
     // 14. Start Application
