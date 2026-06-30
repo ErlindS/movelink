@@ -3,13 +3,13 @@
 <head>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.6/dist/mermaid.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 24px; background: #0f172a; color: #f8fafc; }
+        body { font-family: 'Outfit', 'Inter', sans-serif; padding: 24px; background: #061d28; color: #f0f5f7; }
         #diagram-container { 
-            background: #1e293b; 
+            background: #0d2530; 
             border-radius: 16px; 
             padding: 32px; 
             min-height: 450px; 
-            border: 1px solid #334155;
+            border: 1px solid rgba(53, 134, 196, 0.3);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -80,8 +80,8 @@ const componentConnections = [
 
 // Level 1: Komponenten-Übersicht
 const level1 = `flowchart LR
-    classDef comp fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc
-    classDef ext fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0
+    classDef comp fill:#0d2530,stroke:#3586c4,stroke-width:2.5px,color:#f0f5f7
+    classDef ext fill:#05151c,stroke:#5d7c8a,stroke-width:2px,color:#93abb5
     imu["Sensordatenerfassung"]:::comp
     engine["Inferenz-Engine"]:::comp
     ble["BLE-Streamer"]:::comp
@@ -122,8 +122,8 @@ const innerConnections = {
 
 function buildLevel2(componentId) {
     let mmd = 'flowchart LR\n';
-    mmd += '    classDef cls fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc\n';
-    mmd += '    classDef ghost fill:#0f172a,stroke:#38bdf8,stroke-width:2px,stroke-dasharray:5 5,color:#38bdf8\n';
+    mmd += '    classDef cls fill:#0d2530,stroke:#3586c4,stroke-width:2.5px,color:#f0f5f7\n';
+    mmd += '    classDef ghost fill:#061d28,stroke:#38bdf8,stroke-width:2px,stroke-dasharray:5 5,color:#38bdf8\n';
 
     const inputs = componentConnections.filter(c => c.to === componentId);
     const outputs = componentConnections.filter(c => c.from === componentId);

@@ -2,7 +2,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize Mermaid
     if (typeof mermaid !== 'undefined') {
-        mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
+        mermaid.initialize({ 
+            startOnLoad: false, 
+            theme: 'base', 
+            securityLevel: 'loose',
+            flowchart: { useMaxWidth: false },
+            themeVariables: {
+                fontSize: '16px',
+                fontFamily: "'Outfit', 'Inter', sans-serif"
+            }
+        });
     }
 
     // 1. Initialize State
@@ -124,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.activeTab === 'matrix-tab' && elements.toggleArchMatrixBtn && elements.toggleArchMatrixBtn.classList.contains('active')) {
             drawArchMatrixArrows();
         } else if (state.activeTab === 'c4-tab') {
-            drawC4Connections();
+            renderC4Explorer();
         }
     });
 
@@ -1488,10 +1497,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const knownComponentIds = elementsList.map(e => e.id);
 
-            // Build clean Mermaid flowchart with high-contrast palette
+            const isLight = document.body.classList.contains('light-mode');
+            const compFill = isLight ? '#ffffff' : '#0d2530';
+            const compStroke = isLight ? '#2d7eb8' : '#3586c4';
+            const compColor = isLight ? '#1b2a30' : '#f0f5f7';
+            const extFill = isLight ? '#f0f5f7' : '#05151c';
+            const extStroke = isLight ? '#5d7c8a' : '#496b7a';
+            const extColor = isLight ? '#334c57' : '#93abb5';
+
+            // Build clean Mermaid flowchart with theme-aware palette
             let mmd = 'flowchart LR\n';
-            mmd += '    classDef comp fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc\n';
-            mmd += '    classDef ext fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0\n';
+            mmd += `    classDef comp fill:${compFill},stroke:${compStroke},stroke-width:2.5px,color:${compColor}\n`;
+            mmd += `    classDef ext fill:${extFill},stroke:${extStroke},stroke-width:2px,color:${extColor}\n`;
 
             elementsList.forEach(el => {
                 const label = el.title.replace(/"/g, "'").replace(/[[\]{}()<>|&]/g, ' ');
@@ -1583,9 +1600,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ghostOutIds = outputs.map((_, i) => 'ghost_out_' + i);
                 const allKnownIds = [...internalIds, ...ghostInIds, ...ghostOutIds];
 
+                const isLight = document.body.classList.contains('light-mode');
+                const clsFill = isLight ? '#ffffff' : '#0d2530';
+                const clsStroke = isLight ? '#2d7eb8' : '#3586c4';
+                const clsColor = isLight ? '#1b2a30' : '#f0f5f7';
+                const ghostFill = isLight ? '#eef6fc' : '#061d28';
+                const ghostStroke = isLight ? '#2d7eb8' : '#38bdf8';
+                const ghostColor = isLight ? '#1d5f8c' : '#38bdf8';
+
                 let mmd = 'flowchart LR\n';
-                mmd += '    classDef cls fill:#1e293b,stroke:#a855f7,stroke-width:3px,color:#f8fafc\n';
-                mmd += '    classDef ghost fill:#0f172a,stroke:#38bdf8,stroke-width:2px,stroke-dasharray:5 5,color:#38bdf8\n';
+                mmd += `    classDef cls fill:${clsFill},stroke:${clsStroke},stroke-width:2.5px,color:${clsColor}\n`;
+                mmd += `    classDef ghost fill:${ghostFill},stroke:${ghostStroke},stroke-width:2px,stroke-dasharray:5 5,color:${ghostColor}\n`;
 
                 // Ghost inputs
                 inputs.forEach((inp, i) => {
