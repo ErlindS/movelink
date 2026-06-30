@@ -10,7 +10,7 @@ import { AnimatedLogo } from '@/components/AnimatedLogo';
 import { GlassCard } from '@/components/GlassCard';
 import { Colors } from '@/constants/Colors';
 import { useTrainingStore, TrainingSession } from '@/store';
-import { SessionCard } from '@/components/SessionCard';
+import { SessionCard } from '@/components/session_card/SessionCard';
 import { formatMovementLabel, getAnomalyColor, getAnomalyLabel } from './index';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';

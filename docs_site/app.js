@@ -1175,9 +1175,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: "Mobile App Komponenten",
                 elements: [
                     { id: 'firmware_ghost', type: 'external', title: 'Sensor-Firmware Container', description: 'Erfasst Sensordaten und klassifiziert Übungen lokal.', tech: 'C4 Container (nRF52840)' },
-                    { id: 'sensor_card', type: 'component', title: 'SensorCard UI', description: 'Steuert den Verbindungszustand und das Bluetooth-Geräte-Pairing.', tech: 'React Native Component', file: 'app/components/architecture.md' },
-                    { id: 'live_chart', type: 'component', title: 'LiveChart UI', description: 'Echtzeit-Zeichnung des Beschleunigungs- und Gyroskop-Verlaufs.', tech: 'SVG Canvas Component', file: 'app/components/architecture.md' },
-                    { id: 'session_card', type: 'component', title: 'SessionCard UI', description: 'Zeigt eine Zusammenfassung einer vergangenen Trainingseinheit.', tech: 'React Native Component', file: 'app/components/SessionCard.tsx' },
+                    { id: 'side_nav', type: 'component', title: 'SideNav UI', description: 'Navigationskomponente für die App-Steuerung auf Tablets und Web.', tech: 'React Native Component', file: 'app/components/side_nav/architecture.md' },
+                    { id: 'sensor_card', type: 'component', title: 'SensorCard UI', description: 'Steuert den Verbindungszustand und das Bluetooth-Geräte-Pairing.', tech: 'React Native Component', file: 'app/components/sensor_card/architecture.md' },
+                    { id: 'live_chart', type: 'component', title: 'LiveChart UI', description: 'Echtzeit-Zeichnung des Beschleunigungs- und Gyroskop-Verlaufs.', tech: 'SVG Canvas Component', file: 'app/components/live_chart/architecture.md' },
+                    { id: 'session_card', type: 'component', title: 'SessionCard UI', description: 'Zeigt eine Zusammenfassung einer vergangenen Trainingseinheit.', tech: 'React Native Component', file: 'app/components/session_card/architecture.md' },
                     { id: 'profile_card', type: 'component', title: 'ProfileCard UI', description: 'Komponente zur Darstellung der Benutzerdaten und Authentifizierung.', tech: 'React Native Component', file: 'app/components/ProfileCard/architecture.md' },
                     { id: 'use_ble', type: 'component', title: 'useBLE Hook', description: 'Custom React Hook für das Scanning und die BLE-Verbindung.', tech: 'TypeScript Hook', file: 'app/hooks/useBLE.ts' },
                     { id: 'use_ws', type: 'component', title: 'useWebSocket Hook', description: 'Verbindung zum Backend zwecks Live-Datentransfer.', tech: 'TypeScript Hook', file: 'app/hooks/useWebSocket.ts' },
@@ -1244,24 +1245,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 ],
                 connections: []
             },
+            side_nav: {
+                title: "SideNav UI Komponenten",
+                elements: [
+                    { id: 'side_nav_comp', type: 'class', title: 'SideNav()', description: 'Funktionale React-Komponente für die Seiten-Navigation.', tech: 'JSX React Component', file: 'app/components/side_nav/SideNav.tsx', line: 19 }
+                ],
+                connections: []
+            },
             sensor_card: {
                 title: "SensorCard UI Komponenten",
                 elements: [
-                    { id: 'sensor_card_comp', type: 'class', title: 'SensorCard()', description: 'Funktionale React-Komponente, die das BLE-Koppel-UI und Verbindungsstatus anzeigt.', tech: 'JSX React Component', file: 'app/components/SensorCard.tsx', line: 5 }
+                    { id: 'sensor_card_comp', type: 'class', title: 'SensorCard()', description: 'Funktionale React-Komponente, die das BLE-Koppel-UI und Verbindungsstatus anzeigt.', tech: 'JSX React Component', file: 'app/components/sensor_card/SensorCard.tsx', line: 55 }
                 ],
                 connections: []
             },
             live_chart: {
                 title: "LiveChart UI Komponenten",
                 elements: [
-                    { id: 'live_chart_comp', type: 'class', title: 'LiveChart()', description: 'Zeichnet eintreffende IMU-Beschleunigungs- und Drehratendaten in Echtzeit auf einem SVG-Canvas.', tech: 'JSX React Component', file: 'app/components/LiveChart.tsx', line: 5 }
+                    { id: 'live_chart_comp', type: 'class', title: 'LiveChart()', description: 'Zeichnet eintreffende IMU-Beschleunigungs- und Drehratendaten in Echtzeit auf einem SVG-Canvas.', tech: 'JSX React Component', file: 'app/components/live_chart/LiveChart.tsx', line: 66 }
                 ],
                 connections: []
             },
             session_card: {
                 title: "SessionCard UI Komponenten",
                 elements: [
-                    { id: 'session_card_comp', type: 'class', title: 'SessionCard()', description: 'Zeigt Metadaten und Diagramme vergangener Trainingseinheiten an.', tech: 'JSX React Component', file: 'app/components/SessionCard.tsx', line: 5 }
+                    { id: 'session_card_comp', type: 'class', title: 'SessionCard()', description: 'Zeigt Metadaten und Diagramme vergangener Trainingseinheiten an.', tech: 'JSX React Component', file: 'app/components/session_card/SessionCard.tsx', line: 30 }
                 ],
                 connections: []
             },

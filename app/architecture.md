@@ -33,10 +33,9 @@ flowchart TD
 
 ## Komponenten in diesem Container
 Die App enthält mehrere Komponenten (C4-Komponenten-Ebene):
-1. **[SideNav](file:///c:/Users/erlin/repo/movelink/app/components/SideNav.tsx)**: Navigationskomponente für die App-Steuerung. (Erfüllt: FA1.1)
-2. **[SensorCard](file:///c:/Users/erlin/repo/movelink/app/components/SensorCard.tsx)**: Verwaltung der BLE-Geräteverbindung und Pairing. (Erfüllt: FA1.2, FA1.3, NF3)
-3. **[LiveChart](file:///c:/Users/erlin/repo/movelink/app/components/LiveChart.tsx)**: Echtzeit-Visualisierung der IMU-Beschleunigungs- und Gyroskopwerte. (Erfüllt: FA1.5)
-4. **[SessionCard](file:///c:/Users/erlin/repo/movelink/app/components/SessionCard.tsx)**: Visualisierung historischer Trainingseinheiten. (Erfüllt: FA1.6)
-5. **[BLE-Hook (useBLE)](file:///c:/Users/erlin/repo/movelink/app/hooks/useBLE.ts)**: Kapselt die Bluetooth-Gerätekommunikation und den Reconnect. (Erfüllt: FA1.3, NF2)
-6. **[ProfileCard](file:///c:/Users/erlin/repo/movelink/app/components/ProfileCard/architecture.md)**: Visualisierung der Benutzerprofildetails. (Erfüllt: FA1.7)
-
+1. **[SideNav](file:///home/arch/repo/movelink/app/components/side_nav/SideNav.tsx)**: Navigationskomponente für die App-Steuerung. (Erfüllt: FA1.1, FA1.1.1)
+2. **[SensorCard](file:///home/arch/repo/movelink/app/components/sensor_card/SensorCard.tsx)**: Verwaltung der BLE-Geräteverbindung und Pairing. (Erfüllt: FA1.2, FA1.3, NF3)
+3. **[LiveChart](file:///home/arch/repo/movelink/app/components/live_chart/LiveChart.tsx)**: Echtzeit-Visualisierung der IMU-Beschleunigungs- und Gyroskopwerte. (Erfüllt: FA1.5)
+4. **[SessionCard](file:///home/arch/repo/movelink/app/components/session_card/SessionCard.tsx)**: Visualisierung historischer Trainingseinheiten. (Erfüllt: FA1.6)
+5. **[BLE-Hook (useBLE)](file:///home/arch/repo/movelink/app/hooks/useBLE.ts)**: Kapselt die Bluetooth-Gerätekommunikation und den Reconnect. (Erfüllt: FA1.3, NF2)
+6. **[ProfileCard](file:///home/arch/repo/movelink/app/components/ProfileCard/architecture.md)**: Visualisierung der Benutzerprofildetails. (Erfüllt: FA1.7)

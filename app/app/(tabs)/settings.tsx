@@ -6,7 +6,7 @@ import { AnimatedLogo } from '@/components/AnimatedLogo';
 import { Colors } from '@/constants/Colors';
 import { useBLEStore } from '@/store';
 import { useBLE } from '@/hooks/useBLE';
-import { SensorCard } from '@/components/SensorCard';
+import { SensorCard } from '@/components/sensor_card/SensorCard';
 import { GlassCard } from '@/components/GlassCard';
 import { BLE_SERVICE_UUID, BLE_IMU_CHARACTERISTIC_UUID, BLE_MAX_RECONNECT_ATTEMPTS } from '@/constants/BLE';
 
