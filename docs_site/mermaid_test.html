@@ -20,7 +20,25 @@
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
 
-// Level 1: Komponenten
+// Component names
+const nodeNames = {
+    imu: 'Sensordatenerfassung',
+    engine: 'Inferenz-Engine',
+    ble: 'BLE-Streamer',
+    led: 'LED Controller',
+    app: 'Mobile App'
+};
+
+// Connections between components (used to generate input/output ghost nodes)
+const componentConnections = [
+    { from: 'imu', to: 'engine', text: 'IMU Arrays' },
+    { from: 'engine', to: 'led', text: 'Klasse, Score' },
+    { from: 'engine', to: 'ble', text: 'Klasse, Score' },
+    { from: 'imu', to: 'ble', text: 'Raw IMU' },
+    { from: 'ble', to: 'app', text: 'JSON Stream' }
+];
+
+// Level 1: Komponenten-Übersicht
 const level1 = `flowchart LR
     classDef comp fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
     classDef ext fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#334155
@@ -39,51 +57,94 @@ const level1 = `flowchart LR
     click ble call drillDown()
     click led call drillDown()`;
 
-// Level 2: Innenansichten pro Komponente
-const level2 = {
-    imu: `flowchart TD
-    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
-    initIMU["initIMU - C++ Function"]:::cls
-    readSensor["readSensorData - C++ Function"]:::cls
-    initIMU --> readSensor
-    click initIMU call codeClick()
-    click readSensor call codeClick()`,
-
-    engine: `flowchart TD
-    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
-    runInference["runModelInference - C++ Function"]:::cls
-    click runInference call codeClick()`,
-
-    ble: `flowchart TD
-    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
-    initBLE["initBLE - C++ Function"]:::cls
-    streamIMU["streamIMUData - C++ Function"]:::cls
-    initBLE --> streamIMU
-    click initBLE call codeClick()
-    click streamIMU call codeClick()`,
-
-    led: `flowchart TD
-    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a
-    initFB["initFeedback - C++ Function"]:::cls
-    updateFB["updateFeedback - C++ Function"]:::cls
-    sendJson["sendJsonToPC - C++ Function"]:::cls
-    initFB --> updateFB
-    updateFB --> sendJson
-    click initFB call codeClick()
-    click updateFB call codeClick()
-    click sendJson call codeClick()`
+// Level 2: Inner functions per component
+const innerFunctions = {
+    imu: [
+        { id: 'initIMU', label: 'initIMU - C++ Function' },
+        { id: 'readSensor', label: 'readSensorData - C++ Function' }
+    ],
+    engine: [
+        { id: 'runInference', label: 'runModelInference - C++ Function' }
+    ],
+    ble: [
+        { id: 'initBLE', label: 'initBLE - C++ Function' },
+        { id: 'streamIMU', label: 'streamIMUData - C++ Function' }
+    ],
+    led: [
+        { id: 'initFB', label: 'initFeedback - C++ Function' },
+        { id: 'updateFB', label: 'updateFeedback - C++ Function' },
+        { id: 'sendJson', label: 'sendJsonToPC - C++ Function' }
+    ]
 };
 
-const nodeNames = {
-    imu: 'Sensordatenerfassung',
-    engine: 'Inferenz-Engine',
-    ble: 'BLE-Streamer',
-    led: 'LED Controller'
+// Inner connections (within a component)
+const innerConnections = {
+    imu: [{ from: 'initIMU', to: 'readSensor' }],
+    engine: [],
+    ble: [{ from: 'initBLE', to: 'streamIMU' }],
+    led: [{ from: 'initFB', to: 'updateFB' }, { from: 'updateFB', to: 'sendJson' }]
 };
 
-// Global callbacks (simple names, no dots - required for Mermaid v10)
+function buildLevel2(componentId) {
+    let mmd = 'flowchart LR\n';
+    mmd += '    classDef cls fill:#ffffff,stroke:#8b5cf6,stroke-width:2px,color:#0f172a\n';
+    mmd += '    classDef ghost fill:#f8fafc,stroke:#94a3b8,stroke-width:1px,stroke-dasharray:5 5,color:#64748b\n';
+
+    // Find incoming connections (other component -> this component)
+    const inputs = componentConnections.filter(c => c.to === componentId);
+    // Find outgoing connections (this component -> other component)
+    const outputs = componentConnections.filter(c => c.from === componentId);
+
+    // Create ghost input nodes
+    inputs.forEach((inp, i) => {
+        const ghostId = 'in_' + i;
+        mmd += `    ${ghostId}["${nodeNames[inp.from] || inp.from}"]:::ghost\n`;
+    });
+
+    // Create inner function nodes
+    const funcs = innerFunctions[componentId] || [];
+    funcs.forEach(fn => {
+        mmd += `    ${fn.id}["${fn.label}"]:::cls\n`;
+    });
+
+    // Create ghost output nodes
+    outputs.forEach((out, i) => {
+        const ghostId = 'out_' + i;
+        mmd += `    ${ghostId}["${nodeNames[out.to] || out.to}"]:::ghost\n`;
+    });
+
+    // Connect inputs to first inner function
+    if (funcs.length > 0) {
+        inputs.forEach((inp, i) => {
+            mmd += `    in_${i} -->|"${inp.text}"|${funcs[0].id}\n`;
+        });
+    }
+
+    // Inner connections
+    const inner = innerConnections[componentId] || [];
+    inner.forEach(c => {
+        mmd += `    ${c.from} --> ${c.to}\n`;
+    });
+
+    // Connect last inner function to outputs
+    if (funcs.length > 0) {
+        const lastFunc = funcs[funcs.length - 1].id;
+        outputs.forEach((out, i) => {
+            mmd += `    ${lastFunc} -->|"${out.text}"|out_${i}\n`;
+        });
+    }
+
+    // Click callbacks for inner functions
+    funcs.forEach(fn => {
+        mmd += `    click ${fn.id} call codeClick()\n`;
+    });
+
+    return mmd;
+}
+
+// Global callbacks
 window.drillDown = function(nodeId) {
-    if (level2[nodeId]) {
+    if (innerFunctions[nodeId]) {
         showLevel2(nodeId);
     }
 };
@@ -111,7 +172,7 @@ async function renderDiagram(mmdText) {
 function updateBreadcrumb(componentId) {
     const bc = document.getElementById('breadcrumb');
     if (componentId) {
-        bc.innerHTML = `<span onclick="showLevel1()">⬅ Komponenten</span> &rsaquo; <b>${nodeNames[componentId] || componentId}</b>`;
+        bc.innerHTML = `<span onclick="showLevel1()">⬅ Komponenten</span> &rsaquo; <b>${nodeNames[componentId]}</b>`;
     } else {
         bc.innerHTML = `<b>Komponenten-Übersicht</b> <span style="color:#94a3b8">(Klicke auf eine Komponente)</span>`;
     }
@@ -124,7 +185,7 @@ window.showLevel1 = function() {
 
 function showLevel2(componentId) {
     updateBreadcrumb(componentId);
-    renderDiagram(level2[componentId]);
+    renderDiagram(buildLevel2(componentId));
 }
 
 // Start
