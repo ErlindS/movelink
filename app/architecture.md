@@ -39,8 +39,9 @@ flowchart LR
     App[React Native App Container]:::process
     Sensor[Sensor Firmware Container]:::external
 
-    User -->|Interagiert mit| App
-    App <-->|BLE Bluetooth (Sensordaten / Status)| Sensor
+    User -->|"Interagiert mit"| App
+    App -->|"BLE Bluetooth (Steuerung)"| Sensor
+    Sensor -->|"BLE Bluetooth (Sensordaten)"| App
 ```
 
 ## Komponenten in diesem Container
