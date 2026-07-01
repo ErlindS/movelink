@@ -25,7 +25,7 @@ Der BLE-Streamer initialisiert den nRF52840-Bluetooth-Stack, stellt einen GATT-S
 ```mermaid
 flowchart LR
     IMU[Sensor-Rohwerte] -->|ax, ay, az, gx, gy, gz| Streamer[BLE-Streamer Component]
-    Streamer -->|GATT Notification (24 Bytes)| App[Mobile App useBLE Hook]
+    Streamer -->|"GATT Notification (24 Bytes)"| App[Mobile App useBLE Hook]
 ```
 
 ### GATT Profile & UUIDs

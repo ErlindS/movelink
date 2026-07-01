@@ -28,6 +28,6 @@ Die LiveChart visualisiert den Kurvenverlauf der Beschleunigung (X, Y, Z) und op
 flowchart LR
     BLE[useBLE Hook] -->|Neue IMU-Werte| Store[useBLEStore]
     Store -->|latestReading| Screen[Training Screen]
-    Screen -->|Datenpuffer (Buffer)| Chart[LiveChart Component]
+    Screen -->|"Datenpuffer (Buffer)"| Chart[LiveChart Component]
     Chart -->|SVG Render| Canvas[Bildschirm-Anzeige]
 ```

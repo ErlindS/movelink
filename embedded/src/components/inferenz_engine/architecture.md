@@ -29,9 +29,9 @@ Die Inferenz-Engine führt ein CNN-Klassifikationsmodell aus, das über Edge Imp
 
 ```mermaid
 flowchart TD
-    DSP[DSP Puffer (6 Achsen)] -->|run_classifier| Model[CNN Inferenzmodell]
+    DSP["DSP Puffer (6 Achsen)"] -->|run_classifier| Model[CNN Inferenzmodell]
     Model -->|Wahrscheinlichkeiten| Eval[Klassenauswertung]
-    Eval -->|Bester Treffer + Score| Output[Feedback & PC-JSON-Stream]
+    Eval -->|Bester Treffer + Score| Output["Feedback & PC-JSON-Stream"]
 ```
 
 ## Technische Details

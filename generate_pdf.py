@@ -20,7 +20,7 @@ except ImportError:
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Preformatted
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Preformatted, Image
 from reportlab.pdfgen import canvas
 from reportlab.graphics.shapes import Drawing, Rect, String, Line, Polygon
 
@@ -202,63 +202,6 @@ def get_class_for_req(req_id, references):
             classes.append({'name': name, 'file': file, 'line': ref['line']})
     return classes
 
-def create_mappings_drawing(total_rows, row_height, use_cases, tree, data):
-    d = Drawing(30, total_rows * row_height)
-    
-    # Calculate row spans
-    uc_spans = []
-    remaining = total_rows
-    for i in range(len(use_cases)):
-        span = remaining if i == len(use_cases) - 1 else total_rows // len(use_cases)
-        uc_spans.append(span)
-        remaining -= span
-        
-    uc_centers = []
-    curr_row = 0
-    for span in uc_spans:
-        center_row = curr_row + (span - 1) / 2.0
-        y = (total_rows - 1 - center_row + 0.5) * row_height
-        uc_centers.append(y)
-        curr_row += span
-        
-    fa_centers = {}
-    curr_row = 0
-    for container in tree:
-        container_total_rows = 0
-        for sub in container['subFAs']:
-            sub_rows = len(sub['detailFAs']) if sub['detailFAs'] else 1
-            container_total_rows += sub_rows
-        center_row = curr_row + (container_total_rows - 1) / 2.0
-        y = (total_rows - 1 - center_row + 0.5) * row_height
-        fa_centers[container['id']] = y
-        curr_row += container_total_rows
-        
-    connections = []
-    for container in tree:
-        container_id = container['id']
-        def_info = data['definitions'].get(container_id)
-        if def_info and def_info.get('links'):
-            for uc_id in def_info['links']:
-                uc_idx = -1
-                for idx, uc in enumerate(use_cases):
-                    if uc['id'] == uc_id:
-                        uc_idx = idx
-                        break
-                if uc_idx != -1:
-                    color = colors.HexColor('#627c78')
-                    if container_id == 'FA2':
-                        color = colors.HexColor('#f97316')
-                    elif container_id == 'FA3':
-                        color = colors.HexColor('#22c55e')
-                    connections.append((uc_idx, container_id, color))
-                    
-    for uc_idx, fa_id, color in connections:
-        y_from = uc_centers[uc_idx]
-        y_to = fa_centers[fa_id]
-        d.add(Line(0, y_from, 30, y_to, strokeColor=color, strokeWidth=1.5))
-        
-    return d
-
 RENDERED_ANCHORS = set()
 
 def make_requirement_card(item_id, title, desc_text, styles):
@@ -317,34 +260,22 @@ def markdown_to_flowables(text, styles):
             i += 1  # skip the closing ```
             
             if is_mermaid:
-                mermaid_code = "".join(mermaid_lines)
-                if "Loop in Executable.ino" in mermaid_code:
+                mermaid_code = "\n".join(mermaid_lines)
+                rendered_flowable = render_mermaid_to_flowable(mermaid_code)
+                if rendered_flowable:
                     flowables.append(Spacer(1, 5))
-                    flowables.append(create_sensordatenerfassung_diagram())
+                    flowables.append(rendered_flowable)
                     flowables.append(Spacer(1, 5))
-                elif "LSM6DS3 Sensor (Hardware)" in mermaid_code or "Sensordatenerfassung" in mermaid_code:
+                else:
+                    # Fallback: display as a neat styled code block
+                    p_style = ParagraphStyle(
+                        'MermaidFallback',
+                        parent=styles['CodeStyle'],
+                        fontSize=8,
+                        leading=10
+                    )
                     flowables.append(Spacer(1, 5))
-                    flowables.append(create_firmware_dataflow_diagram())
-                    flowables.append(Spacer(1, 5))
-                elif "CNN Modell" in mermaid_code or "run_classifier" in mermaid_code:
-                    flowables.append(Spacer(1, 5))
-                    flowables.append(create_inferenz_engine_diagram())
-                    flowables.append(Spacer(1, 5))
-                elif "Feedback-Logik" in mermaid_code or "Welche Klasse?" in mermaid_code:
-                    flowables.append(Spacer(1, 5))
-                    flowables.append(create_led_display_controller_diagram())
-                    flowables.append(Spacer(1, 5))
-                elif "GATT Notification" in mermaid_code or "GATT-Service" in mermaid_code:
-                    flowables.append(Spacer(1, 5))
-                    flowables.append(create_ble_streamer_diagram())
-                    flowables.append(Spacer(1, 5))
-                elif "Physische Platzierung" in mermaid_code or "Armbandlaschen" in mermaid_code:
-                    flowables.append(Spacer(1, 5))
-                    flowables.append(create_gehause_diagram())
-                    flowables.append(Spacer(1, 5))
-                elif "React Native App Container" in mermaid_code:
-                    flowables.append(Spacer(1, 5))
-                    flowables.append(create_container_diagram())
+                    flowables.append(Paragraph(f"<b>[Mermaid Diagram]</b><br/>" + clean_md_tags(mermaid_code).replace('\n', '<br/>'), p_style))
                     flowables.append(Spacer(1, 5))
             continue
             
@@ -572,7 +503,12 @@ def draw_c4_box(d, x, y, w, h, title, tech, desc, box_type):
     d.add(String(x + w/2, y + h - 14, title, fontName='Helvetica-Bold', fontSize=9, textAnchor='middle', fillColor=text_color))
     
     # Draw Tech (italic/oblique)
-    d.add(String(x + w/2, y + h - 24, f"[{tech}]", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=tech_color))
+    if tech:
+        tech_str = f"[{tech}]" if not (tech.startswith('[') and tech.endswith(']')) else tech
+        d.add(String(x + w/2, y + h - 24, tech_str, fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=tech_color))
+        start_y = y + h - 34
+    else:
+        start_y = y + h - 24
     
     # Wrap and draw description
     def wrap_text(text, max_chars=28):
@@ -590,7 +526,6 @@ def draw_c4_box(d, x, y, w, h, title, tech, desc, box_type):
         return lines
 
     desc_lines = wrap_text(desc, max_chars=26)
-    start_y = y + h - 34
     for idx, line in enumerate(desc_lines):
         line_y = start_y - idx * 8.5
         d.add(String(x + w/2, line_y, line, fontName='Helvetica', fontSize=6.2, textAnchor='middle', fillColor=desc_color))
@@ -636,234 +571,245 @@ def draw_c4_arrow(d, x1, y1, x2, y2, label, stroke_color, is_dashed=False):
         d.add(Rect(mid_x - p_w/2, mid_y - p_h/2, p_w, p_h, rx=2, ry=2, fillColor=colors.HexColor('#ffffff'), strokeColor=colors.HexColor('#cccccc'), strokeWidth=0.5))
         d.add(String(mid_x, mid_y - 2.5, label, fontName='Helvetica', fontSize=6.5, textAnchor='middle', fillColor=colors.HexColor('#333333')))
 
-def create_system_context_diagram():
-    d = Drawing(480, 130)
-    d.add(Rect(0, 0, 480, 130, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
-    teal = colors.HexColor('#00a685')
-    grey = colors.HexColor('#666666')
+def render_mermaid_to_flowable(mermaid_code):
+    import base64
+    import urllib.request
+    import hashlib
+    import struct
     
-    # Draw boxes
-    draw_c4_box(d, 20, 30, 110, 70, "Trainierender", "Person", "Benutzer, der seine Übungsausführung in Echtzeit analysieren möchte.", "actor")
-    draw_c4_box(d, 185, 30, 110, 70, "MoveLink System", "Software System", "Erfasst, filtert und visualisiert Bewegungsdaten, klassifiziert Übungen lokal.", "system")    
-    # Draw arrows
-    draw_c4_arrow(d, 130, 65, 185, 65, "Nutzt für Training", teal)
-    return d
+    # Normalize the mermaid code (strip CRLF to LF, and spaces)
+    mermaid_code = mermaid_code.replace('\r', '').strip()
+    if not mermaid_code:
+        return None
+        
+    # Compute SHA-256 hash of the code to use as the cache filename
+    code_hash = hashlib.sha256(mermaid_code.encode('utf-8')).hexdigest()
+    
+    # Create diagrams directory if it doesn't exist
+    diagrams_dir = Path(__file__).parent.resolve() / 'docs_site' / 'diagrams'
+    diagrams_dir.mkdir(exist_ok=True)
+    
+    img_path = diagrams_dir / f"{code_hash}.png"
+    
+    if not img_path.exists():
+        # Base64 encode the mermaid code in urlsafe format
+        graph_bytes = mermaid_code.encode("utf-8")
+        base64_bytes = base64.urlsafe_b64encode(graph_bytes)
+        base64_string = base64_bytes.decode("utf-8")
+        
+        import time
+        base64_string = base64_string.rstrip("=")
+        url = f"https://mermaid.ink/img/{base64_string}"
+        
+        print(f"Downloading Mermaid diagram {code_hash[:8]} from mermaid.ink...")
+        success = False
+        for attempt in range(3):
+            try:
+                time.sleep(1.0 + attempt * 2.0)
+                req = urllib.request.Request(
+                    url,
+                    headers={'User-Agent': 'Mozilla/5.0'}
+                )
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    img_data = response.read()
+                    with open(img_path, 'wb') as f:
+                        f.write(img_data)
+                success = True
+                break
+            except Exception as e:
+                print(f"  Attempt {attempt + 1} failed: {e}")
+                
+        if not success:
+            print(f"Warning: Failed to render Mermaid diagram via mermaid.ink after 3 attempts.")
+            return None
+
+    # Parse image size using Pillow (supports PNG, JPEG/JFIF, etc.)
+    width, height = 480, 200 # fallback
+    try:
+        from PIL import Image as PILImage
+        with PILImage.open(img_path) as pil_img:
+            w_px, h_px = pil_img.size
+            # Scale image to fit within maximum PDF content width (480 points)
+            max_width = 480.0
+            scale = min(1.0, max_width / (w_px * 0.75))
+            width = w_px * 0.75 * scale
+            height = h_px * 0.75 * scale
+    except Exception as e:
+        print(f"Warning: Failed to parse image dimensions for {img_path}: {e}")
+        pass
+        
+    img_flowable = Image(str(img_path), width=width, height=height)
+    img_flowable.hAlign = 'CENTER'
+    return img_flowable
+
+def create_system_context_diagram():
+    mermaid_code = """
+    flowchart LR
+        user["Trainierender\n[Person]\nBenutzer, der seine Übungsausführung in Echtzeit analysieren möchte."]:::ext
+        system["MoveLink System\n[Software System]\nErfasst, filtert und visualisiert Bewegungsdaten, klassifiziert Übungen lokal."]:::comp
+        user -->|"Nutzt für Training"| system
+    """
+    return render_mermaid_to_flowable(mermaid_code)
 
 def create_container_diagram():
-    d = Drawing(480, 130)
-    d.add(Rect(0, 0, 480, 130, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
-    teal = colors.HexColor('#00a685')
-    
-    # Draw boxes
-    draw_c4_box(d, 80, 30, 140, 70, "Sensor Firmware", "Arduino C/C++", "Erfasst Sensordaten, wendet Filter an und streamt BLE-Pakete.", "container")
-    draw_c4_box(d, 280, 30, 140, 70, "Mobile App", "React Native", "Bietet UI für Verbindung, Live-Visualisierung, Verlauf und lokale Datenhaltung.", "container")
-    
-    # Draw arrows
-    draw_c4_arrow(d, 220, 65, 280, 65, "BLE Data Stream", teal)
-    return d
+    mermaid_code = """
+    flowchart LR
+        firmware["Sensor Firmware\n[Arduino C/C++]\nErfasst Sensordaten, wendet Filter an und streamt BLE-Pakete."]:::comp
+        app["Mobile App\n[React Native]\nBietet UI für Verbindung, Live-Visualisierung, Verlauf und lokale Datenhaltung."]:::comp
+        firmware -->|"BLE Data Stream"| app
+    """
+    return render_mermaid_to_flowable(mermaid_code)
 
 def create_firmware_components_diagram():
-    d = Drawing(480, 135)
-    d.add(Rect(0, 0, 480, 135, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
-    purple = colors.HexColor('#8b5cf6')
-    
-    # Draw boxes
-    draw_c4_box(d, 20, 40, 110, 70, "LSM6DS3 Reader", "C++ Module", "Periodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz.", "component")
-    draw_c4_box(d, 185, 40, 110, 70, "Edge Impulse SDK", "Inferenzbibliothek", "Lokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung.", "component")
-    draw_c4_box(d, 350, 40, 110, 70, "BLE Service", "ArduinoBLE", "Stellt Characteristics bereit und verwaltet Verbindungsnotifikationen.", "component")
-    
-    # Draw direct arrows
-    draw_c4_arrow(d, 130, 75, 185, 75, "Liefert Sensor-Rohdaten", purple)
-    draw_c4_arrow(d, 295, 75, 350, 75, "Überträgt Klassifikation", purple)
-    
-    # Draw segmented arrow (imu_reader -> ble_service)
-    d.add(Line(75, 40, 75, 15, strokeColor=purple, strokeWidth=1.2))
-    d.add(Line(75, 15, 405, 15, strokeColor=purple, strokeWidth=1.2))
-    d.add(Line(405, 15, 405, 40, strokeColor=purple, strokeWidth=1.2))
-    arrow = Polygon([405, 40, 402, 34, 408, 34], fillColor=purple, strokeColor=purple)
-    d.add(arrow)
-    label = "Streamt Rohdaten"
-    p_w = len(label) * 4.2 + 8
-    d.add(Rect(240 - p_w/2, 15 - 5, p_w, 10, rx=2, ry=2, fillColor=colors.white, strokeColor=colors.HexColor('#cccccc'), strokeWidth=0.5))
-    d.add(String(240, 15 - 2.5, label, fontName='Helvetica', fontSize=6.5, textAnchor='middle', fillColor=colors.HexColor('#333333')))
-    return d
+    mermaid_code = """
+    flowchart LR
+        Reader["LSM6DS3 Reader\n[C++ Module]\nPeriodische Erfassung der Rohbeschleunigungs- und Gyroskopwerte mit 50Hz."]:::comp
+        SDK["Edge Impulse SDK\n[Inferenzbibliothek]\nLokale Ausführung des trainierten neuronalen Netzes (CNN) zur Curl-Klassifizierung."]:::comp
+        BLE["BLE Service\n[ArduinoBLE]\nStellt Characteristics bereit und verwaltet Verbindungsnotifikationen."]:::comp
+        
+        Reader -->|"Liefert Sensor-Rohdaten"| SDK
+        SDK -->|"Überträgt Klassifikation"| BLE
+        Reader -->|"Streamt Rohdaten"| BLE
+    """
+    return render_mermaid_to_flowable(mermaid_code)
 
 def create_app_components_diagram():
-    d = Drawing(480, 220)
-    d.add(Rect(0, 0, 480, 220, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
-    purple = colors.HexColor('#8b5cf6')
-    
-    # Row 2 (Top, y=125)
-    draw_c4_box(d, 15, 125, 100, 75, "SensorCard UI", "React Native", "Steuert den Verbindungszustand und das Bluetooth-Pairing.", "component")
-    draw_c4_box(d, 127, 125, 100, 75, "LiveChart UI", "SVG Canvas", "Echtzeit-Zeichnung des IMU-Verlaufs.", "component")
-    draw_c4_box(d, 239, 125, 100, 75, "SessionCard UI", "React Native", "Zusammenfassung einer vergangenen Trainingseinheit.", "component")
-    draw_c4_box(d, 351, 125, 114, 75, "ProfileCard UI", "React Native", "Darstellung der Benutzerdaten und Authentifizierung.", "component")
-    
-    # Row 1 (Bottom, y=25)
-    draw_c4_box(d, 70, 25, 130, 60, "useBLE Hook", "TypeScript Hook", "Custom Hook für Scanning und BLE-Verbindung.", "component")
-    draw_c4_box(d, 280, 25, 130, 60, "Local Store", "Zustand & AsyncStorage", "Verwaltet den Zustand und persistiert Daten lokal.", "component")
-    
-    # Draw arrows
-    draw_c4_arrow(d, 65, 125, 110, 85, "Steuert BLE", purple)
-    draw_c4_arrow(d, 177, 125, 160, 85, "Liest IMU", purple)
-    draw_c4_arrow(d, 289, 125, 320, 85, "Lädt/Speichert", purple)
-    draw_c4_arrow(d, 408, 125, 370, 85, "Nutzt Store", purple)
-    return d
+    mermaid_code = """
+    flowchart LR
+        SensorCard["SensorCard UI\n[React Native]\nSteuert den Verbindungszustand und das Bluetooth-Pairing."]:::comp
+        LiveChart["LiveChart UI\n[SVG Canvas]\nEchtzeit-Zeichnung des IMU-Verlaufs."]:::comp
+        SessionCard["SessionCard UI\n[React Native]\nZusammenfassung einer vergangenen Trainingseinheit."]:::comp
+        ProfileCard["ProfileCard UI\n[React Native]\nDarstellung der Benutzerdaten und Authentifizierung."]:::comp
+        useBLE["useBLE Hook\n[TypeScript Hook]\nCustom Hook für Scanning und BLE-Verbindung."]:::comp
+        Store["Local Store\n[Zustand & AsyncStorage]\nVerwaltet den Zustand und persistiert Daten lokal."]:::comp
+        
+        SensorCard -->|"Steuert BLE"| useBLE
+        LiveChart -->|"Liest IMU"| useBLE
+        SessionCard -->|"Lädt/Speichert"| Store
+        ProfileCard -->|"Nutzt Store"| Store
+    """
+    return render_mermaid_to_flowable(mermaid_code)
 
 def create_data_control_flow_diagram():
-    d = Drawing(480, 185)
-    d.add(Rect(0, 0, 480, 185, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
-    
-    teal = colors.HexColor('#00a685')
-    grey = colors.HexColor('#666666')
-    
-    # Draw 3 blocks
-    draw_c4_box(d, 30, 60, 110, 60, "LSM6DS3 Sensor", "Hardware IMU", "Erfasst Rohbeschleunigung & Gyro mit 50Hz.", "external")
-    draw_c4_box(d, 185, 60, 110, 60, "XIAO MCU", "nRF52840 MCU", "Filtert Rohwerte, führt Edge Impulse Inferenz aus.", "component")
-    draw_c4_box(d, 340, 60, 110, 60, "Mobile App", "React Native & Stores", "Empfängt BLE-Pakete, aktualisiert UI State und speichert lokal.", "container")
-    
-    # --- Forward Data Flow (Upper path, y=95) ---
-    draw_c4_arrow(d, 140, 95, 185, 95, "Rohwerte", grey)
-    draw_c4_arrow(d, 295, 95, 340, 95, "BLE Daten", teal)
-    
-    # --- Backward Control & Feedback Flow (Lower path, y=85) ---
-    draw_c4_arrow(d, 340, 85, 295, 85, "BLE Ctrl", teal, is_dashed=True)
-    
-    # Explanatory annotations
-    d.add(String(240, 25, "Datenfluss: Sensorik (50Hz) -> Inferenz -> BLE Notification -> UI State -> AsyncStorage Speicherung", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
-    d.add(String(240, 13, "Kontroll- & Feedbackfluss: App-Steuerungssignale -> BLE-Steuerung an den Sensor", fontName='Helvetica-Oblique', fontSize=7, textAnchor='middle', fillColor=colors.HexColor('#4b5563')))
-    return d
+    mermaid_code = """
+    flowchart LR
+        Sensor["LSM6DS3 Sensor\n[Hardware IMU]\nErfasst Rohbeschleunigung & Gyro mit 50Hz."]:::ext
+        MCU["XIAO MCU\n[nRF52840 MCU]\nFiltert Rohwerte, führt Edge Impulse Inferenz aus."]:::comp
+        App["Mobile App\n[React Native & Stores]\nEmpfängt BLE-Pakete, aktualisiert UI State und speichert lokal."]:::comp
+        
+        Sensor -->|"Rohwerte"| MCU
+        MCU -->|"BLE Daten"| App
+        App -.->|"BLE Ctrl"| MCU
+    """
+    return render_mermaid_to_flowable(mermaid_code)
 
-def create_firmware_dataflow_diagram():
-    d = Drawing(480, 175)
-    d.add(Rect(0, 0, 480, 175, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+def parse_use_cases(content):
+    sections = content.split('---')
+    use_cases = []
     
-    teal = colors.HexColor('#00a685')
-    purple = colors.HexColor('#8b5cf6')
-    grey = colors.HexColor('#666666')
-    
-    # Draw boxes
-    draw_c4_box(d, 15, 105, 85, 50, "LSM6DS3 Sensor", "Hardware IMU", "Beschleunigung & Gyro.", "external")
-    draw_c4_box(d, 120, 105, 95, 50, "Sensordatenerfassung", "C++ Component", "Taktet Erfassung mit 50Hz.", "component")
-    draw_c4_box(d, 240, 105, 95, 50, "Inferenz-Engine", "CNN Classifier", "Klassifiziert Curls.", "component")
-    draw_c4_box(d, 360, 105, 105, 50, "BLE-Streamer", "C++ Component", "Streamt Daten via GATT.", "component")
-    
-    draw_c4_box(d, 360, 15, 105, 50, "Mobile App", "React Native", "Empfängt BLE Pakete.", "external")
-    draw_c4_box(d, 240, 15, 95, 50, "LED-Controller", "C++ Component", "Steuert Feedback-LEDs.", "component")
-    draw_c4_box(d, 120, 15, 95, 50, "RGB-LEDs", "Hardware LED", "Zeigt Status rot/grün/blau.", "external")
-    
-    # Draw arrows
-    draw_c4_arrow(d, 100, 130, 120, 130, "Rohwerte", grey)
-    draw_c4_arrow(d, 215, 130, 240, 130, "Buffer", purple)
-    draw_c4_arrow(d, 335, 130, 360, 130, "Ergebnis", purple)
-    draw_c4_arrow(d, 412, 105, 412, 65, "BLE Notify", teal)
-    draw_c4_arrow(d, 287, 105, 287, 65, "Klasse", purple)
-    draw_c4_arrow(d, 240, 40, 215, 40, "Signal", purple)
-    
-    return d
+    for sec in sections:
+        sec = sec.strip()
+        if not sec:
+            continue
+            
+        lines = sec.split('\n')
+        uc_id = ""
+        uc_title = ""
+        akteur = ""
+        vorbedingung = ""
+        beschreibung = ""
+        ablauf = []
+        
+        title_line = lines[0].strip()
+        match = re.match(r'\*\*?(UC-\d+)\*\*?:\s*(.*)', title_line)
+        if match:
+            uc_id = match.group(1)
+            uc_title = match.group(2).strip()
+        else:
+            continue
+            
+        in_ablauf = False
+        for line in lines[1:]:
+            line_strip = line.strip()
+            if not line_strip:
+                continue
+            
+            if line_strip.startswith('* **Akteur**:'):
+                akteur = line_strip.split(':', 1)[1].strip()
+            elif line_strip.startswith('* **Vorbedingung**:'):
+                vorbedingung = line_strip.split(':', 1)[1].strip()
+            elif line_strip.startswith('* **Beschreibung**:'):
+                beschreibung = line_strip.split(':', 1)[1].strip()
+            elif line_strip.startswith('* **Ablauf (Szenario)**:'):
+                in_ablauf = True
+            elif in_ablauf and re.match(r'^\d+\.', line_strip):
+                step_text = line_strip.split('.', 1)[1].strip()
+                step_text = step_text.replace('**', '')
+                ablauf.append(step_text)
+            elif in_ablauf and (line_strip.startswith('**Eingabe**:') or line_strip.startswith('**Ausgabe**:') or line_strip.startswith('* **Eingabe**:') or line_strip.startswith('* **Ausgabe**:') or line_strip.startswith('**') or line_strip.startswith('*')):
+                clean_text = line_strip.lstrip('* ').replace('**', '')
+                if ablauf:
+                    ablauf[-1] += "\n" + clean_text
+                else:
+                    ablauf.append(clean_text)
+                    
+        use_cases.append({
+            'id': uc_id,
+            'title': uc_title,
+            'akteur': akteur,
+            'vorbedingung': vorbedingung,
+            'beschreibung': beschreibung,
+            'ablauf': ablauf
+        })
+    return use_cases
 
-def create_sensordatenerfassung_diagram():
-    d = Drawing(480, 95)
-    d.add(Rect(0, 0, 480, 95, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+def render_use_case_table(uc, styles):
+    left_lines = []
+    if uc['akteur']:
+        left_lines.append(f"<b>Akteur:</b><br/>{uc['akteur']}")
+    if uc['vorbedingung']:
+        left_lines.append(f"<b>Vorbedingung:</b><br/>{uc['vorbedingung']}")
+    if uc['beschreibung']:
+        left_lines.append(f"<b>Beschreibung:</b><br/>{uc['beschreibung']}")
+        
+    left_text = "<br/><br/>".join(left_lines)
     
-    teal = colors.HexColor('#00a685')
-    purple = colors.HexColor('#8b5cf6')
-    grey = colors.HexColor('#666666')
+    right_lines = ["<b>Ablauf (Szenario):</b>"]
+    for idx, step in enumerate(uc['ablauf']):
+        formatted_step = step.replace('\n', '<br/>&nbsp;&nbsp;&nbsp;&nbsp;')
+        formatted_step = formatted_step.replace("Eingabe:", "<b>Eingabe:</b>").replace("Ausgabe:", "<b>Ausgabe:</b>")
+        right_lines.append(f"{idx+1}. {formatted_step}")
+        
+    right_text = "<br/><br/>".join(right_lines)
     
-    # Draw boxes
-    draw_c4_box(d, 15, 20, 95, 50, "LSM6DS3 Sensor", "Hardware IMU", "Erfasst Beschleunigung & Drehung.", "external")
-    draw_c4_box(d, 130, 20, 95, 50, "Executable.ino (Loop)", "C++ Component", "Taktet Erfassung mit 50Hz.", "component")
-    draw_c4_box(d, 245, 20, 105, 50, "Skalierung & Filter", "C++ Modul", "Rechnet in m/s^2 um & clampt auf 2G.", "component")
-    draw_c4_box(d, 370, 20, 95, 50, "DSP Puffer", "Memory Buffer", "Speichert Daten für Inferenz-Engine.", "component")
+    left_p = Paragraph(left_text, styles['NormalText'])
+    right_p = Paragraph(right_text, styles['NormalText'])
     
-    # Draw arrows
-    draw_c4_arrow(d, 110, 45, 130, 45, "I2C Rohwert", grey)
-    draw_c4_arrow(d, 225, 45, 245, 45, "Clamping 2G", purple)
-    draw_c4_arrow(d, 350, 45, 370, 45, "Befüllen", purple)
+    title_p = Paragraph(f"<font color='#00a685'><b>{uc['id']}</b></font> &nbsp;&mdash;&nbsp; <b>{uc['title']}</b>", styles['TableHeader'])
     
-    return d
-
-def create_inferenz_engine_diagram():
-    d = Drawing(480, 95)
-    d.add(Rect(0, 0, 480, 95, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
+    table_data = [
+        [title_p, ""],
+        [left_p, right_p]
+    ]
     
-    purple = colors.HexColor('#8b5cf6')
-    
-    # Draw boxes
-    draw_c4_box(d, 15, 20, 95, 50, "DSP Puffer (6 Achsen)", "Data Buffer", "Hält 6-Achsen-Messdaten.", "component")
-    draw_c4_box(d, 130, 20, 95, 50, "CNN Modell", "TensorFlow Lite", "Klassifiziert Bewegungsmuster.", "component")
-    draw_c4_box(d, 245, 20, 105, 50, "Klassenauswertung", "C++ Modul", "Bestimmt beste Klasse & Wahrscheinlichkeit.", "component")
-    draw_c4_box(d, 370, 20, 95, 50, "Feedback / PC-Stream", "Output Interface", "Gibt Ergebnisse lokal & seriell aus.", "component")
-    
-    # Draw arrows
-    draw_c4_arrow(d, 110, 45, 130, 45, "run_classifier", purple)
-    draw_c4_arrow(d, 225, 45, 245, 45, "Scores", purple)
-    draw_c4_arrow(d, 350, 45, 370, 45, "Treffer", purple)
-    
-    return d
-
-def create_led_display_controller_diagram():
-    d = Drawing(480, 140)
-    d.add(Rect(0, 0, 480, 140, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
-    
-    teal = colors.HexColor('#00a685')
-    purple = colors.HexColor('#8b5cf6')
-    
-    # Draw boxes
-    draw_c4_box(d, 15, 45, 90, 50, "Inferenz-Ergebnis", "Data Input", "Klassifikation & Konfidenz.", "component")
-    draw_c4_box(d, 135, 45, 90, 50, "Feedback-Logik", "C++ Component", "Entscheidet über Anzeige/LED Farbe.", "component")
-    
-    draw_c4_box(d, 265, 90, 100, 40, "IDLE (Blau leuchten)", "OLED / LED Action", "OLED: Status IDLE", "external")
-    draw_c4_box(d, 265, 45, 100, 40, "PERFEKT (Grün leuchten)", "OLED / LED Action", "OLED: Curl PERFEKT", "external")
-    draw_c4_box(d, 265, 0, 100, 40, "FEHLER (Rot leuchten)", "OLED / LED Action", "OLED: Achtung FEHLER", "external")
-    
-    # Draw arrows
-    draw_c4_arrow(d, 105, 70, 135, 70, "Treffer", purple)
-    
-    # Branching arrows
-    draw_c4_arrow(d, 225, 80, 265, 110, "idle / <60%", teal)
-    draw_c4_arrow(d, 225, 70, 265, 65, "curl_sauber", teal)
-    draw_c4_arrow(d, 225, 60, 265, 20, "fehler", teal)
-    
-    return d
-
-def create_ble_streamer_diagram():
-    d = Drawing(480, 95)
-    d.add(Rect(0, 0, 480, 95, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
-    
-    teal = colors.HexColor('#00a685')
-    purple = colors.HexColor('#8b5cf6')
-    
-    # Draw boxes
-    draw_c4_box(d, 20, 20, 100, 50, "Sensor-Rohwerte", "Data Source", "Liefert ax, ay, az, gx, gy, gz.", "external")
-    draw_c4_box(d, 190, 20, 100, 50, "BLE-Streamer Component", "nRF52840 BLE Service", "Paketiert Daten in 24-Byte-GATT-Puffer.", "component")
-    draw_c4_box(d, 360, 20, 100, 50, "Mobile App", "useBLE Hook", "Empfängt und parst Datenpakete.", "external")
-    
-    # Draw arrows
-    draw_c4_arrow(d, 120, 45, 190, 45, "IMU Werte", purple)
-    draw_c4_arrow(d, 290, 45, 360, 45, "GATT Notify", teal)
-    
-    return d
-
-def create_gehause_diagram():
-    d = Drawing(480, 140)
-    d.add(Rect(0, 0, 480, 140, rx=10, ry=10, fillColor=colors.HexColor('#f9fafb'), strokeColor=colors.HexColor('#e5e7eb'), strokeWidth=0.5))
-    
-    teal = colors.HexColor('#00a685')
-    purple = colors.HexColor('#8b5cf6')
-    
-    # Draw boxes
-    draw_c4_box(d, 20, 75, 110, 45, "XIAO Controller", "Hardware Core", "XIAO nRF52840 Sense + OLED.", "component")
-    draw_c4_box(d, 20, 15, 110, 45, "LiPo-Akku", "Hardware Power", "Bietet Energie für autonomen Betrieb.", "component")
-    draw_c4_box(d, 185, 42, 110, 50, "3D-Druck Gehäuse", "Physical Enclosure", "Umschließt und schützt die Hardware.", "component")
-    draw_c4_box(d, 350, 42, 110, 50, "Sportarmband (20mm)", "Wearable Strap", "Fixiert den Sensor stabil am Arm des Nutzers.", "external")
-    
-    # Draw arrows
-    draw_c4_arrow(d, 130, 97, 185, 77, "Umschlossen", purple)
-    draw_c4_arrow(d, 130, 37, 185, 57, "Umschlossen", purple)
-    draw_c4_arrow(d, 295, 67, 350, 67, "Befestigt", teal)
-    
-    return d
+    col_widths = [180, 300]
+    t = Table(table_data, colWidths=col_widths)
+    t.setStyle(TableStyle([
+        ('SPAN', (0,0), (1,0)),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f3fbf9')),
+        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        ('TOPPADDING', (0,0), (-1,0), 6),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#d1eae5')),
+        ('BACKGROUND', (0,1), (-1,-1), colors.white),
+        ('TOPPADDING', (0,1), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+    ]))
+    t.keepWithNext = True
+    return t
 
 def get_component_clean_markdown(content, section_num):
     content_clean = re.sub(r'<!--.*?-->', '', content, flags=re.DOTALL)
@@ -1166,12 +1112,10 @@ def main():
     
     if 'doc/UseCases.md' in files_by_path:
         content = files_by_path['doc/UseCases.md']['content']
-        content_lines = content.split('\n')
-        # Skip the main title of the markdown file to avoid duplicate headers
-        if content_lines and content_lines[0].startswith('# '):
-            content_lines = content_lines[1:]
-        flowables = markdown_to_flowables('\n'.join(content_lines), styles)
-        story.extend(flowables)
+        use_cases = parse_use_cases(content)
+        for uc in use_cases:
+            story.append(render_use_case_table(uc, styles))
+            story.append(Spacer(1, 15))
     else:
         story.append(Paragraph("Warnung: doc/UseCases.md wurde nicht im Scrape-Datensatz gefunden.", styles['NormalText']))
         
@@ -1261,11 +1205,11 @@ def main():
         
         # 4.1.2 to 4.1.6 Component Sub-chapters
         embedded_components = [
-            ('embedded/components/sensordatenerfassung/architecture.md', '4.1.2'),
-            ('embedded/components/inferenz_engine/architecture.md', '4.1.3'),
-            ('embedded/components/led_display_controller/architecture.md', '4.1.4'),
-            ('embedded/components/ble_streamer/architecture.md', '4.1.5'),
-            ('embedded/components/gehause/architecture.md', '4.1.6')
+            ('embedded/src/components/sensordatenerfassung/architecture.md', '4.1.2'),
+            ('embedded/src/components/inferenz_engine/architecture.md', '4.1.3'),
+            ('embedded/src/components/led_display_controller/architecture.md', '4.1.4'),
+            ('embedded/src/components/ble_streamer/architecture.md', '4.1.5'),
+            ('embedded/src/components/gehause/architecture.md', '4.1.6')
         ]
         for comp_path, section_num in embedded_components:
             if comp_path in files_by_path:
@@ -1448,12 +1392,10 @@ def main():
     # Table data construction
     table_data = [[
         Paragraph("<b>Use Case (UC)</b>", styles['TableHeader']),
-        Paragraph("<b>Mappings</b>", styles['TableHeader']),
         Paragraph("<b>FA Ebene 1</b>", styles['TableHeader']),
         Paragraph("<b>Sub-FA Ebene 2</b>", styles['TableHeader']),
         Paragraph("<b>Component</b>", styles['TableHeader']),
-        Paragraph("<b>Detail-FA Ebene 3</b>", styles['TableHeader']),
-        Paragraph("<b>Klassenebene (Klasse)</b>", styles['TableHeader'])
+        Paragraph("<b>Detail-FA Ebene 3</b>", styles['TableHeader'])
     ]]
 
     uc_current_idx = 0
@@ -1461,9 +1403,9 @@ def main():
     table_spans = []
 
     for r_idx, row in enumerate(rendered_rows):
-        row_cells = [""] * 7
+        row_cells = [""] * 5
         
-        # Column 1: Use Case
+        # Column 0: Use Case
         if r_idx == 0 or uc_row_count >= uc_spans[uc_current_idx]:
             if r_idx > 0:
                 uc_current_idx += 1
@@ -1479,33 +1421,24 @@ def main():
             
         uc_row_count += 1
         
-        # Column 2: Mappings (embedded Drawing spanning all rows)
-        if r_idx == 0:
-            row_height = 28
-            draw = create_mappings_drawing(total_rows, row_height, use_cases, tree, data)
-            row_cells[1] = draw
-            if total_rows > 1:
-                table_spans.append(('SPAN', (1, 1), (1, total_rows)))
-            
-        # Column 3: FA Ebene 1
+        # Column 1: FA Ebene 1
         if row['container_row_span'] > 0:
             fa_text = f"<b>{row['container']['id']}</b><br/><font size='6.5' color='#627c78'>{row['container']['title']}</font>"
-            row_cells[2] = Paragraph(fa_text, styles['MatrixCell'])
+            row_cells[1] = Paragraph(fa_text, styles['MatrixCell'])
             if row['container_row_span'] > 1:
-                table_spans.append(('SPAN', (2, r_idx + 1), (2, r_idx + row['container_row_span'])))
+                table_spans.append(('SPAN', (1, r_idx + 1), (1, r_idx + row['container_row_span'])))
             
-        # Column 4: Sub-FA Ebene 2
-        # Column 5: Component
+        # Column 2: Sub-FA Ebene 2
+        # Column 3: Component
         if row['sub_fa_row_span'] > 0:
             sub_fa = row['sub_fa']
             if sub_fa['id']:
-                # Link to req card
                 sub_fa_text = f"<a href='#req_{sub_fa['id']}'><b>{sub_fa['id']}</b></a>"
             else:
                 sub_fa_text = "<i>(unbenannt)</i>"
-            row_cells[3] = Paragraph(sub_fa_text, styles['MatrixCell'])
+            row_cells[2] = Paragraph(sub_fa_text, styles['MatrixCell'])
             if row['sub_fa_row_span'] > 1:
-                table_spans.append(('SPAN', (3, r_idx + 1), (3, r_idx + row['sub_fa_row_span'])))
+                table_spans.append(('SPAN', (2, r_idx + 1), (2, r_idx + row['sub_fa_row_span'])))
             
             comp_name = sub_fa['component']
             target_link = ""
@@ -1520,47 +1453,34 @@ def main():
                 comp_text = f"<a href='#{target_link}'><b>{comp_name}</b></a>"
             else:
                 comp_text = comp_name
-            row_cells[4] = Paragraph(comp_text, styles['MatrixCell'])
+            row_cells[3] = Paragraph(comp_text, styles['MatrixCell'])
             if row['sub_fa_row_span'] > 1:
-                table_spans.append(('SPAN', (4, r_idx + 1), (4, r_idx + row['sub_fa_row_span'])))
+                table_spans.append(('SPAN', (3, r_idx + 1), (3, r_idx + row['sub_fa_row_span'])))
             
-        # Column 6: Detail-FA Ebene 3
+        # Column 4: Detail-FA Ebene 3
         det = row['detail_fa']
         if det:
             det_text = f"<b>{det['id']}</b> {det['title']}"
-            row_cells[5] = Paragraph(det_text, styles['MatrixCell'])
+            row_cells[4] = Paragraph(det_text, styles['MatrixCell'])
         else:
-            row_cells[5] = Paragraph("-", styles['MatrixCell'])
-            
-        # Column 7: Klassenebene (Klasse)
-        classes = row['classes']
-        if classes:
-            class_links = []
-            for cls in classes:
-                cls_name = cls['name'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                link_href = f"file:///c:/Users/erlin/repo/movelink/{cls['file']}#L{cls['line']}"
-                class_links.append(f"<a href='{link_href}'>{cls_name}</a>")
-            row_cells[6] = Paragraph(" &nbsp;<font color='#00a685'>&lt;/&gt;</font>&nbsp; ".join(class_links), styles['MatrixCell'])
-        else:
-            row_cells[6] = Paragraph("<i>(Zielstruktur)</i>", styles['MatrixCell'])
+            row_cells[4] = Paragraph("-", styles['MatrixCell'])
             
         table_data.append(row_cells)
 
-    # Column widths total 487
-    col_widths = [70, 30, 85, 45, 65, 102, 90]
-    row_heights = [20] + [28] * total_rows
+    # Column widths total 480
+    col_widths = [85, 95, 50, 75, 175]
     
-    matrix_table = Table(table_data, colWidths=col_widths, rowHeights=row_heights)
+    matrix_table = Table(table_data, colWidths=col_widths)
     t_style = [
         ('BACKGROUND', (0,0), (-1,0), primary_color),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
         ('BACKGROUND', (0,1), (-1,-1), colors.white),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-        ('LEFTPADDING', (0,0), (-1,-1), 4),
-        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('LEFTPADDING', (0,0), (-1,-1), 5),
+        ('RIGHTPADDING', (0,0), (-1,-1), 5),
     ]
     t_style.extend(table_spans)
     matrix_table.setStyle(TableStyle(t_style))
